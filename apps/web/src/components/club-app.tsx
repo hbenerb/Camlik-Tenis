@@ -1025,6 +1025,19 @@ export function ClubApp() {
     });
   }
 
+  function refreshCalendar() {
+    if (!user) {
+      return;
+    }
+
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      window.location.reload();
+      return;
+    }
+
+    void loadData(user);
+  }
+
   if (!supabase) {
     return (
       <main
@@ -1163,7 +1176,7 @@ export function ClubApp() {
                 isAdmin(profile) ? openEditReservation : undefined
               }
               onCreateReservation={openReservationForm}
-              onRefresh={() => loadData(user)}
+              onRefresh={refreshCalendar}
               reservations={visibleReservations}
               selectedDate={selectedDate}
               setCalendarView={setCalendarView}
