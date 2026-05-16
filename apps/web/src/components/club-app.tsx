@@ -1768,7 +1768,20 @@ function CalendarPanel({
   settings: ClubSettings;
   timeSlots: string[];
 }) {
-  const isTodaySelected = isSameDay(selectedDate, currentTime);
+  const todayActionLabel =
+    calendarView === "week"
+      ? "Bu Hafta"
+      : calendarView === "month"
+        ? "Bu Ay"
+        : "Bugün";
+  const isCurrentPeriodSelected =
+    calendarView === "day"
+      ? isSameDay(selectedDate, currentTime)
+      : calendarView === "week"
+        ? startOfWeek(selectedDate, { weekStartsOn: 1 }).getTime() ===
+          startOfWeek(currentTime, { weekStartsOn: 1 }).getTime()
+        : startOfMonth(selectedDate).getTime() ===
+          startOfMonth(currentTime).getTime();
 
   return (
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
@@ -1836,14 +1849,14 @@ function CalendarPanel({
         </button>
         <button
           className={`h-10 rounded-md border px-2 text-sm font-medium ${
-            isTodaySelected
+            isCurrentPeriodSelected
               ? "border-[#237000] bg-[#237000] text-white"
               : "border-[#cfc8b8] bg-white hover:bg-[#eee9dd]"
           }`}
           onClick={() => setSelectedDate(new Date())}
           type="button"
         >
-          Bugün
+          {todayActionLabel}
         </button>
         <button
           className="inline-flex h-10 items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
