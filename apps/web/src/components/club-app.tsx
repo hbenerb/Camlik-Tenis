@@ -100,7 +100,7 @@ function getReservationOwner(reservation: Reservation) {
   return (
     reservation.profiles?.full_name ||
     reservation.profiles?.email ||
-    "Rezervasyon"
+    "Üye"
   );
 }
 
@@ -174,18 +174,6 @@ function firstBookableDate(
   }
 
   return currentTime;
-}
-
-function dayStatusLabel(status: DayAvailability) {
-  if (status === "past") {
-    return "Geçmiş";
-  }
-
-  if (status === "bookable") {
-    return "Rezervasyona açık";
-  }
-
-  return "Pencere dışında";
 }
 
 function formatWeekdayTiny(date: Date) {
@@ -864,9 +852,9 @@ export function ClubApp() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+      <div className="mx-auto grid w-full max-w-7xl gap-4 px-3 py-4 sm:px-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
+        <aside className="w-full lg:sticky lg:top-6 lg:self-start">
+          <nav className="flex justify-center gap-2 overflow-x-auto lg:flex-col lg:justify-start lg:overflow-visible">
             <NavButton
               icon={<CalendarDays size={18} />}
               isActive={activeTab === "calendar"}
@@ -890,7 +878,7 @@ export function ClubApp() {
           </nav>
         </aside>
 
-        <section className="min-w-0">
+        <section className="mx-auto w-full min-w-0 max-w-5xl">
           {statusMessage ? (
             <div className="mb-4 rounded-md border border-[#d9c799] bg-[#fff8df] px-4 py-3 text-sm text-[#5f4b19]">
               {statusMessage}
@@ -1118,20 +1106,20 @@ function CalendarPanel({
   timeSlots: string[];
 }) {
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-          <p className="text-sm text-[#68756b]">
-            {normalizeTime(settings.opening_time)} -{" "}
-            {normalizeTime(settings.closing_time)} ·{" "}
-            {settings.reservation_slot_minutes} dk
-          </p>
-          <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
-            {calendarView === "month"
-              ? format(selectedDate, "MMMM yyyy")
-              : formatDateTitle(selectedDate)}
-          </h2>
+            <p className="text-sm text-[#68756b]">
+              {normalizeTime(settings.opening_time)} -{" "}
+              {normalizeTime(settings.closing_time)} ·{" "}
+              {settings.reservation_slot_minutes} dk
+            </p>
+            <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
+              {calendarView === "month"
+                ? format(selectedDate, "MMMM yyyy")
+                : formatDateTitle(selectedDate)}
+            </h2>
           </div>
           <button
             aria-label="Yenile"
@@ -1281,12 +1269,12 @@ function DayCalendar({
           gridTemplateColumns,
         }}
       >
-        <div className="border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-[9px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
+        <div className="grid place-items-center border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-center text-[9px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
           Saat
         </div>
         {courts.map((court) => (
           <div
-            className="break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-center text-[10px] font-semibold leading-tight sm:p-3 sm:text-sm"
+            className="grid place-items-center break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-center text-[10px] font-semibold leading-tight sm:p-3 sm:text-sm"
             key={court.id}
           >
             {court.name}
@@ -1304,7 +1292,7 @@ function DayCalendar({
           )
           .map((slot) => (
             <div className="contents" key={slot}>
-              <div className="border-r border-t border-[#eee7db] px-1 py-2 text-[10px] font-medium text-[#68756b] sm:p-3 sm:text-sm">
+              <div className="grid place-items-center border-r border-t border-[#eee7db] px-1 py-2 text-center text-[10px] font-medium text-[#68756b] sm:p-3 sm:text-sm">
                 {slot}
               </div>
               {courts.map((court) => {
@@ -1321,18 +1309,18 @@ function DayCalendar({
                   slot,
                 );
                 const cellClassName =
-                  "min-h-12 border-r border-t border-[#eee7db] p-1 text-left transition sm:min-h-20 sm:p-2";
+                  "min-h-12 border-r border-t border-[#eee7db] p-1 text-center transition sm:min-h-20 sm:p-2";
 
                 if (reservation) {
                   const owner = getReservationOwner(reservation);
 
                   return (
                     <div
-                      className={`${cellClassName} bg-[#e6f0e7] hover:bg-[#dbe8dc]`}
+                      className={`${cellClassName} flex flex-col items-center justify-center bg-[#e6f0e7] hover:bg-[#dbe8dc]`}
                       key={`${court.id}-${slot}`}
                     >
                       <p
-                        className="truncate text-center text-[10px] font-semibold text-[#1e4a32] sm:text-left sm:text-sm"
+                        className="w-full truncate text-[12px] font-semibold text-[#1e4a32] sm:text-sm"
                         title={owner}
                       >
                         {owner}
@@ -1371,7 +1359,7 @@ function DayCalendar({
 
                 return (
                   <button
-                    className={`${cellClassName} ${
+                    className={`${cellClassName} flex items-center justify-center ${
                       slotBookable
                         ? "cursor-pointer bg-[#f0f8ef] text-[#1e4a32] hover:bg-[#e3f1df]"
                         : "cursor-not-allowed bg-white text-[#8b8f86]"
@@ -1383,8 +1371,8 @@ function DayCalendar({
                     }
                     type="button"
                   >
-                    <span className="text-[10px] font-medium sm:text-xs">
-                      {slotBookable ? "Uygun" : "Uygun değil"}
+                    <span className="text-[12px] font-semibold sm:text-sm">
+                      {slotBookable ? "Açık" : "Kapalı"}
                     </span>
                   </button>
                 );
@@ -1459,7 +1447,7 @@ function WeekCalendar({
               {format(day, "d")}
             </p>
             <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
-              {dayReservations.length > 0 ? `${dayReservations.length} rez.` : dayStatusLabel(status)}
+              {dayReservations.length > 0 ? `${dayReservations.length} rez.` : ""}
             </p>
           </button>
         );
@@ -1535,7 +1523,7 @@ function MonthCalendar({
               {format(day, "d")}
             </p>
             <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
-              {count > 0 ? `${count} rez.` : isMonthDay ? dayStatusLabel(status) : ""}
+              {count > 0 ? `${count} rez.` : ""}
             </p>
           </button>
         );
