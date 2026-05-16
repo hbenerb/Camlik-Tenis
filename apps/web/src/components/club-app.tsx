@@ -841,32 +841,33 @@ export function ClubApp() {
   return (
     <main className={`${themeClassName} min-h-screen bg-[#f7f6f1] text-[#17211c]`}>
       <header className="border-b border-[#ddd7c8] bg-[#fffdf8]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-7xl items-start justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-start gap-3">
             <ClubMark size="sm" />
-            <div>
+            <div className="min-w-0">
               <p className="text-sm text-[#6d746c]">Ayvalık Çamlık</p>
               <h1 className="text-xl font-semibold tracking-normal">
                 Kort Rezervasyon
               </h1>
+              <div className="mt-1 text-xs text-[#546257] sm:text-sm">
+                <span className="font-medium text-[#17211c]">
+                  {getDisplayName(profile, user)}
+                </span>
+                {profile?.is_club_member ? " · Kulüp üyesi" : " · App üyesi"}
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="text-sm text-[#546257]">
-              <span className="font-medium text-[#17211c]">
-                {getDisplayName(profile, user)}
-              </span>
-              {profile?.is_club_member ? " · Kulüp üyesi" : " · App üyesi"}
-            </div>
+          <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle onToggle={toggleTheme} theme={theme} />
             <button
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#cfc8b8] px-3 text-sm font-medium hover:bg-[#eee9dd]"
+              aria-label="Çıkış yap"
+              className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
               onClick={signOut}
+              title="Çıkış yap"
               type="button"
             >
               <LogOut size={16} />
-              Çıkış
             </button>
           </div>
         </div>
@@ -1274,21 +1275,26 @@ function DayCalendar({
   selectedDate: Date;
   timeSlots: string[];
 }) {
+  const compactCourtGrid = courts.length <= 3;
+  const gridTemplateColumns = compactCourtGrid
+    ? `46px repeat(${courts.length}, minmax(0, 1fr))`
+    : `72px repeat(${courts.length}, minmax(128px, 1fr))`;
+
   return (
     <div className="overflow-x-auto rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
       <div
-        className="min-w-[720px]"
+        className={compactCourtGrid ? "w-full min-w-0" : "min-w-[640px]"}
         style={{
           display: "grid",
-          gridTemplateColumns: `84px repeat(${courts.length}, minmax(150px, 1fr))`,
+          gridTemplateColumns,
         }}
       >
-        <div className="border-b border-r border-[#e6dfd2] bg-[#f3efe5] p-3 text-xs font-semibold uppercase text-[#68756b]">
+        <div className="border-b border-r border-[#e6dfd2] bg-[#f3efe5] p-2 text-[10px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
           Saat
         </div>
         {courts.map((court) => (
           <div
-            className="border-b border-r border-[#e6dfd2] bg-[#f3efe5] p-3 text-sm font-semibold"
+            className="break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] p-2 text-[11px] font-semibold leading-tight sm:p-3 sm:text-sm"
             key={court.id}
           >
             {court.name}
@@ -1306,7 +1312,7 @@ function DayCalendar({
           )
           .map((slot) => (
             <div className="contents" key={slot}>
-              <div className="border-r border-t border-[#eee7db] p-3 text-sm font-medium text-[#68756b]">
+              <div className="border-r border-t border-[#eee7db] p-2 text-[11px] font-medium text-[#68756b] sm:p-3 sm:text-sm">
                 {slot}
               </div>
               {courts.map((court) => {
@@ -1323,18 +1329,23 @@ function DayCalendar({
                   slot,
                 );
                 const cellClassName =
-                  "min-h-20 border-r border-t border-[#eee7db] p-2 text-left transition";
+                  "min-h-16 border-r border-t border-[#eee7db] p-1.5 text-left transition sm:min-h-20 sm:p-2";
 
                 if (reservation) {
+                  const owner = getReservationOwner(reservation);
+
                   return (
                     <div
                       className={`${cellClassName} bg-[#e6f0e7] hover:bg-[#dbe8dc]`}
                       key={`${court.id}-${slot}`}
                     >
-                      <p className="text-sm font-semibold text-[#1e4a32]">
-                        {getReservationOwner(reservation)}
+                      <p
+                        className="truncate text-[11px] font-semibold text-[#1e4a32] sm:text-sm"
+                        title={owner}
+                      >
+                        {owner}
                       </p>
-                      <p className="mt-1 text-xs text-[#557260]">
+                      <p className="mt-1 text-[10px] text-[#557260] sm:text-xs">
                         {formatTime(new Date(reservation.starts_at))} -{" "}
                         {formatTime(new Date(reservation.ends_at))}
                       </p>
@@ -1342,7 +1353,7 @@ function DayCalendar({
                         <div className="mt-2 flex flex-wrap gap-1">
                           {onEditReservation ? (
                             <button
-                              className="inline-flex rounded border border-[#cfc8b8] px-2 py-1 text-xs font-medium"
+                              className="inline-flex rounded border border-[#cfc8b8] px-1.5 py-1 text-[10px] font-medium sm:px-2 sm:text-xs"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 onEditReservation(reservation);
@@ -1354,7 +1365,7 @@ function DayCalendar({
                           ) : null}
                           {onDeleteReservation ? (
                             <button
-                              className="inline-flex rounded border border-[#cfc8b8] px-2 py-1 text-xs font-medium"
+                              className="inline-flex rounded border border-[#cfc8b8] px-1.5 py-1 text-[10px] font-medium sm:px-2 sm:text-xs"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 onDeleteReservation(reservation);
@@ -1384,7 +1395,7 @@ function DayCalendar({
                     }
                     type="button"
                   >
-                    <span className="text-xs font-medium">
+                    <span className="text-[11px] font-medium sm:text-xs">
                       {slotBookable ? "Uygun" : "Uygun değil"}
                     </span>
                   </button>
@@ -2321,15 +2332,17 @@ function ThemeToggle({
   theme: ThemeMode;
 }) {
   const isDark = theme === "dark";
+  const label = isDark ? "Açık moda geç" : "Koyu moda geç";
 
   return (
     <button
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[#cfc8b8] bg-white px-3 text-sm font-medium hover:bg-[#eee9dd]"
+      aria-label={label}
+      className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
       onClick={onToggle}
+      title={label}
       type="button"
     >
       {isDark ? <Sun size={16} /> : <Moon size={16} />}
-      {isDark ? "Açık mod" : "Koyu mod"}
     </button>
   );
 }

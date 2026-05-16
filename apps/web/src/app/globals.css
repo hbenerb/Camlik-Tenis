@@ -99,7 +99,7 @@ body {
 }
 
 .theme-dark [class*="bg-[#17211c]"] {
-  background-color: var(--theme-text) !important;
+  background-color: var(--theme-primary) !important;
 }
 
 .theme-dark [class*="bg-[#b55036]"] {
