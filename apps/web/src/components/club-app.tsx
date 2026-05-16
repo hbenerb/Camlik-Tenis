@@ -131,6 +131,14 @@ function isProfileComplete(profile: Profile | null) {
   );
 }
 
+function triggerLightHaptic() {
+  if (typeof navigator === "undefined" || !("vibrate" in navigator)) {
+    return;
+  }
+
+  navigator.vibrate(8);
+}
+
 function isAdmin(profile: Profile | null) {
   return profile?.app_role === "admin" || profile?.app_role === "super_admin";
 }
@@ -414,6 +422,45 @@ export function ClubApp() {
     });
 
     return () => window.cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
+    function handleButtonTouch(event: PointerEvent) {
+      if (event.pointerType === "mouse") {
+        return;
+      }
+
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const button = target.closest("button, [role='button']");
+
+      if (!button) {
+        return;
+      }
+
+      if (
+        (button instanceof HTMLButtonElement && button.disabled) ||
+        button.getAttribute("aria-disabled") === "true"
+      ) {
+        return;
+      }
+
+      triggerLightHaptic();
+    }
+
+    document.addEventListener("pointerdown", handleButtonTouch, {
+      capture: true,
+    });
+
+    return () => {
+      document.removeEventListener("pointerdown", handleButtonTouch, {
+        capture: true,
+      });
+    };
   }, []);
 
   useEffect(() => {
