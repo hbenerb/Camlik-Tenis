@@ -1013,32 +1013,94 @@ export function ClubApp() {
       ),
     };
 
-    const { error } = await supabase
-      .from("club_settings")
-      .update({
-        opening_time: updatedSettings.opening_time,
-        closing_time: updatedSettings.closing_time,
-        reservation_slot_minutes: updatedSettings.reservation_slot_minutes,
-        max_active_reservations: updatedSettings.max_active_reservations,
-        default_booking_days_ahead: updatedSettings.default_booking_days_ahead,
-        club_member_booking_days_ahead:
-          updatedSettings.club_member_booking_days_ahead,
-        cancellation_deadline_hours:
-          updatedSettings.cancellation_deadline_hours,
-      })
-      .eq("id", 1);
+    const settingsPayload = {
+      setting_cancellation_deadline_hours:
+        updatedSettings.cancellation_deadline_hours,
+      setting_closing_time: updatedSettings.closing_time,
+      setting_club_member_booking_days_ahead:
+        updatedSettings.club_member_booking_days_ahead,
+      setting_default_booking_days_ahead:
+        updatedSettings.default_booking_days_ahead,
+      setting_max_active_reservations:
+        updatedSettings.max_active_reservations,
+      setting_opening_time: updatedSettings.opening_time,
+      setting_reservation_slot_minutes:
+        updatedSettings.reservation_slot_minutes,
+    };
+
+    const rpcResult = await supabase.rpc(
+      "admin_update_club_settings",
+      settingsPayload,
+    );
+    const updateResult = rpcResult.error
+      ? await supabase
+          .from("club_settings")
+          .update({
+            opening_time: updatedSettings.opening_time,
+            closing_time: updatedSettings.closing_time,
+            reservation_slot_minutes: updatedSettings.reservation_slot_minutes,
+            max_active_reservations: updatedSettings.max_active_reservations,
+            default_booking_days_ahead:
+              updatedSettings.default_booking_days_ahead,
+            club_member_booking_days_ahead:
+              updatedSettings.club_member_booking_days_ahead,
+            cancellation_deadline_hours:
+              updatedSettings.cancellation_deadline_hours,
+          })
+          .eq("id", 1)
+      : rpcResult;
 
     setIsSaving(false);
 
-    if (error) {
+    if (updateResult.error) {
       setStatusMessage(
-        `${error.message} Ayarlar kaydolmadıysa Supabase admin izin SQL'ini çalıştırmak gerekiyor.`,
+        `${updateResult.error.message} Ayarlar kaydolmadıysa Supabase admin ayar SQL'ini çalıştırmak gerekiyor.`,
       );
       return;
     }
 
-    setSettings(updatedSettings);
-    setSettingsDraft(updatedSettings);
+    const refreshedSettingsResult = await supabase
+      .from("club_settings")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (refreshedSettingsResult.error || !refreshedSettingsResult.data) {
+      setStatusMessage(
+        refreshedSettingsResult.error?.message ??
+          "Kulüp ayarları kaydedildi ama doğrulama için tekrar okunamadı.",
+      );
+      return;
+    }
+
+    const savedSettings = refreshedSettingsResult.data as ClubSettings;
+
+    if (
+      normalizeTime(savedSettings.opening_time) !==
+        normalizeTime(updatedSettings.opening_time) ||
+      normalizeTime(savedSettings.closing_time) !==
+        normalizeTime(updatedSettings.closing_time) ||
+      Number(savedSettings.reservation_slot_minutes) !==
+        updatedSettings.reservation_slot_minutes ||
+      Number(savedSettings.max_active_reservations) !==
+        updatedSettings.max_active_reservations ||
+      Number(savedSettings.default_booking_days_ahead) !==
+        updatedSettings.default_booking_days_ahead ||
+      Number(savedSettings.club_member_booking_days_ahead) !==
+        updatedSettings.club_member_booking_days_ahead ||
+      Number(savedSettings.cancellation_deadline_hours) !==
+        updatedSettings.cancellation_deadline_hours
+    ) {
+      setSettings(savedSettings);
+      setSettingsDraft(savedSettings);
+      setStatusMessage(
+        "Kulüp ayarları kaydedilemedi. Supabase admin ayar SQL'ini çalıştırmak gerekiyor.",
+      );
+      return;
+    }
+
+    setSettings(savedSettings);
+    setSettingsDraft(savedSettings);
     setStatusMessage("Kulüp ayarları güncellendi.");
   }
 
@@ -1207,25 +1269,88 @@ export function ClubApp() {
       return;
     }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update(fields)
-      .eq("id", memberId);
+    const currentMember =
+      members.find((member) => member.id === memberId) ??
+      (profile?.id === memberId ? profile : null);
 
-    if (error) {
+    if (!currentMember) {
+      setStatusMessage("Üye bulunamadı.");
+      return;
+    }
+
+    const nextMember: Profile = {
+      ...currentMember,
+      ...fields,
+    };
+
+    const rpcResult = await supabase.rpc("admin_update_profile", {
+      profile_app_role: nextMember.app_role,
+      profile_full_name: nextMember.full_name,
+      profile_id: memberId,
+      profile_is_club_member: nextMember.is_club_member,
+      profile_reservation_days_ahead: nextMember.reservation_days_ahead,
+      profile_skill_level: nextMember.skill_level ?? "beginner",
+    });
+    const updateResult = rpcResult.error
+      ? await supabase.from("profiles").update(fields).eq("id", memberId)
+      : rpcResult;
+
+    if (updateResult.error) {
       setStatusMessage(
-        `${error.message} Üye kaydolmadıysa Supabase admin izin SQL'ini çalıştırmak gerekiyor.`,
+        `${updateResult.error.message} Üye kaydolmadıysa Supabase admin ayar SQL'ini çalıştırmak gerekiyor.`,
+      );
+      return;
+    }
+
+    const refreshedMemberResult = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", memberId)
+      .maybeSingle();
+
+    if (refreshedMemberResult.error || !refreshedMemberResult.data) {
+      setStatusMessage(
+        refreshedMemberResult.error?.message ??
+          "Üye güncellendi ama doğrulama için tekrar okunamadı.",
+      );
+      return;
+    }
+
+    const savedMember = refreshedMemberResult.data as Profile;
+
+    if (
+      (fields.full_name !== undefined &&
+        savedMember.full_name !== nextMember.full_name) ||
+      (fields.skill_level !== undefined &&
+        savedMember.skill_level !== nextMember.skill_level) ||
+      (fields.is_club_member !== undefined &&
+        savedMember.is_club_member !== nextMember.is_club_member) ||
+      (fields.reservation_days_ahead !== undefined &&
+        savedMember.reservation_days_ahead !==
+          nextMember.reservation_days_ahead) ||
+      (fields.app_role !== undefined && savedMember.app_role !== nextMember.app_role)
+    ) {
+      setMembers((currentMembers) =>
+        currentMembers.map((member) =>
+          member.id === memberId ? savedMember : member,
+        ),
+      );
+      if (profile?.id === memberId) {
+        setProfile(savedMember);
+      }
+      setStatusMessage(
+        "Üye ayarı kaydedilemedi. Supabase admin ayar SQL'ini çalıştırmak gerekiyor.",
       );
       return;
     }
 
     setMembers((currentMembers) =>
       currentMembers.map((member) =>
-        member.id === memberId ? { ...member, ...fields } : member,
+        member.id === memberId ? savedMember : member,
       ),
     );
     if (profile?.id === memberId) {
-      setProfile({ ...profile, ...fields });
+      setProfile(savedMember);
     }
     setStatusMessage("Üye güncellendi.");
   }
