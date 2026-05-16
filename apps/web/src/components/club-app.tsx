@@ -2265,15 +2265,13 @@ function ReservationsPanel({
               </h3>
               <div className="mt-1 space-y-0.5 text-xs leading-5 text-[#68756b] sm:text-sm">
                 <p className="truncate">
-                  Kort: {reservation.courts?.name ?? "Kort"}
+                  {reservation.courts?.name ?? "Kort"}
                 </p>
                 <p className="truncate">
-                  Tarih: {format(startsAt, "dd.MM.yyyy")} ·{" "}
-                  {formatWeekdayLong(startsAt)}
+                  {format(startsAt, "dd.MM.yyyy")} · {formatWeekdayLong(startsAt)}
                 </p>
                 <p className="truncate">
-                  Saat: {formatTime(startsAt)} -{" "}
-                  {formatTime(new Date(reservation.ends_at))}
+                  {formatTime(startsAt)} - {formatTime(new Date(reservation.ends_at))}
                 </p>
               </div>
             </div>
