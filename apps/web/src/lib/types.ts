@@ -1,11 +1,13 @@
 export type AppRole = "user" | "admin" | "super_admin";
 export type ReservationStatus = "confirmed" | "canceled";
 export type CalendarView = "day" | "week" | "month";
+export type SkillLevel = "beginner" | "intermediate" | "advanced" | "master";
 
 export type Profile = {
   id: string;
   email: string;
   full_name: string | null;
+  skill_level?: SkillLevel | null;
   avatar_url: string | null;
   app_role: AppRole;
   is_club_member: boolean;
@@ -49,4 +51,3 @@ export type Reservation = {
   courts?: Pick<Court, "name"> | null;
   profiles?: Pick<Profile, "email" | "full_name"> | null;
 };
-

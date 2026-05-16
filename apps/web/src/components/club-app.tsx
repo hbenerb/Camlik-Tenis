@@ -24,6 +24,7 @@ import {
   Settings2,
   ShieldCheck,
   Sun,
+  User as UserIcon,
   Users,
   X,
 } from "lucide-react";
@@ -54,9 +55,10 @@ import type {
   Profile,
   Reservation,
   ReservationStatus,
+  SkillLevel,
 } from "@/lib/types";
 
-type AppTab = "calendar" | "reservations" | "admin";
+type AppTab = "calendar" | "reservations" | "profile" | "admin";
 type OAuthProvider = "google" | "apple";
 type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
@@ -86,7 +88,35 @@ const viewLabels: Record<CalendarView, string> = {
   month: "Aylık",
 };
 
+const skillLevelLabels: Record<SkillLevel, string> = {
+  beginner: "Başlangıç",
+  intermediate: "Orta",
+  advanced: "İleri",
+  master: "Master",
+};
+
+const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
+
 const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
+
+function normalizeFullName(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function hasCompleteFullName(value: string | null | undefined) {
+  return normalizeFullName(value ?? "").split(" ").filter(Boolean).length >= 2;
+}
+
+function isSkillLevel(value: unknown): value is SkillLevel {
+  return typeof value === "string" && skillLevels.includes(value as SkillLevel);
+}
+
+function isProfileComplete(profile: Profile | null) {
+  return (
+    hasCompleteFullName(profile?.full_name) &&
+    isSkillLevel(profile?.skill_level)
+  );
+}
 
 function isAdmin(profile: Profile | null) {
   return profile?.app_role === "admin" || profile?.app_role === "super_admin";
@@ -100,7 +130,7 @@ function getReservationOwner(reservation: Reservation) {
   return (
     reservation.profiles?.full_name ||
     reservation.profiles?.email ||
-    "Üye"
+    "İsim yok"
   );
 }
 
@@ -229,10 +259,15 @@ export function ClubApp() {
     start_time: "09:00",
     status: "confirmed" as ReservationStatus,
   });
+  const [profileForm, setProfileForm] = useState({
+    full_name: "",
+    skill_level: "beginner" as SkillLevel,
+  });
   const [newCourtName, setNewCourtName] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProfileSchemaReady, setIsProfileSchemaReady] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [theme, setTheme] = useState<ThemeMode>("light");
 
@@ -244,6 +279,9 @@ export function ClubApp() {
   );
 
   const timeSlots = useMemo(() => buildTimeSlots(settings), [settings]);
+
+  const mustCompleteProfile =
+    Boolean(profile) && isProfileSchemaReady && !isProfileComplete(profile);
 
   const bookingWindowDays = useMemo(() => {
     if (!profile) {
@@ -347,6 +385,22 @@ export function ClubApp() {
       return;
     }
 
+    const profileSchemaReady = Object.prototype.hasOwnProperty.call(
+      loadedProfile,
+      "skill_level",
+    );
+
+    setIsProfileSchemaReady(profileSchemaReady);
+    setProfileForm({
+      full_name:
+        loadedProfile.full_name ??
+        currentUser.user_metadata?.full_name ??
+        currentUser.user_metadata?.name ??
+        "",
+      skill_level: isSkillLevel(loadedProfile.skill_level)
+        ? loadedProfile.skill_level
+        : "beginner",
+    });
     setProfile(loadedProfile);
     setSettings(loadedSettings);
     setSettingsDraft(loadedSettings);
@@ -465,8 +519,63 @@ export function ClubApp() {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setIsProfileSchemaReady(false);
+    setProfileForm({ full_name: "", skill_level: "beginner" });
     setReservations([]);
     setMembers([]);
+  }
+
+  async function saveOwnProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!supabase || !user) {
+      return;
+    }
+
+    if (!isProfileSchemaReady) {
+      setStatusMessage("Profil SQL'i henüz Supabase'de çalıştırılmadı.");
+      return;
+    }
+
+    const fullName = normalizeFullName(profileForm.full_name);
+
+    if (!hasCompleteFullName(fullName)) {
+      setStatusMessage("Ad soyad iki kelime olacak şekilde girilmeli.");
+      return;
+    }
+
+    if (!isSkillLevel(profileForm.skill_level)) {
+      setStatusMessage("Seviye seçilmeli.");
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+
+    const { data, error } = await supabase.rpc("update_own_profile", {
+      profile_full_name: fullName,
+      profile_skill_level: profileForm.skill_level,
+    });
+
+    setIsSaving(false);
+
+    if (error) {
+      setStatusMessage(error.message);
+      return;
+    }
+
+    const updatedProfile = data as Profile;
+
+    setProfile(updatedProfile);
+    setProfileForm({
+      full_name: updatedProfile.full_name ?? fullName,
+      skill_level: isSkillLevel(updatedProfile.skill_level)
+        ? updatedProfile.skill_level
+        : profileForm.skill_level,
+    });
+    setActiveTab("calendar");
+    await loadData(user);
+    setStatusMessage("Profil güncellendi.");
   }
 
   function openReservationForm(courtId?: string, date?: Date, slot?: string) {
@@ -815,6 +924,8 @@ export function ClubApp() {
     );
   }
 
+  const visibleActiveTab = mustCompleteProfile ? "profile" : activeTab;
+
   return (
     <main
       className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] text-[#17211c]`}
@@ -857,20 +968,26 @@ export function ClubApp() {
           <nav className="flex justify-center gap-2 overflow-x-auto lg:flex-col lg:justify-start lg:overflow-visible">
             <NavButton
               icon={<CalendarDays size={18} />}
-              isActive={activeTab === "calendar"}
+              isActive={visibleActiveTab === "calendar"}
               label="Takvim"
               onClick={() => setActiveTab("calendar")}
             />
             <NavButton
               icon={<Clock3 size={18} />}
-              isActive={activeTab === "reservations"}
+              isActive={visibleActiveTab === "reservations"}
               label="Rezervasyonlar"
               onClick={() => setActiveTab("reservations")}
+            />
+            <NavButton
+              icon={<UserIcon size={18} />}
+              isActive={visibleActiveTab === "profile"}
+              label="Profil"
+              onClick={() => setActiveTab("profile")}
             />
             {isAdmin(profile) ? (
               <NavButton
                 icon={<Settings2 size={18} />}
-                isActive={activeTab === "admin"}
+                isActive={visibleActiveTab === "admin"}
                 label="Admin"
                 onClick={() => setActiveTab("admin")}
               />
@@ -894,7 +1011,7 @@ export function ClubApp() {
             </div>
           ) : null}
 
-          {!isLoading && activeTab === "calendar" ? (
+          {!isLoading && visibleActiveTab === "calendar" ? (
             <CalendarPanel
               activeCourts={activeCourts}
               bookingWindowDays={bookingWindowDays}
@@ -919,7 +1036,7 @@ export function ClubApp() {
             />
           ) : null}
 
-          {!isLoading && activeTab === "reservations" ? (
+          {!isLoading && visibleActiveTab === "reservations" ? (
             <ReservationsPanel
               canManageAll={isAdmin(profile)}
               currentTime={currentTime}
@@ -937,7 +1054,19 @@ export function ClubApp() {
             />
           ) : null}
 
-          {!isLoading && activeTab === "admin" && profile && isAdmin(profile) ? (
+          {!isLoading && visibleActiveTab === "profile" && profile ? (
+            <ProfilePanel
+              form={profileForm}
+              isRequired={mustCompleteProfile}
+              isSaving={isSaving}
+              isSchemaReady={isProfileSchemaReady}
+              onFormChange={setProfileForm}
+              onSubmit={saveOwnProfile}
+              profile={profile}
+            />
+          ) : null}
+
+          {!isLoading && visibleActiveTab === "admin" && profile && isAdmin(profile) ? (
             <AdminPanel
               courts={courts}
               currentProfile={profile}
@@ -1633,6 +1762,93 @@ function ReservationsPanel({
         );
       })}
     </div>
+  );
+}
+
+function ProfilePanel({
+  form,
+  isRequired,
+  isSaving,
+  isSchemaReady,
+  onFormChange,
+  onSubmit,
+  profile,
+}: {
+  form: { full_name: string; skill_level: SkillLevel };
+  isRequired: boolean;
+  isSaving: boolean;
+  isSchemaReady: boolean;
+  onFormChange: (form: { full_name: string; skill_level: SkillLevel }) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  profile: Profile;
+}) {
+  return (
+    <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-5">
+      <div className="mb-5 flex items-start gap-3">
+        <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#e6f0e7] text-[#1e4a32]">
+          <UserIcon size={18} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm text-[#68756b]">{profile.email}</p>
+          <h2 className="text-xl font-semibold">Profil</h2>
+          {isRequired ? (
+            <p className="mt-1 text-sm font-medium text-[#a0543b]">
+              Devam etmek için ad soyad ve seviye girilmeli.
+            </p>
+          ) : null}
+          {!isSchemaReady ? (
+            <p className="mt-1 text-sm font-medium text-[#a0543b]">
+              {"Profil SQL'i Supabase'de çalıştırılınca aktifleşecek."}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <form className="grid gap-4 sm:max-w-lg" onSubmit={onSubmit}>
+        <Field label="Ad soyad">
+          <input
+            className="input"
+            disabled={!isSchemaReady}
+            minLength={3}
+            onChange={(event) =>
+              onFormChange({ ...form, full_name: event.target.value })
+            }
+            placeholder="Ad Soyad"
+            required
+            value={form.full_name}
+          />
+        </Field>
+
+        <Field label="Seviye">
+          <select
+            className="input"
+            disabled={!isSchemaReady}
+            onChange={(event) =>
+              onFormChange({
+                ...form,
+                skill_level: event.target.value as SkillLevel,
+              })
+            }
+            required
+            value={form.skill_level}
+          >
+            {skillLevels.map((level) => (
+              <option key={level} value={level}>
+                {skillLevelLabels[level]}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <button
+          className="primary-button"
+          disabled={isSaving || !isSchemaReady}
+          type="submit"
+        >
+          Profili kaydet
+        </button>
+      </form>
+    </section>
   );
 }
 
