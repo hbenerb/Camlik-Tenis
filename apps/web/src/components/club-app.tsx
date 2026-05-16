@@ -21,7 +21,6 @@ import {
   Moon,
   Plus,
   RefreshCw,
-  Settings2,
   ShieldCheck,
   Sun,
   User as UserIcon,
@@ -948,17 +947,32 @@ export function ClubApp() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <ThemeToggle onToggle={toggleTheme} theme={theme} />
-            <button
-              aria-label="Çıkış yap"
-              className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
-              onClick={signOut}
-              title="Çıkış yap"
-              type="button"
-            >
-              <LogOut size={16} />
-            </button>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <ThemeToggle onToggle={toggleTheme} theme={theme} />
+              <button
+                aria-label="Çıkış yap"
+                className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+                onClick={signOut}
+                title="Çıkış yap"
+                type="button"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+            {isAdmin(profile) ? (
+              <button
+                className={`h-8 rounded-md px-3 text-xs font-semibold ${
+                  visibleActiveTab === "admin"
+                    ? "bg-[#1e4a32] text-white"
+                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
+                }`}
+                onClick={() => setActiveTab("admin")}
+                type="button"
+              >
+                Admin
+              </button>
+            ) : null}
           </div>
         </div>
       </header>
@@ -980,18 +994,11 @@ export function ClubApp() {
             />
             <NavButton
               icon={<UserIcon size={18} />}
+              iconOnly
               isActive={visibleActiveTab === "profile"}
               label="Profil"
               onClick={() => setActiveTab("profile")}
             />
-            {isAdmin(profile) ? (
-              <NavButton
-                icon={<Settings2 size={18} />}
-                isActive={visibleActiveTab === "admin"}
-                label="Admin"
-                onClick={() => setActiveTab("admin")}
-              />
-            ) : null}
           </nav>
         </aside>
 
@@ -2468,11 +2475,13 @@ function ReservationEditDialog({
 }
 
 function NavButton({
+  iconOnly = false,
   icon,
   isActive,
   label,
   onClick,
 }: {
+  iconOnly?: boolean;
   icon: ReactNode;
   isActive: boolean;
   label: string;
@@ -2480,7 +2489,10 @@ function NavButton({
 }) {
   return (
     <button
-      className={`inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-semibold ${
+      aria-label={label}
+      className={`inline-flex h-11 items-center justify-center whitespace-nowrap rounded-md text-sm font-semibold ${
+        iconOnly ? "w-11 px-0" : "gap-2 px-3"
+      } ${
         isActive
           ? "bg-[#1e4a32] text-white"
           : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
@@ -2489,7 +2501,7 @@ function NavButton({
       type="button"
     >
       {icon}
-      {label}
+      <span className={iconOnly ? "sr-only" : undefined}>{label}</span>
     </button>
   );
 }
