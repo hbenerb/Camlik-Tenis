@@ -19,8 +19,8 @@
   --theme-success-text: #1e4a32;
   --theme-warning-bg: #fff8df;
   --theme-warning-text: #5f4b19;
-  --theme-primary: #b55036;
-  --theme-primary-hover: #97452f;
+  --theme-primary: #1e4a32;
+  --theme-primary-hover: #28613f;
 }
 
 @theme inline {
@@ -55,9 +55,25 @@ body {
   --theme-success-text: #b8efc9;
   --theme-warning-bg: #3c3118;
   --theme-warning-text: #ffe0a1;
-  --theme-primary: #d06b4c;
-  --theme-primary-hover: #e17e5f;
+  --theme-primary: #2d7a4f;
+  --theme-primary-hover: #35945e;
   color-scheme: dark;
+}
+
+html,
+body {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+html.theme-dark-root,
+html.theme-dark-root body {
+  background: #0e1512;
+}
+
+html.theme-light-root,
+html.theme-light-root body {
+  background: #f7f6f1;
 }
 
 .theme-light,
@@ -98,7 +114,9 @@ body {
   background-color: var(--theme-warning-bg) !important;
 }
 
-.theme-dark [class*="bg-[#17211c]"] {
+.theme-dark [class*="bg-[#17211c]"],
+.theme-dark [class*="bg-[#1e4a32]"],
+.theme-dark [class*="bg-[#28613f]"] {
   background-color: var(--theme-primary) !important;
 }
 
@@ -154,6 +172,22 @@ button {
 
 button:disabled {
   cursor: not-allowed;
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
+  body::before {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+    padding: 2rem;
+    text-align: center;
+    font-weight: 700;
+    content: "Lütfen telefonu dik konuma çevirin.";
+  }
 }
 
 .input {

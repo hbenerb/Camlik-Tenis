@@ -4,6 +4,21 @@ import { useEffect } from "react";
 
 export function PwaRegister() {
   useEffect(() => {
+    const lockPortrait = () => {
+      const orientation =
+        "orientation" in screen
+          ? (screen.orientation as ScreenOrientation & {
+              lock?: (orientation: "portrait-primary") => Promise<void>;
+            })
+          : null;
+
+      void orientation?.lock?.("portrait-primary").catch(() => {
+        // Browsers may only allow orientation lock after install/fullscreen.
+      });
+    };
+
+    lockPortrait();
+
     if (
       process.env.NODE_ENV !== "production" ||
       !("serviceWorker" in navigator)

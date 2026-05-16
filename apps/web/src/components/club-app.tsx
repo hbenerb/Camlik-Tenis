@@ -8,6 +8,7 @@ import {
   format,
   isSameDay,
   startOfDay,
+  startOfMonth,
   startOfWeek,
 } from "date-fns";
 import {
@@ -38,7 +39,6 @@ import {
   dateInputValue,
   findReservationAtSlot,
   formatDateTitle,
-  formatShortDate,
   formatTime,
   getRangeForView,
   isCurrentMonth,
@@ -106,22 +106,6 @@ function getReservationOwner(reservation: Reservation) {
 
 function isFutureReservation(reservation: Reservation, currentTime: Date) {
   return new Date(reservation.starts_at).getTime() >= currentTime.getTime();
-}
-
-function readInitialTheme(): ThemeMode {
-  if (typeof window === "undefined") {
-    return "light";
-  }
-
-  const savedTheme = window.localStorage.getItem("camlik-theme");
-
-  if (savedTheme === "dark" || savedTheme === "light") {
-    return savedTheme;
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
 }
 
 function dayAvailability(
@@ -202,6 +186,10 @@ function dayStatusLabel(status: DayAvailability) {
   }
 
   return "Pencere dışında";
+}
+
+function formatWeekdayTiny(date: Date) {
+  return new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(date);
 }
 
 function visibleDayAvailability(
@@ -291,19 +279,20 @@ export function ClubApp() {
 
   const toggleTheme = useCallback(() => {
     setTheme((currentTheme) => {
-      const nextTheme = currentTheme === "dark" ? "light" : "dark";
-      window.localStorage.setItem("camlik-theme", nextTheme);
-      return nextTheme;
+      return currentTheme === "dark" ? "light" : "dark";
     });
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setTheme(readInitialTheme());
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, []);
+    document.documentElement.classList.toggle(
+      "theme-dark-root",
+      theme === "dark",
+    );
+    document.documentElement.classList.toggle(
+      "theme-light-root",
+      theme === "light",
+    );
+  }, [theme]);
 
   const loadData = useCallback(async (currentUser: User) => {
     if (!supabase) {
@@ -839,7 +828,9 @@ export function ClubApp() {
   }
 
   return (
-    <main className={`${themeClassName} min-h-screen bg-[#f7f6f1] text-[#17211c]`}>
+    <main
+      className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] text-[#17211c]`}
+    >
       <header className="border-b border-[#ddd7c8] bg-[#fffdf8]">
         <div className="mx-auto flex max-w-7xl items-start justify-between gap-3 px-4 py-4 sm:px-6">
           <div className="flex min-w-0 items-start gap-3">
@@ -885,7 +876,7 @@ export function ClubApp() {
             <NavButton
               icon={<Clock3 size={18} />}
               isActive={activeTab === "reservations"}
-              label="Rezervasyonlarım"
+              label="Rezervasyonlar"
               onClick={() => setActiveTab("reservations")}
             />
             {isAdmin(profile) ? (
@@ -1071,7 +1062,7 @@ function LandingShell({
             Google ile bağlan
           </button>
           <button
-            className="inline-flex h-12 items-center justify-center gap-3 rounded-md bg-[#17211c] px-4 text-sm font-semibold text-white hover:bg-[#2b3a31] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-12 items-center justify-center gap-3 rounded-md bg-[#1e4a32] px-4 text-sm font-semibold text-white hover:bg-[#28613f] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isAuthDisabled}
             onClick={() => onSignIn("apple")}
             type="button"
@@ -1127,28 +1118,39 @@ function CalendarPanel({
   timeSlots: string[];
 }) {
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+    <div className="space-y-3 sm:space-y-4">
+      <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
           <p className="text-sm text-[#68756b]">
             {normalizeTime(settings.opening_time)} -{" "}
             {normalizeTime(settings.closing_time)} ·{" "}
             {settings.reservation_slot_minutes} dk
           </p>
-          <h2 className="mt-1 text-2xl font-semibold">
+          <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
             {calendarView === "month"
               ? format(selectedDate, "MMMM yyyy")
               : formatDateTitle(selectedDate)}
           </h2>
+          </div>
+          <button
+            aria-label="Yenile"
+            className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+            onClick={onRefresh}
+            title="Yenile"
+            type="button"
+          >
+            <RefreshCw size={16} />
+          </button>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <div className="inline-flex rounded-md border border-[#cfc8b8] bg-white p-1">
+        <div className="mt-3 grid gap-2">
+          <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
             {(Object.keys(viewLabels) as CalendarView[]).map((view) => (
               <button
-                className={`h-9 rounded px-3 text-sm font-medium ${
+                className={`h-9 rounded px-2 text-sm font-medium ${
                   calendarView === view
-                    ? "bg-[#17211c] text-white"
+                    ? "bg-[#1e4a32] text-white"
                     : "text-[#546257] hover:bg-[#eee9dd]"
                 }`}
                 key={view}
@@ -1160,15 +1162,7 @@ function CalendarPanel({
             ))}
           </div>
           <button
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-[#cfc8b8] bg-white px-3 text-sm font-semibold hover:bg-[#eee9dd]"
-            onClick={onRefresh}
-            type="button"
-          >
-            <RefreshCw size={16} />
-            Yenile
-          </button>
-          <button
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#b55036] px-4 text-sm font-semibold text-white hover:bg-[#97452f]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1e4a32] px-4 text-sm font-semibold text-white hover:bg-[#28613f]"
             onClick={() => onCreateReservation()}
             type="button"
           >
@@ -1178,28 +1172,28 @@ function CalendarPanel({
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="grid grid-cols-3 gap-2">
         <button
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#cfc8b8] bg-white px-3 text-sm font-medium hover:bg-[#eee9dd]"
+          className="inline-flex h-10 items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
           onClick={() => moveCalendar(-1)}
           type="button"
         >
           <ChevronLeft size={18} />
-          Önceki
+          <span className="sr-only sm:not-sr-only">Önceki</span>
         </button>
         <button
-          className="h-10 rounded-md border border-[#cfc8b8] bg-white px-3 text-sm font-medium hover:bg-[#eee9dd]"
+          className="h-10 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
           onClick={() => setSelectedDate(new Date())}
           type="button"
         >
           Bugün
         </button>
         <button
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-[#cfc8b8] bg-white px-3 text-sm font-medium hover:bg-[#eee9dd]"
+          className="inline-flex h-10 items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
           onClick={() => moveCalendar(1)}
           type="button"
         >
-          Sonraki
+          <span className="sr-only sm:not-sr-only">Sonraki</span>
           <ChevronRight size={18} />
         </button>
       </div>
@@ -1229,8 +1223,6 @@ function CalendarPanel({
         <WeekCalendar
           bookingWindowDays={bookingWindowDays}
           currentTime={currentTime}
-          onDeleteReservation={onDeleteReservation}
-          onEditReservation={onEditReservation}
           reservations={reservations}
           selectedDate={selectedDate}
           setCalendarView={setCalendarView}
@@ -1277,24 +1269,24 @@ function DayCalendar({
 }) {
   const compactCourtGrid = courts.length <= 3;
   const gridTemplateColumns = compactCourtGrid
-    ? `46px repeat(${courts.length}, minmax(0, 1fr))`
-    : `72px repeat(${courts.length}, minmax(128px, 1fr))`;
+    ? `42px repeat(${courts.length}, minmax(0, 1fr))`
+    : `64px repeat(${courts.length}, minmax(116px, 1fr))`;
 
   return (
-    <div className="overflow-x-auto rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
+    <div className="w-full overflow-x-auto rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
       <div
-        className={compactCourtGrid ? "w-full min-w-0" : "min-w-[640px]"}
+        className={compactCourtGrid ? "w-full min-w-0" : "min-w-[560px]"}
         style={{
           display: "grid",
           gridTemplateColumns,
         }}
       >
-        <div className="border-b border-r border-[#e6dfd2] bg-[#f3efe5] p-2 text-[10px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
+        <div className="border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-[9px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
           Saat
         </div>
         {courts.map((court) => (
           <div
-            className="break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] p-2 text-[11px] font-semibold leading-tight sm:p-3 sm:text-sm"
+            className="break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-center text-[10px] font-semibold leading-tight sm:p-3 sm:text-sm"
             key={court.id}
           >
             {court.name}
@@ -1312,7 +1304,7 @@ function DayCalendar({
           )
           .map((slot) => (
             <div className="contents" key={slot}>
-              <div className="border-r border-t border-[#eee7db] p-2 text-[11px] font-medium text-[#68756b] sm:p-3 sm:text-sm">
+              <div className="border-r border-t border-[#eee7db] px-1 py-2 text-[10px] font-medium text-[#68756b] sm:p-3 sm:text-sm">
                 {slot}
               </div>
               {courts.map((court) => {
@@ -1329,7 +1321,7 @@ function DayCalendar({
                   slot,
                 );
                 const cellClassName =
-                  "min-h-16 border-r border-t border-[#eee7db] p-1.5 text-left transition sm:min-h-20 sm:p-2";
+                  "min-h-12 border-r border-t border-[#eee7db] p-1 text-left transition sm:min-h-20 sm:p-2";
 
                 if (reservation) {
                   const owner = getReservationOwner(reservation);
@@ -1340,20 +1332,16 @@ function DayCalendar({
                       key={`${court.id}-${slot}`}
                     >
                       <p
-                        className="truncate text-[11px] font-semibold text-[#1e4a32] sm:text-sm"
+                        className="truncate text-center text-[10px] font-semibold text-[#1e4a32] sm:text-left sm:text-sm"
                         title={owner}
                       >
                         {owner}
                       </p>
-                      <p className="mt-1 text-[10px] text-[#557260] sm:text-xs">
-                        {formatTime(new Date(reservation.starts_at))} -{" "}
-                        {formatTime(new Date(reservation.ends_at))}
-                      </p>
                       {onEditReservation || onDeleteReservation ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
+                        <div className="mt-1 flex flex-wrap justify-center gap-1 sm:mt-2 sm:justify-start">
                           {onEditReservation ? (
                             <button
-                              className="inline-flex rounded border border-[#cfc8b8] px-1.5 py-1 text-[10px] font-medium sm:px-2 sm:text-xs"
+                              className="inline-flex rounded border border-[#cfc8b8] px-1 py-0.5 text-[9px] font-medium sm:px-2 sm:py-1 sm:text-xs"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 onEditReservation(reservation);
@@ -1365,7 +1353,7 @@ function DayCalendar({
                           ) : null}
                           {onDeleteReservation ? (
                             <button
-                              className="inline-flex rounded border border-[#cfc8b8] px-1.5 py-1 text-[10px] font-medium sm:px-2 sm:text-xs"
+                              className="inline-flex rounded border border-[#cfc8b8] px-1 py-0.5 text-[9px] font-medium sm:px-2 sm:py-1 sm:text-xs"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 onDeleteReservation(reservation);
@@ -1395,7 +1383,7 @@ function DayCalendar({
                     }
                     type="button"
                   >
-                    <span className="text-[11px] font-medium sm:text-xs">
+                    <span className="text-[10px] font-medium sm:text-xs">
                       {slotBookable ? "Uygun" : "Uygun değil"}
                     </span>
                   </button>
@@ -1411,8 +1399,6 @@ function DayCalendar({
 function WeekCalendar({
   bookingWindowDays,
   currentTime,
-  onDeleteReservation,
-  onEditReservation,
   reservations,
   selectedDate,
   setCalendarView,
@@ -1421,8 +1407,6 @@ function WeekCalendar({
 }: {
   bookingWindowDays: number;
   currentTime: Date;
-  onDeleteReservation?: (reservation: Reservation) => void;
-  onEditReservation?: (reservation: Reservation) => void;
   reservations: Reservation[];
   selectedDate: Date;
   setCalendarView: (view: CalendarView) => void;
@@ -1431,9 +1415,19 @@ function WeekCalendar({
 }) {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  const weekdayLabels = days.map((day) => formatWeekdayTiny(day));
 
   return (
-    <div className="grid gap-3 lg:grid-cols-7">
+    <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-1">
+      <div className="grid grid-cols-7 gap-1">
+        {weekdayLabels.map((label, index) => (
+          <div
+            className="px-1 py-1 text-center text-[10px] font-semibold uppercase text-[#68756b] sm:text-xs"
+            key={`${label}-${index}`}
+          >
+            {label}
+          </div>
+        ))}
       {days.map((day) => {
         const dayReservations = reservations.filter((reservation) =>
           isSameDay(new Date(reservation.starts_at), day),
@@ -1446,8 +1440,8 @@ function WeekCalendar({
         );
 
         return (
-          <div
-            className={`min-h-40 rounded-md border p-3 text-left transition ${
+          <button
+            className={`min-h-20 rounded border p-1 text-left transition sm:min-h-32 sm:p-2 ${
               status === "past"
                 ? "border-[#eee7db] bg-[#f1eee5] text-[#8b8f86]"
                 : status === "bookable"
@@ -1455,67 +1449,22 @@ function WeekCalendar({
                 : "border-[#ddd7c8] bg-[#fffdf8] hover:bg-[#f7f1e5]"
             }`}
             key={day.toISOString()}
+            onClick={() => {
+              setSelectedDate(day);
+              setCalendarView("day");
+            }}
+            type="button"
           >
-            <button
-              className="block w-full text-left"
-              onClick={() => {
-                setSelectedDate(day);
-                setCalendarView("day");
-              }}
-              type="button"
-            >
-              <p className="text-sm font-semibold">{formatShortDate(day)}</p>
-              <p className="mt-1 text-xs text-[#68756b]">
-                {dayStatusLabel(status)} · {dayReservations.length} rezervasyon
-              </p>
-            </button>
-            <div className="mt-3 space-y-2">
-              {dayReservations.slice(0, 3).map((reservation) => {
-                const canManageReservation =
-                  isFutureReservation(reservation, currentTime) &&
-                  (onEditReservation || onDeleteReservation);
-
-                return (
-                  <div
-                    className="rounded bg-[#e6f0e7] px-2 py-1 text-xs text-[#1e4a32]"
-                    key={reservation.id}
-                  >
-                    <p>
-                      {formatTime(new Date(reservation.starts_at))} ·{" "}
-                      {reservation.courts?.name}
-                    </p>
-                    <p className="mt-1 text-[#557260]">
-                      {getReservationOwner(reservation)}
-                    </p>
-                    {canManageReservation ? (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {onEditReservation ? (
-                          <button
-                            className="inline-flex rounded border border-[#cfc8b8] bg-white px-2 py-1 text-xs font-medium"
-                            onClick={() => onEditReservation(reservation)}
-                            type="button"
-                          >
-                            Düzenle
-                          </button>
-                        ) : null}
-                        {onDeleteReservation ? (
-                          <button
-                            className="inline-flex rounded border border-[#cfc8b8] bg-white px-2 py-1 text-xs font-medium"
-                            onClick={() => onDeleteReservation(reservation)}
-                            type="button"
-                          >
-                            Sil
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+            <p className="text-center text-xs font-semibold sm:text-sm">
+              {format(day, "d")}
+            </p>
+            <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
+              {dayReservations.length > 0 ? `${dayReservations.length} rez.` : dayStatusLabel(status)}
+            </p>
+          </button>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -1537,10 +1486,23 @@ function MonthCalendar({
   setSelectedDate: (date: Date) => void;
   timeSlots: string[];
 }) {
-  const days = buildMonthDays(selectedDate);
+  const monthAnchor = startOfMonth(selectedDate);
+  const days = buildMonthDays(monthAnchor);
+  const weekdayLabels = Array.from({ length: 7 }, (_, index) =>
+    formatWeekdayTiny(addDays(startOfWeek(monthAnchor, { weekStartsOn: 1 }), index)),
+  );
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+    <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-1">
+      <div className="grid grid-cols-7 gap-1">
+        {weekdayLabels.map((label, index) => (
+          <div
+            className="px-1 py-1 text-center text-[10px] font-semibold uppercase text-[#68756b] sm:text-xs"
+            key={`${label}-${index}`}
+          >
+            {label}
+          </div>
+        ))}
       {days.map((day) => {
         const count = reservations.filter((reservation) =>
           isSameDay(new Date(reservation.starts_at), day),
@@ -1551,11 +1513,11 @@ function MonthCalendar({
           currentTime,
           timeSlots,
         );
-        const isMonthDay = isCurrentMonth(day, selectedDate);
+        const isMonthDay = isCurrentMonth(day, monthAnchor);
 
         return (
           <button
-            className={`min-h-28 rounded-md border p-3 text-left transition ${
+            className={`min-h-16 rounded border p-1 text-left transition sm:min-h-24 sm:p-2 ${
               status === "past" || !isMonthDay
                 ? "border-[#eee7db] bg-[#f1eee5] text-[#8b8f86]"
                 : status === "bookable"
@@ -1569,14 +1531,16 @@ function MonthCalendar({
             }}
             type="button"
           >
-            <p className="text-sm font-semibold">{format(day, "d")}</p>
-            <p className="mt-2 text-xs text-[#68756b]">
-              {dayStatusLabel(status)}
-              {count > 0 ? ` · ${count} rezervasyon` : ""}
+            <p className="text-center text-xs font-semibold sm:text-sm">
+              {format(day, "d")}
+            </p>
+            <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
+              {count > 0 ? `${count} rez.` : isMonthDay ? dayStatusLabel(status) : ""}
             </p>
           </button>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -1598,10 +1562,12 @@ function ReservationsPanel({
   reservations: Reservation[];
   userId: string;
 }) {
-  const sorted = [...reservations].sort(
-    (a, b) =>
-      new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
-  );
+  const sorted = reservations
+    .filter((reservation) => isFutureReservation(reservation, currentTime))
+    .sort(
+      (a, b) =>
+        new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+    );
 
   if (sorted.length === 0) {
     return (
@@ -1610,7 +1576,7 @@ function ReservationsPanel({
         text={
           canManageAll
             ? "Henüz oluşturulmuş rezervasyon bulunmuyor."
-            : "Henüz oluşturulmuş rezervasyonunuz bulunmuyor."
+            : "Gelecek rezervasyonunuz bulunmuyor."
         }
       />
     );
@@ -2312,7 +2278,7 @@ function NavButton({
     <button
       className={`inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-md px-3 text-sm font-semibold ${
         isActive
-          ? "bg-[#17211c] text-white"
+          ? "bg-[#1e4a32] text-white"
           : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
       }`}
       onClick={onClick}
