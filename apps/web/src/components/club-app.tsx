@@ -61,6 +61,15 @@ type AppTab = "calendar" | "reservations" | "profile" | "admin";
 type OAuthProvider = "google" | "apple";
 type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
+type ReservationFormState = {
+  court_id: string;
+  date: string;
+  start_time: string;
+  user_id: string;
+};
+type ReservationEditFormState = ReservationFormState & {
+  status: ReservationStatus;
+};
 
 const defaultSettings: ClubSettings = {
   id: 1,
@@ -163,6 +172,29 @@ function attachReservationProfiles(
       profiles: reservationProfile,
     };
   });
+}
+
+function uniqueProfiles(profiles: Array<Profile | null>) {
+  const profileMap = new Map<string, Profile>();
+
+  profiles.forEach((profile) => {
+    if (profile) {
+      profileMap.set(profile.id, profile);
+    }
+  });
+
+  return Array.from(profileMap.values()).sort((first, second) =>
+    (first.full_name ?? first.email).localeCompare(
+      second.full_name ?? second.email,
+      "tr",
+    ),
+  );
+}
+
+function profileOptionLabel(profile: Profile) {
+  return profile.full_name
+    ? `${profile.full_name} (${profile.email})`
+    : profile.email;
 }
 
 function isFutureReservation(reservation: Reservation, currentTime: Date) {
@@ -283,13 +315,15 @@ export function ClubApp() {
     court_id: "",
     date: dateInputValue(new Date()),
     start_time: "09:00",
-  });
+    user_id: "",
+  } satisfies ReservationFormState);
   const [reservationEditForm, setReservationEditForm] = useState({
     court_id: "",
     date: dateInputValue(new Date()),
     start_time: "09:00",
+    user_id: "",
     status: "confirmed" as ReservationStatus,
-  });
+  } satisfies ReservationEditFormState);
   const [profileForm, setProfileForm] = useState({
     full_name: "",
     skill_level: "beginner" as SkillLevel,
@@ -299,6 +333,7 @@ export function ClubApp() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isProfileSchemaReady, setIsProfileSchemaReady] = useState(false);
+  const [showAllReservations, setShowAllReservations] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [theme, setTheme] = useState<ThemeMode>("light");
 
@@ -326,6 +361,17 @@ export function ClubApp() {
         : settings.default_booking_days_ahead)
     );
   }, [profile, settings]);
+
+  const reservationOwnerOptions = useMemo(
+    () => uniqueProfiles([profile, ...members]),
+    [members, profile],
+  );
+
+  const canManageReservations = isAdmin(profile);
+
+  const effectiveBookingWindowDays = canManageReservations
+    ? ADMIN_EDIT_BOOKING_WINDOW_DAYS
+    : bookingWindowDays;
 
   const visibleReservations = useMemo(() => {
     const range = getRangeForView(selectedDate, calendarView);
@@ -438,14 +484,14 @@ export function ClubApp() {
     setCourts(loadedCourts);
 
     setReservationForm((current) => {
-      if (current.court_id || loadedCourts.length === 0) {
-        return current;
-      }
-
       return {
         ...current,
+        user_id: current.user_id || currentUser.id,
         court_id:
-          loadedCourts.find((court) => court.is_active)?.id ?? loadedCourts[0].id,
+          current.court_id ||
+          loadedCourts.find((court) => court.is_active)?.id ||
+          loadedCourts[0]?.id ||
+          "",
         start_time: buildTimeSlots(loadedSettings)[0] ?? current.start_time,
       };
     });
@@ -620,22 +666,27 @@ export function ClubApp() {
   }
 
   function openReservationForm(courtId?: string, date?: Date, slot?: string) {
+    if (!user) {
+      return;
+    }
+
     const requestedDate = date ?? selectedDate;
     const dateForForm = isBookableDay(
       requestedDate,
-      bookingWindowDays,
+      effectiveBookingWindowDays,
       currentTime,
     )
       ? requestedDate
-      : firstBookableDate(bookingWindowDays, timeSlots, currentTime);
+      : firstBookableDate(effectiveBookingWindowDays, timeSlots, currentTime);
     const dateValue = dateInputValue(dateForForm);
     const slotForForm =
-      slot && isBookableStart(dateValue, slot, bookingWindowDays, currentTime)
+      slot &&
+      isBookableStart(dateValue, slot, effectiveBookingWindowDays, currentTime)
         ? slot
         : firstBookableSlot(
             dateValue,
             timeSlots,
-            bookingWindowDays,
+            effectiveBookingWindowDays,
             currentTime,
           );
 
@@ -643,6 +694,7 @@ export function ClubApp() {
       court_id: courtId ?? activeCourts[0]?.id ?? "",
       date: dateValue,
       start_time: slotForForm ?? timeSlots[0] ?? "09:00",
+      user_id: reservationForm.user_id || user.id,
     });
     setStatusMessage(null);
     setIsReservationOpen(true);
@@ -660,6 +712,7 @@ export function ClubApp() {
       court_id: reservation.court_id,
       date: dateInputValue(startsAt),
       start_time: formatTime(startsAt),
+      user_id: reservation.user_id,
       status: reservation.status,
     });
     setStatusMessage(null);
@@ -682,7 +735,7 @@ export function ClubApp() {
       !isBookableStart(
         reservationForm.date,
         reservationForm.start_time,
-        bookingWindowDays,
+        effectiveBookingWindowDays,
         currentTime,
       )
     ) {
@@ -701,7 +754,9 @@ export function ClubApp() {
 
     const { error } = await supabase.from("reservations").insert({
       court_id: reservationForm.court_id,
-      user_id: user.id,
+      user_id: canManageReservations
+        ? reservationForm.user_id || user.id
+        : user.id,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
       status: "confirmed",
@@ -772,6 +827,7 @@ export function ClubApp() {
       .from("reservations")
       .update({
         court_id: reservationEditForm.court_id,
+        user_id: reservationEditForm.user_id || editingReservation.user_id,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
         status: reservationEditForm.status,
@@ -812,6 +868,7 @@ export function ClubApp() {
     }
 
     setStatusMessage("Rezervasyon silindi.");
+    setEditingReservation(null);
     await loadData(user);
   }
 
@@ -1035,8 +1092,8 @@ export function ClubApp() {
               onClick={() => setActiveTab("reservations")}
             />
             <NavButton
+              compactOnMobile
               icon={<UserIcon size={18} />}
-              iconOnly
               isActive={visibleActiveTab === "profile"}
               label="Profil"
               onClick={() => setActiveTab("profile")}
@@ -1063,14 +1120,11 @@ export function ClubApp() {
           {!isLoading && visibleActiveTab === "calendar" ? (
             <CalendarPanel
               activeCourts={activeCourts}
-              bookingWindowDays={bookingWindowDays}
+              bookingWindowDays={effectiveBookingWindowDays}
               calendarView={calendarView}
               courts={courts}
               currentTime={currentTime}
               moveCalendar={moveCalendar}
-              onDeleteReservation={
-                isAdmin(profile) ? deleteReservation : undefined
-              }
               onEditReservation={
                 isAdmin(profile) ? openEditReservation : undefined
               }
@@ -1089,16 +1143,11 @@ export function ClubApp() {
             <ReservationsPanel
               canManageAll={isAdmin(profile)}
               currentTime={currentTime}
-              onDelete={deleteReservation}
               onEdit={openEditReservation}
               onCancel={cancelReservation}
-              reservations={
-                isAdmin(profile)
-                  ? reservations
-                  : reservations.filter(
-                      (reservation) => reservation.user_id === user.id,
-                    )
-              }
+              onShowAllChange={setShowAllReservations}
+              reservations={reservations}
+              showAll={showAllReservations}
               userId={user.id}
             />
           ) : null}
@@ -1144,11 +1193,13 @@ export function ClubApp() {
       {isReservationOpen ? (
         <ReservationDialog
           activeCourts={activeCourts}
-          bookingWindowDays={bookingWindowDays}
+          bookingWindowDays={effectiveBookingWindowDays}
+          canChooseOwner={canManageReservations}
           currentTime={currentTime}
           form={reservationForm}
           isSaving={isSaving}
           onClose={() => setIsReservationOpen(false)}
+          ownerOptions={reservationOwnerOptions}
           onSubmit={createReservation}
           setForm={setReservationForm}
           settings={settings}
@@ -1164,6 +1215,10 @@ export function ClubApp() {
           form={reservationEditForm}
           isSaving={isSaving}
           onClose={() => setEditingReservation(null)}
+          onDelete={() => {
+            void deleteReservation(editingReservation);
+          }}
+          ownerOptions={reservationOwnerOptions}
           onSubmit={updateReservation}
           setForm={setReservationEditForm}
           settings={settings}
@@ -1256,7 +1311,6 @@ function CalendarPanel({
   currentTime,
   moveCalendar,
   onCreateReservation,
-  onDeleteReservation,
   onEditReservation,
   onRefresh,
   reservations,
@@ -1273,7 +1327,6 @@ function CalendarPanel({
   currentTime: Date;
   moveCalendar: (direction: -1 | 1) => void;
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
-  onDeleteReservation?: (reservation: Reservation) => void;
   onEditReservation?: (reservation: Reservation) => void;
   onRefresh: () => void;
   reservations: Reservation[];
@@ -1376,7 +1429,6 @@ function CalendarPanel({
           bookingWindowDays={bookingWindowDays}
           courts={activeCourts}
           currentTime={currentTime}
-          onDeleteReservation={onDeleteReservation}
           onEditReservation={onEditReservation}
           onCreateReservation={onCreateReservation}
           reservations={reservations}
@@ -1416,7 +1468,6 @@ function DayCalendar({
   bookingWindowDays,
   courts,
   currentTime,
-  onDeleteReservation,
   onEditReservation,
   onCreateReservation,
   reservations,
@@ -1426,7 +1477,6 @@ function DayCalendar({
   bookingWindowDays: number;
   courts: Court[];
   currentTime: Date;
-  onDeleteReservation?: (reservation: Reservation) => void;
   onEditReservation?: (reservation: Reservation) => void;
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
   reservations: Reservation[];
@@ -1491,46 +1541,35 @@ function DayCalendar({
 
                 if (reservation) {
                   const owner = getReservationOwner(reservation);
+                  const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#e6f0e7] hover:bg-[#dbe8dc]`;
+                  const reservedCellContent = (
+                    <p
+                      className="w-full truncate text-[12px] font-semibold text-[#1e4a32] sm:text-sm"
+                      title={owner}
+                    >
+                      {owner}
+                    </p>
+                  );
+
+                  if (onEditReservation) {
+                    return (
+                      <button
+                        className={`${reservedCellClassName} cursor-pointer`}
+                        key={`${court.id}-${slot}`}
+                        onClick={() => onEditReservation(reservation)}
+                        type="button"
+                      >
+                        {reservedCellContent}
+                      </button>
+                    );
+                  }
 
                   return (
                     <div
-                      className={`${cellClassName} flex flex-col items-center justify-center bg-[#e6f0e7] hover:bg-[#dbe8dc]`}
+                      className={reservedCellClassName}
                       key={`${court.id}-${slot}`}
                     >
-                      <p
-                        className="w-full truncate text-[12px] font-semibold text-[#1e4a32] sm:text-sm"
-                        title={owner}
-                      >
-                        {owner}
-                      </p>
-                      {onEditReservation || onDeleteReservation ? (
-                        <div className="mt-1 flex flex-wrap justify-center gap-1 sm:mt-2 sm:justify-start">
-                          {onEditReservation ? (
-                            <button
-                              className="inline-flex rounded border border-[#cfc8b8] px-1 py-0.5 text-[9px] font-medium sm:px-2 sm:py-1 sm:text-xs"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onEditReservation(reservation);
-                              }}
-                              type="button"
-                            >
-                              Düzenle
-                            </button>
-                          ) : null}
-                          {onDeleteReservation ? (
-                            <button
-                              className="inline-flex rounded border border-[#cfc8b8] px-1 py-0.5 text-[9px] font-medium sm:px-2 sm:py-1 sm:text-xs"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onDeleteReservation(reservation);
-                              }}
-                              type="button"
-                            >
-                              Sil
-                            </button>
-                          ) : null}
-                        </div>
-                      ) : null}
+                      {reservedCellContent}
                     </div>
                   );
                 }
@@ -1715,20 +1754,26 @@ function ReservationsPanel({
   canManageAll,
   currentTime,
   onCancel,
-  onDelete,
   onEdit,
+  onShowAllChange,
   reservations,
+  showAll,
   userId,
 }: {
   canManageAll: boolean;
   currentTime: Date;
   onCancel: (reservation: Reservation) => void;
-  onDelete: (reservation: Reservation) => void;
   onEdit: (reservation: Reservation) => void;
+  onShowAllChange: (value: boolean) => void;
   reservations: Reservation[];
+  showAll: boolean;
   userId: string;
 }) {
-  const sorted = reservations
+  const visibleReservations =
+    canManageAll && showAll
+      ? reservations
+      : reservations.filter((reservation) => reservation.user_id === userId);
+  const sorted = visibleReservations
     .filter((reservation) => isFutureReservation(reservation, currentTime))
     .sort(
       (a, b) =>
@@ -1737,19 +1782,33 @@ function ReservationsPanel({
 
   if (sorted.length === 0) {
     return (
-      <EmptyState
-        title="Rezervasyon yok"
-        text={
-          canManageAll
-            ? "Henüz oluşturulmuş rezervasyon bulunmuyor."
-            : "Gelecek rezervasyonunuz bulunmuyor."
-        }
-      />
+      <div className="space-y-3">
+        {canManageAll ? (
+          <ReservationListHeader
+            onShowAllChange={onShowAllChange}
+            showAll={showAll}
+          />
+        ) : null}
+        <EmptyState
+          title="Rezervasyon yok"
+          text={
+            canManageAll && showAll
+              ? "Henüz oluşturulmuş rezervasyon bulunmuyor."
+              : "Gelecek rezervasyonunuz bulunmuyor."
+          }
+        />
+      </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      {canManageAll ? (
+        <ReservationListHeader
+          onShowAllChange={onShowAllChange}
+          showAll={showAll}
+        />
+      ) : null}
       {sorted.map((reservation) => {
         const startsAt = new Date(reservation.starts_at);
         const isMine = reservation.user_id === userId;
@@ -1780,22 +1839,13 @@ function ReservationsPanel({
             </div>
             <div className="flex flex-wrap gap-2">
               {canManageReservation ? (
-                <>
-                  <button
-                    className="inline-flex h-10 items-center justify-center rounded-md border border-[#cfc8b8] px-3 text-sm font-medium hover:bg-[#eee9dd]"
-                    onClick={() => onEdit(reservation)}
-                    type="button"
-                  >
-                    Düzenle
-                  </button>
-                  <button
-                    className="inline-flex h-10 items-center justify-center rounded-md border border-[#cfc8b8] px-3 text-sm font-medium hover:bg-[#eee9dd]"
-                    onClick={() => onDelete(reservation)}
-                    type="button"
-                  >
-                    Sil
-                  </button>
-                </>
+                <button
+                  className="inline-flex h-10 items-center justify-center rounded-md border border-[#cfc8b8] px-3 text-sm font-medium hover:bg-[#eee9dd]"
+                  onClick={() => onEdit(reservation)}
+                  type="button"
+                >
+                  Düzenle
+                </button>
               ) : null}
               {canCancel ? (
                 <button
@@ -1810,6 +1860,29 @@ function ReservationsPanel({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function ReservationListHeader({
+  onShowAllChange,
+  showAll,
+}: {
+  onShowAllChange: (value: boolean) => void;
+  showAll: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3">
+      <h2 className="text-lg font-semibold">Rezervasyonlar</h2>
+      <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+        Tüm
+        <input
+          checked={showAll}
+          className="size-4"
+          onChange={(event) => onShowAllChange(event.target.checked)}
+          type="checkbox"
+        />
+      </label>
     </div>
   );
 }
@@ -1934,12 +2007,7 @@ function AdminPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <ShieldCheck size={20} />
-          <h2 className="text-xl font-semibold">Kulüp ayarları</h2>
-        </div>
-
+      <AdminFoldout icon={<ShieldCheck size={20} />} title="Kulüp ayarları">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={onSaveSettings}>
           <Field label="Açılış saati">
             <input
@@ -2048,14 +2116,9 @@ function AdminPanel({
             </button>
           </div>
         </form>
-      </section>
+      </AdminFoldout>
 
-      <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <CalendarDays size={20} />
-          <h2 className="text-xl font-semibold">Kortlar</h2>
-        </div>
-
+      <AdminFoldout icon={<CalendarDays size={20} />} title="Kortlar">
         <form className="mb-4 flex flex-col gap-2 sm:flex-row" onSubmit={onAddCourt}>
           <input
             className="input"
@@ -2112,95 +2175,159 @@ function AdminPanel({
             </div>
           ))}
         </div>
-      </section>
+      </AdminFoldout>
 
-      <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <Users size={20} />
-          <h2 className="text-xl font-semibold">Üyeler</h2>
-        </div>
-
+      <AdminFoldout icon={<Users size={20} />} title="Üyeler">
         <div className="overflow-x-auto">
-          <table className="min-w-[760px] w-full border-collapse text-sm">
+          <table className="min-w-[980px] w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
                 <th className="py-3 pr-3 font-medium">E-posta</th>
+                <th className="py-3 pr-3 font-medium">Ad soyad</th>
+                <th className="py-3 pr-3 font-medium">Seviye</th>
                 <th className="py-3 pr-3 font-medium">Kulüp üyesi</th>
                 <th className="py-3 pr-3 font-medium">Gün limiti</th>
-                <th className="py-3 pr-3 font-medium">Rol</th>
+                {canManageRoles ? (
+                  <th className="py-3 pr-3 font-medium">Rol</th>
+                ) : null}
               </tr>
             </thead>
             <tbody>
-              {members.map((member) => (
-                <tr className="border-b border-[#eee7db]" key={member.id}>
-                  <td className="py-3 pr-3">
-                    <div className="font-medium">{member.email}</div>
-                    <div className="text-xs text-[#68756b]">
-                      {member.full_name ?? "İsim yok"}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-3">
-                    <input
-                      checked={member.is_club_member}
-                      onChange={(event) =>
-                        onMemberUpdate(member.id, {
-                          is_club_member: event.target.checked,
-                        })
-                      }
-                      type="checkbox"
-                    />
-                  </td>
-                  <td className="py-3 pr-3">
-                    <input
-                      className="input max-w-28"
-                      min={0}
-                      onBlur={(event) =>
-                        onMemberUpdate(member.id, {
-                          reservation_days_ahead: event.target.value
-                            ? Number(event.target.value)
-                            : null,
-                        })
-                      }
-                      placeholder="Varsayılan"
-                      type="number"
-                      defaultValue={member.reservation_days_ahead ?? ""}
-                    />
-                  </td>
-                  <td className="py-3 pr-3">
-                    <select
-                      className="input max-w-40"
-                      disabled={!canManageRoles}
-                      onChange={(event) =>
-                        onMemberUpdate(member.id, {
-                          app_role: event.target.value as AppRole,
-                        })
-                      }
-                      value={member.app_role}
-                    >
-                      {(Object.keys(roleLabels) as AppRole[]).map((role) => (
-                        <option key={role} value={role}>
-                          {roleLabels[role]}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
+              {members.map((member) => {
+                const canEditMember =
+                  canManageRoles || member.app_role !== "super_admin";
+
+                return (
+                  <tr className="border-b border-[#eee7db]" key={member.id}>
+                    <td className="py-3 pr-3">
+                      <div className="font-medium">{member.email}</div>
+                      <div className="text-xs text-[#68756b]">
+                        {roleLabels[member.app_role]}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-3">
+                      <input
+                        className="input min-w-44"
+                        defaultValue={member.full_name ?? ""}
+                        disabled={!canEditMember}
+                        onBlur={(event) =>
+                          onMemberUpdate(member.id, {
+                            full_name:
+                              normalizeFullName(event.target.value) || null,
+                          })
+                        }
+                        placeholder="İsim yok"
+                      />
+                    </td>
+                    <td className="py-3 pr-3">
+                      <select
+                        className="input min-w-36"
+                        defaultValue={member.skill_level ?? "beginner"}
+                        disabled={!canEditMember}
+                        onChange={(event) =>
+                          onMemberUpdate(member.id, {
+                            skill_level: event.target.value as SkillLevel,
+                          })
+                        }
+                      >
+                        {skillLevels.map((level) => (
+                          <option key={level} value={level}>
+                            {skillLevelLabels[level]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-3 pr-3">
+                      <input
+                        checked={member.is_club_member}
+                        disabled={!canEditMember}
+                        onChange={(event) =>
+                          onMemberUpdate(member.id, {
+                            is_club_member: event.target.checked,
+                          })
+                        }
+                        type="checkbox"
+                      />
+                    </td>
+                    <td className="py-3 pr-3">
+                      <input
+                        className="input max-w-28"
+                        defaultValue={member.reservation_days_ahead ?? ""}
+                        disabled={!canEditMember}
+                        min={0}
+                        onBlur={(event) =>
+                          onMemberUpdate(member.id, {
+                            reservation_days_ahead: event.target.value
+                              ? Number(event.target.value)
+                              : null,
+                          })
+                        }
+                        placeholder="Varsayılan"
+                        type="number"
+                      />
+                    </td>
+                    {canManageRoles ? (
+                      <td className="py-3 pr-3">
+                        <select
+                          className="input max-w-40"
+                          onChange={(event) =>
+                            onMemberUpdate(member.id, {
+                              app_role: event.target.value as AppRole,
+                            })
+                          }
+                          value={member.app_role}
+                        >
+                          {(Object.keys(roleLabels) as AppRole[]).map((role) => (
+                            <option key={role} value={role}>
+                              {roleLabels[role]}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    ) : null}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </section>
+      </AdminFoldout>
     </div>
+  );
+}
+
+function AdminFoldout({
+  children,
+  icon,
+  title,
+}: {
+  children: ReactNode;
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <details className="group rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h2 className="text-xl font-semibold">{title}</h2>
+        </div>
+        <ChevronRight className="transition group-open:rotate-90" size={18} />
+      </summary>
+      <div className="border-t border-[#eee7db] p-4">{children}</div>
+    </details>
   );
 }
 
 function ReservationDialog({
   activeCourts,
   bookingWindowDays,
+  canChooseOwner,
   currentTime,
   form,
   isSaving,
   onClose,
+  ownerOptions,
   onSubmit,
   setForm,
   settings,
@@ -2208,12 +2335,14 @@ function ReservationDialog({
 }: {
   activeCourts: Court[];
   bookingWindowDays: number;
+  canChooseOwner: boolean;
   currentTime: Date;
-  form: { court_id: string; date: string; start_time: string };
+  form: ReservationFormState;
   isSaving: boolean;
   onClose: () => void;
+  ownerOptions: Profile[];
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  setForm: (form: { court_id: string; date: string; start_time: string }) => void;
+  setForm: (form: ReservationFormState) => void;
   settings: ClubSettings;
   timeSlots: string[];
 }) {
@@ -2263,6 +2392,25 @@ function ReservationDialog({
         </div>
 
         <form className="grid gap-4" onSubmit={onSubmit}>
+          {canChooseOwner ? (
+            <Field label="Rezervasyon sahibi">
+              <select
+                className="input"
+                onChange={(event) =>
+                  setForm({ ...form, user_id: event.target.value })
+                }
+                required
+                value={form.user_id}
+              >
+                {ownerOptions.map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {profileOptionLabel(owner)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+
           <Field label="Kort">
             <select
               className="input"
@@ -2347,6 +2495,8 @@ function ReservationEditDialog({
   form,
   isSaving,
   onClose,
+  onDelete,
+  ownerOptions,
   onSubmit,
   setForm,
   settings,
@@ -2355,21 +2505,13 @@ function ReservationEditDialog({
   activeCourts: Court[];
   bookingWindowDays: number;
   currentTime: Date;
-  form: {
-    court_id: string;
-    date: string;
-    start_time: string;
-    status: ReservationStatus;
-  };
+  form: ReservationEditFormState;
   isSaving: boolean;
   onClose: () => void;
+  onDelete: () => void;
+  ownerOptions: Profile[];
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  setForm: (form: {
-    court_id: string;
-    date: string;
-    start_time: string;
-    status: ReservationStatus;
-  }) => void;
+  setForm: (form: ReservationEditFormState) => void;
   settings: ClubSettings;
   timeSlots: string[];
 }) {
@@ -2419,6 +2561,23 @@ function ReservationEditDialog({
         </div>
 
         <form className="grid gap-4" onSubmit={onSubmit}>
+          <Field label="Rezervasyon sahibi">
+            <select
+              className="input"
+              onChange={(event) =>
+                setForm({ ...form, user_id: event.target.value })
+              }
+              required
+              value={form.user_id}
+            >
+              {ownerOptions.map((owner) => (
+                <option key={owner.id} value={owner.id}>
+                  {profileOptionLabel(owner)}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Kort">
             <select
               className="input"
@@ -2503,13 +2662,23 @@ function ReservationEditDialog({
             ) : null}
           </div>
 
-          <button
-            className="primary-button"
-            disabled={isSaving || !selectedSlotBookable}
-            type="submit"
-          >
-            Değişiklikleri kaydet
-          </button>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              className="primary-button"
+              disabled={isSaving || !selectedSlotBookable}
+              type="submit"
+            >
+              Değişiklikleri kaydet
+            </button>
+            <button
+              className="secondary-button border-[#a0543b] text-[#a0543b]"
+              disabled={isSaving}
+              onClick={onDelete}
+              type="button"
+            >
+              Sil
+            </button>
+          </div>
         </form>
       </section>
     </div>
@@ -2517,13 +2686,13 @@ function ReservationEditDialog({
 }
 
 function NavButton({
-  iconOnly = false,
+  compactOnMobile = false,
   icon,
   isActive,
   label,
   onClick,
 }: {
-  iconOnly?: boolean;
+  compactOnMobile?: boolean;
   icon: ReactNode;
   isActive: boolean;
   label: string;
@@ -2533,7 +2702,7 @@ function NavButton({
     <button
       aria-label={label}
       className={`inline-flex h-11 items-center justify-center whitespace-nowrap rounded-md text-sm font-semibold ${
-        iconOnly ? "w-11 px-0" : "gap-2 px-3"
+        compactOnMobile ? "w-11 px-0 lg:w-auto lg:gap-2 lg:px-3" : "gap-2 px-3"
       } ${
         isActive
           ? "bg-[#1e4a32] text-white"
@@ -2543,7 +2712,9 @@ function NavButton({
       type="button"
     >
       {icon}
-      <span className={iconOnly ? "sr-only" : undefined}>{label}</span>
+      <span className={compactOnMobile ? "sr-only lg:not-sr-only" : undefined}>
+        {label}
+      </span>
     </button>
   );
 }
