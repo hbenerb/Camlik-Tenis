@@ -1172,11 +1172,6 @@ export function ClubApp() {
       return;
     }
 
-    if (window.matchMedia("(max-width: 767px)").matches) {
-      window.location.reload();
-      return;
-    }
-
     void loadData(user);
   }
 
@@ -1191,6 +1186,7 @@ export function ClubApp() {
           theme={theme}
           onSignIn={signIn}
           signingInProvider={signingInProvider}
+          showPageRefresh
           isAuthDisabled
         />
       </main>
@@ -1208,6 +1204,7 @@ export function ClubApp() {
           theme={theme}
           onSignIn={signIn}
           signingInProvider={signingInProvider}
+          showPageRefresh
         />
       </main>
     );
@@ -1240,6 +1237,7 @@ export function ClubApp() {
           <div className="flex shrink-0 flex-col items-end gap-2">
             <div className="flex items-center gap-2">
               <ThemeToggle onToggle={toggleTheme} theme={theme} />
+              <PageRefreshButton />
               <button
                 aria-label="Çıkış yap"
                 className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
@@ -1424,6 +1422,7 @@ function LandingShell({
   isAuthDisabled = false,
   onToggleTheme,
   onSignIn,
+  showPageRefresh = false,
   signingInProvider,
   statusMessage,
   theme,
@@ -1431,6 +1430,7 @@ function LandingShell({
   isAuthDisabled?: boolean;
   onToggleTheme: () => void;
   onSignIn: (provider: OAuthProvider) => void;
+  showPageRefresh?: boolean;
   signingInProvider: OAuthProvider | null;
   statusMessage: string | null;
   theme: ThemeMode;
@@ -1444,8 +1444,9 @@ function LandingShell({
 
   return (
     <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl content-start gap-5 pt-20 sm:pt-16 lg:grid-cols-[1fr_420px] lg:content-center lg:gap-10 lg:pt-14">
-      <div className="absolute right-4 top-4 sm:right-8">
+      <div className="absolute right-4 top-4 flex items-center gap-2 sm:right-8">
         <ThemeToggle onToggle={onToggleTheme} theme={theme} />
+        {showPageRefresh ? <PageRefreshButton /> : null}
       </div>
       <section className="mx-auto flex max-w-2xl flex-col items-center text-center">
         <ClubMark size="lg" />
@@ -3006,6 +3007,20 @@ function ThemeToggle({
       type="button"
     >
       {isDark ? <Sun size={16} /> : <Moon size={16} />}
+    </button>
+  );
+}
+
+function PageRefreshButton() {
+  return (
+    <button
+      aria-label="Sayfayı yenile"
+      className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+      onClick={() => window.location.reload()}
+      title="Sayfayı yenile"
+      type="button"
+    >
+      <RefreshCw size={16} />
     </button>
   );
 }
