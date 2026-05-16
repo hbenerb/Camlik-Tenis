@@ -2261,14 +2261,21 @@ function ReservationsPanel({
           >
             <div className="min-w-0">
               <h3 className="truncate text-sm font-semibold sm:text-base">
-                {reservation.courts?.name ?? "Kort"} ·{" "}
-                {format(startsAt, "dd.MM.yyyy")} · {formatWeekdayLong(startsAt)} ·{" "}
-                {formatTime(startsAt)} -{" "}
-                {formatTime(new Date(reservation.ends_at))}
-              </h3>
-              <p className="mt-1 truncate text-sm text-[#68756b]">
                 {getReservationOwner(reservation)}
-              </p>
+              </h3>
+              <div className="mt-1 space-y-0.5 text-xs leading-5 text-[#68756b] sm:text-sm">
+                <p className="truncate">
+                  Kort: {reservation.courts?.name ?? "Kort"}
+                </p>
+                <p className="truncate">
+                  Tarih: {format(startsAt, "dd.MM.yyyy")} ·{" "}
+                  {formatWeekdayLong(startsAt)}
+                </p>
+                <p className="truncate">
+                  Saat: {formatTime(startsAt)} -{" "}
+                  {formatTime(new Date(reservation.ends_at))}
+                </p>
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {canManageReservation ? (
