@@ -36,6 +36,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.brand-title {
+  color: #237000;
+}
+
+.theme-dark .brand-title {
+  color: #ffffff;
+}
+
 .theme-dark {
   --background: #0e1512;
   --foreground: #edf4ef;

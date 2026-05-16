@@ -1087,7 +1087,8 @@ export function ClubApp() {
             <ClubMark size="banner" />
             <div className="min-w-0">
               <h1 className="text-base font-semibold leading-tight tracking-normal sm:text-xl">
-                Ayvalık Çamlık Tenis Kulübü
+                <span className="block">Ayvalık Çamlık</span>
+                <span className="block">Tenis Kulübü</span>
               </h1>
               <div className="mt-1 text-xs text-[#546257] sm:text-sm">
                 <span className="font-medium text-[#17211c]">
@@ -1295,28 +1296,28 @@ function LandingShell({
   theme: ThemeMode;
 }) {
   return (
-    <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl items-center gap-8 pt-14 lg:grid-cols-[1fr_420px] lg:gap-10">
+    <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl content-start gap-5 pt-20 sm:pt-16 lg:grid-cols-[1fr_420px] lg:content-center lg:gap-10 lg:pt-14">
       <div className="absolute right-4 top-4 sm:right-8">
         <ThemeToggle onToggle={onToggleTheme} theme={theme} />
       </div>
       <section className="mx-auto flex max-w-2xl flex-col items-center text-center">
         <ClubMark size="lg" />
-        <div className="mt-6">
-          <p className="text-3xl font-semibold leading-tight tracking-normal text-[#17211c] sm:text-5xl">
+        <div className="mt-5">
+          <p className="brand-title text-[2.45rem] font-semibold leading-none tracking-normal sm:text-5xl">
             Ayvalık Çamlık
           </p>
-          <p className="mt-1 text-xl font-medium leading-tight text-[#546257] sm:text-3xl">
+          <p className="brand-title mt-2 text-[2rem] font-semibold leading-none tracking-normal sm:text-4xl">
             Tenis Kulübü
           </p>
         </div>
-        <h1 className="mt-5 whitespace-nowrap text-3xl font-semibold tracking-normal text-[#17211c] sm:text-5xl">
+        <h1 className="mt-5 whitespace-nowrap text-xl font-medium tracking-normal text-[#546257] sm:text-3xl">
           Kort Rezervasyon
         </h1>
       </section>
 
       <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-6 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold">Üye girişi</h2>
+          <h2 className="text-center text-2xl font-semibold">Üye girişi</h2>
         </div>
 
         <div className="grid gap-3">
@@ -2876,12 +2877,12 @@ function EmptyState({ text, title }: { text: string; title: string }) {
 function ClubMark({ size }: { size: "sm" | "banner" | "lg" }) {
   const dimensionsBySize = {
     banner: "size-16 sm:size-20",
-    lg: "size-32 sm:size-36",
+    lg: "size-64 sm:size-44 lg:size-48",
     sm: "size-12",
   };
   const imageSizeBySize = {
     banner: 80,
-    lg: 144,
+    lg: 256,
     sm: 48,
   };
 
