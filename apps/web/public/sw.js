@@ -1,5 +1,11 @@
-const CACHE_NAME = "camlik-tenis-v1";
-const SHELL_ASSETS = ["/", "/manifest.webmanifest", "/icon.svg"];
+const CACHE_NAME = "camlik-tenis-v2";
+const SHELL_ASSETS = [
+  "/",
+  "/manifest.webmanifest",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/tenis-logo.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -54,8 +60,8 @@ self.addEventListener("fetch", (event) => {
   if (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname === "/manifest.webmanifest" ||
-    url.pathname === "/icon.svg" ||
-    url.pathname.endsWith(".png")
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".jpg")
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {

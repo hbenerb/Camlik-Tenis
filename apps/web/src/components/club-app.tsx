@@ -1,6 +1,7 @@
 "use client";
 
 import type { User } from "@supabase/supabase-js";
+import Image from "next/image";
 import {
   addDays,
   addMonths,
@@ -1115,7 +1116,7 @@ export function ClubApp() {
               <button
                 className={`h-8 rounded-md px-3 text-xs font-semibold ${
                   visibleActiveTab === "admin"
-                    ? "bg-[#1e4a32] text-white"
+                    ? "bg-[#237000] text-white"
                     : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
                 }`}
                 onClick={() => setActiveTab("admin")}
@@ -1335,7 +1336,7 @@ function LandingShell({
             Google ile bağlan
           </button>
           <button
-            className="inline-flex h-12 items-center justify-center gap-3 rounded-md bg-[#1e4a32] px-4 text-sm font-semibold text-white hover:bg-[#28613f] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-12 items-center justify-center gap-3 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isAuthDisabled}
             onClick={() => onSignIn("apple")}
             type="button"
@@ -1421,7 +1422,7 @@ function CalendarPanel({
               <button
                 className={`h-9 rounded px-2 text-sm font-medium ${
                   calendarView === view
-                    ? "bg-[#1e4a32] text-white"
+                    ? "bg-[#237000] text-white"
                     : "text-[#546257] hover:bg-[#eee9dd]"
                 }`}
                 key={view}
@@ -1433,7 +1434,7 @@ function CalendarPanel({
             ))}
           </div>
           <button
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1e4a32] px-4 text-sm font-semibold text-white hover:bg-[#28613f]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
             onClick={() => onCreateReservation()}
             type="button"
           >
@@ -1596,7 +1597,7 @@ function DayCalendar({
                   const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#e6f0e7] hover:bg-[#dbe8dc]`;
                   const reservedCellContent = (
                     <p
-                      className="w-full truncate text-[12px] font-semibold text-[#1e4a32] sm:text-sm"
+                      className="w-full truncate text-[12px] font-semibold text-[#237000] sm:text-sm"
                       title={owner}
                     >
                       {owner}
@@ -1630,7 +1631,7 @@ function DayCalendar({
                   <button
                     className={`${cellClassName} flex items-center justify-center ${
                       slotBookable
-                        ? "cursor-pointer bg-[#f0f8ef] text-[#1e4a32] hover:bg-[#e3f1df]"
+                        ? "cursor-pointer bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
                         : "cursor-not-allowed bg-white text-[#8b8f86]"
                     }`}
                     disabled={!slotBookable}
@@ -1956,7 +1957,7 @@ function ProfilePanel({
   return (
     <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-5">
       <div className="mb-5 flex items-start gap-3">
-        <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#e6f0e7] text-[#1e4a32]">
+        <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#e6f0e7] text-[#237000]">
           <UserIcon size={18} />
         </div>
         <div className="min-w-0">
@@ -2813,7 +2814,7 @@ function NavButton({
         compactOnMobile ? "w-11 px-0 lg:w-auto lg:gap-2 lg:px-3" : "gap-2 px-3"
       } ${
         isActive
-          ? "bg-[#1e4a32] text-white"
+          ? "bg-[#237000] text-white"
           : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
       }`}
       onClick={onClick}
@@ -2877,14 +2878,18 @@ function EmptyState({ text, title }: { text: string; title: string }) {
 }
 
 function ClubMark({ size }: { size: "sm" | "lg" }) {
-  const dimensions = size === "lg" ? "size-20 text-2xl" : "size-12 text-base";
+  const dimensions = size === "lg" ? "size-24" : "size-12";
+  const imageSize = size === "lg" ? 96 : 48;
 
   return (
-    <div
-      className={`${dimensions} grid place-items-center rounded-full border border-[#d0c7b0] bg-[#fffdf8] font-semibold text-[#1f4b32] shadow-sm`}
+    <Image
+      alt="Ayvalık Çamlık Tenis Kulübü"
       aria-label="Ayvalık Çamlık Tenis Kulübü"
-    >
-      ÇT
-    </div>
+      className={`${dimensions} rounded-full object-contain shadow-sm`}
+      height={imageSize}
+      priority={size === "lg"}
+      src="/tenis-logo.png"
+      width={imageSize}
+    />
   );
 }

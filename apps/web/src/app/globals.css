@@ -16,11 +16,11 @@
   --theme-success-bg: #e6f0e7;
   --theme-success-soft: #f0f8ef;
   --theme-success-hover: #e3f1df;
-  --theme-success-text: #1e4a32;
+  --theme-success-text: #237000;
   --theme-warning-bg: #fff8df;
   --theme-warning-text: #5f4b19;
-  --theme-primary: #1e4a32;
-  --theme-primary-hover: #28613f;
+  --theme-primary: #237000;
+  --theme-primary-hover: #1f6500;
 }
 
 @theme inline {
@@ -55,8 +55,8 @@ body {
   --theme-success-text: #b8efc9;
   --theme-warning-bg: #3c3118;
   --theme-warning-text: #ffe0a1;
-  --theme-primary: #2d7a4f;
-  --theme-primary-hover: #35945e;
+  --theme-primary: #237000;
+  --theme-primary-hover: #2b8500;
   color-scheme: dark;
 }
 
@@ -119,8 +119,8 @@ html.theme-light-root body {
 }
 
 .theme-dark [class*="bg-[#17211c]"],
-.theme-dark [class*="bg-[#1e4a32]"],
-.theme-dark [class*="bg-[#28613f]"] {
+.theme-dark [class*="bg-[#237000]"],
+.theme-dark [class*="bg-[#1f6500]"] {
   background-color: var(--theme-primary) !important;
 }
 
@@ -153,7 +153,7 @@ html.theme-light-root body {
   color: var(--theme-muted) !important;
 }
 
-.theme-dark [class*="text-[#1e4a32]"],
+.theme-dark [class*="text-[#237000]"],
 .theme-dark [class*="text-[#557260]"] {
   color: var(--theme-success-text) !important;
 }
