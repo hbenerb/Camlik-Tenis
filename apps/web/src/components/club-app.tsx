@@ -1082,13 +1082,12 @@ export function ClubApp() {
       className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] text-[#17211c]`}
     >
       <header className="border-b border-[#ddd7c8] bg-[#fffdf8]">
-        <div className="mx-auto flex max-w-7xl items-start justify-between gap-3 px-4 py-4 sm:px-6">
-          <div className="flex min-w-0 items-start gap-3">
-            <ClubMark size="sm" />
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <ClubMark size="banner" />
             <div className="min-w-0">
-              <p className="text-sm text-[#6d746c]">Ayvalık Çamlık</p>
-              <h1 className="text-xl font-semibold tracking-normal">
-                Kort Rezervasyon
+              <h1 className="text-base font-semibold leading-tight tracking-normal sm:text-xl">
+                Ayvalık Çamlık Tenis Kulübü
               </h1>
               <div className="mt-1 text-xs text-[#546257] sm:text-sm">
                 <span className="font-medium text-[#17211c]">
@@ -1296,31 +1295,28 @@ function LandingShell({
   theme: ThemeMode;
 }) {
   return (
-    <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl items-center gap-10 pt-14 lg:grid-cols-[1fr_420px]">
+    <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl items-center gap-8 pt-14 lg:grid-cols-[1fr_420px] lg:gap-10">
       <div className="absolute right-4 top-4 sm:right-8">
         <ThemeToggle onToggle={onToggleTheme} theme={theme} />
       </div>
-      <section className="max-w-2xl">
+      <section className="mx-auto flex max-w-2xl flex-col items-center text-center">
         <ClubMark size="lg" />
-        <p className="mt-8 text-sm font-medium uppercase tracking-[0.18em] text-[#7c6f52]">
-          Ayvalık Çamlık Tenis Kulübü
-        </p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-normal text-[#17211c] sm:text-6xl">
-          Kort rezervasyonları için üye girişi
+        <div className="mt-6">
+          <p className="text-3xl font-semibold leading-tight tracking-normal text-[#17211c] sm:text-5xl">
+            Ayvalık Çamlık
+          </p>
+          <p className="mt-1 text-xl font-medium leading-tight text-[#546257] sm:text-3xl">
+            Tenis Kulübü
+          </p>
+        </div>
+        <h1 className="mt-5 whitespace-nowrap text-3xl font-semibold tracking-normal text-[#17211c] sm:text-5xl">
+          Kort Rezervasyon
         </h1>
-        <p className="mt-5 max-w-xl text-lg leading-8 text-[#546257]">
-          Günlük, haftalık ve aylık takvimden uygun saatleri görün; kulüp
-          kurallarına göre rezervasyon oluşturun.
-        </p>
       </section>
 
       <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-6 shadow-sm">
         <div className="mb-6">
           <h2 className="text-2xl font-semibold">Üye girişi</h2>
-          <p className="mt-2 text-sm leading-6 text-[#68756b]">
-            Kulüp üyeliği admin tarafından ayrıca işaretlenir. Uygulama
-            hesabını burada oluşturabilirsiniz.
-          </p>
         </div>
 
         <div className="grid gap-3">
@@ -2877,19 +2873,27 @@ function EmptyState({ text, title }: { text: string; title: string }) {
   );
 }
 
-function ClubMark({ size }: { size: "sm" | "lg" }) {
-  const dimensions = size === "lg" ? "size-24" : "size-12";
-  const imageSize = size === "lg" ? 96 : 48;
+function ClubMark({ size }: { size: "sm" | "banner" | "lg" }) {
+  const dimensionsBySize = {
+    banner: "size-16 sm:size-20",
+    lg: "size-32 sm:size-36",
+    sm: "size-12",
+  };
+  const imageSizeBySize = {
+    banner: 80,
+    lg: 144,
+    sm: 48,
+  };
 
   return (
     <Image
       alt="Ayvalık Çamlık Tenis Kulübü"
       aria-label="Ayvalık Çamlık Tenis Kulübü"
-      className={`${dimensions} rounded-full object-contain shadow-sm`}
-      height={imageSize}
-      priority={size === "lg"}
+      className={`${dimensionsBySize[size]} rounded-full object-contain shadow-sm`}
+      height={imageSizeBySize[size]}
+      priority={size !== "sm"}
       src="/tenis-logo.png"
-      width={imageSize}
+      width={imageSizeBySize[size]}
     />
   );
 }

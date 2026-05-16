@@ -1,9 +1,10 @@
-const CACHE_NAME = "camlik-tenis-v2";
+const CACHE_NAME = "camlik-tenis-v3";
 const SHELL_ASSETS = [
   "/",
   "/manifest.webmanifest",
-  "/icon-192.png",
-  "/icon-512.png",
+  "/tenis-icon-192.png",
+  "/tenis-icon-512.png",
+  "/tenis-apple-touch-icon.png",
   "/tenis-logo.png",
 ];
 
