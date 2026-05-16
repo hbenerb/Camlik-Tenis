@@ -1696,7 +1696,7 @@ function CalendarPanel({
         <button
           className={`h-10 rounded-md border px-2 text-sm font-medium ${
             isTodaySelected
-              ? "border-[#00C7FF] bg-[#00C7FF] text-[#17211c]"
+              ? "border-[#237000] bg-[#237000] text-white"
               : "border-[#cfc8b8] bg-white hover:bg-[#eee9dd]"
           }`}
           onClick={() => setSelectedDate(new Date())}
@@ -1838,10 +1838,10 @@ function DayCalendar({
 
                 if (reservation) {
                   const owner = getReservationOwner(reservation);
-                  const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#00C7FF] hover:bg-[#00b7ea]`;
+                  const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#237000] hover:bg-[#1f6500]`;
                   const reservedCellContent = (
                     <p
-                      className="w-full truncate text-[12px] font-semibold text-[#17211c] sm:text-sm"
+                      className="w-full truncate text-[12px] font-semibold text-white sm:text-sm"
                       title={owner}
                     >
                       {owner}
