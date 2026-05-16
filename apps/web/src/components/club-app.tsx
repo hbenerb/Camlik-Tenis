@@ -41,6 +41,7 @@ import {
   dateInputValue,
   findReservationAtSlot,
   formatDateTitle,
+  formatMonthTitle,
   formatTime,
   getRangeForView,
   isCurrentMonth,
@@ -1822,7 +1823,7 @@ function CalendarPanel({
             </p>
             <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
               {calendarView === "month"
-                ? format(selectedDate, "MMMM yyyy")
+                ? formatMonthTitle(selectedDate)
                 : formatDateTitle(selectedDate)}
             </h2>
           </div>
@@ -1936,8 +1937,8 @@ function DayCalendar({
 }) {
   const compactCourtGrid = courts.length <= 3;
   const gridTemplateColumns = compactCourtGrid
-    ? `clamp(44px, 10vw, 76px) repeat(${courts.length}, minmax(0, 1fr))`
-    : `76px repeat(${courts.length}, minmax(116px, 1fr))`;
+    ? `clamp(64px, 15vw, 96px) repeat(${courts.length}, minmax(0, 1fr))`
+    : `112px repeat(${courts.length}, minmax(116px, 1fr))`;
 
   return (
     <div className="w-full overflow-x-auto rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
@@ -1971,7 +1972,7 @@ function DayCalendar({
           )
           .map((slot) => (
             <div className="contents" key={slot}>
-              <div className="grid place-items-center border-r border-t border-[#eee7db] px-1 py-2 text-center text-[10px] font-medium text-[#68756b] sm:p-3 sm:text-sm">
+              <div className="grid place-items-center border-r border-t border-[#eee7db] px-1 py-2 text-center text-[15px] font-bold leading-none text-[#17211c] sm:p-3 sm:text-xl">
                 {slot}
               </div>
               {courts.map((court) => {

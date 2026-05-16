@@ -37,6 +37,13 @@ export function formatShortDate(date: Date) {
   }).format(date);
 }
 
+export function formatMonthTitle(date: Date) {
+  return new Intl.DateTimeFormat("tr-TR", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 export function formatTime(date: Date) {
   return format(date, TIME_PATTERN);
 }
@@ -133,4 +140,3 @@ export function buildMonthDays(date: Date) {
 export function isCurrentMonth(day: Date, monthDate: Date) {
   return isSameMonth(day, monthDate);
 }
-
