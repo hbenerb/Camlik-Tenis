@@ -68,11 +68,15 @@ body {
 
 html.theme-dark-root,
 html.theme-dark-root body {
+  --theme-bg: #0e1512;
+  --theme-text: #edf4ef;
   background: #0e1512;
 }
 
 html.theme-light-root,
 html.theme-light-root body {
+  --theme-bg: #f7f6f1;
+  --theme-text: #17211c;
   background: #f7f6f1;
 }
 

@@ -799,7 +799,7 @@ export function ClubApp() {
   if (!supabase) {
     return (
       <main
-        className={`${themeClassName} min-h-screen bg-[#f7f6f1] px-4 py-6 text-[#17211c] sm:px-8`}
+        className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] px-4 py-6 text-[#17211c] sm:px-8`}
       >
         <LandingShell
           onToggleTheme={toggleTheme}
@@ -815,7 +815,7 @@ export function ClubApp() {
   if (!user) {
     return (
       <main
-        className={`${themeClassName} min-h-screen bg-[#f7f6f1] px-4 py-6 text-[#17211c] sm:px-8`}
+        className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] px-4 py-6 text-[#17211c] sm:px-8`}
       >
         <LandingShell
           onToggleTheme={toggleTheme}
