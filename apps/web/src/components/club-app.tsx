@@ -19,6 +19,7 @@ import {
   Clock3,
   LogOut,
   Moon,
+  Pencil,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -274,6 +275,10 @@ function firstBookableDate(
 
 function formatWeekdayTiny(date: Date) {
   return new Intl.DateTimeFormat("tr-TR", { weekday: "short" }).format(date);
+}
+
+function formatWeekdayLong(date: Date) {
+  return new Intl.DateTimeFormat("tr-TR", { weekday: "long" }).format(date);
 }
 
 function visibleDayAvailability(
@@ -1865,33 +1870,30 @@ function ReservationsPanel({
 
         return (
           <div
-            className="flex flex-col gap-3 rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:flex-row sm:items-center sm:justify-between"
+            className="flex items-center justify-between gap-3 rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4"
             key={reservation.id}
           >
-            <div>
-              <p className="text-sm text-[#68756b]">
-                {formatDateTitle(startsAt)}
-              </p>
-              <h3 className="mt-1 text-lg font-semibold">
-                {reservation.courts?.name ?? "Kort"} · {formatTime(startsAt)} -{" "}
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-semibold sm:text-base">
+                {reservation.courts?.name ?? "Kort"} ·{" "}
+                {format(startsAt, "dd.MM.yyyy")} · {formatWeekdayLong(startsAt)} ·{" "}
+                {formatTime(startsAt)} -{" "}
                 {formatTime(new Date(reservation.ends_at))}
               </h3>
-              <p className="mt-1 text-sm text-[#68756b]">
-                Rezervasyon bilgisi: {getReservationOwner(reservation)}
-              </p>
-              <p className="mt-1 text-sm text-[#68756b]">
-                Durum:{" "}
-                {reservation.status === "confirmed" ? "Onaylı" : "İptal edildi"}
+              <p className="mt-1 truncate text-sm text-[#68756b]">
+                {getReservationOwner(reservation)}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {canManageReservation ? (
                 <button
-                  className="inline-flex h-10 items-center justify-center rounded-md border border-[#cfc8b8] px-3 text-sm font-medium hover:bg-[#eee9dd]"
+                  aria-label="Düzenle"
+                  className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] text-[#17211c] hover:bg-[#eee9dd]"
                   onClick={() => onEdit(reservation)}
+                  title="Düzenle"
                   type="button"
                 >
-                  Düzenle
+                  <Pencil size={16} />
                 </button>
               ) : null}
               {canCancel ? (
