@@ -1084,8 +1084,15 @@ export function ClubApp() {
     setStatusMessage("Kort eklendi.");
   }
 
-  async function saveCourt(court: Court) {
+  async function saveCourt(courtId: string) {
     if (!supabase || !user) {
+      return;
+    }
+
+    const court = courts.find((currentCourt) => currentCourt.id === courtId);
+
+    if (!court) {
+      setStatusMessage("Kort bulunamadı.");
       return;
     }
 
@@ -1112,10 +1119,47 @@ export function ClubApp() {
       return;
     }
 
+    const refreshedCourtResult = await supabase
+      .from("courts")
+      .select("*")
+      .eq("id", court.id)
+      .maybeSingle();
+
+    if (refreshedCourtResult.error || !refreshedCourtResult.data) {
+      setStatusMessage(
+        refreshedCourtResult.error?.message ??
+          "Kort güncellendi ama doğrulama için tekrar okunamadı.",
+      );
+      return;
+    }
+
+    const savedCourt = refreshedCourtResult.data as Court;
+
+    if (
+      savedCourt.name !== updatedCourt.name ||
+      Number(savedCourt.display_order) !== updatedCourt.display_order ||
+      savedCourt.is_active !== updatedCourt.is_active
+    ) {
+      setCourts((currentCourts) =>
+        currentCourts
+          .map((currentCourt) =>
+            currentCourt.id === court.id ? savedCourt : currentCourt,
+          )
+          .sort(
+            (firstCourt, secondCourt) =>
+              firstCourt.display_order - secondCourt.display_order,
+          ),
+      );
+      setStatusMessage(
+        "Kort ayarı kaydedilemedi. Supabase admin izin SQL'ini çalıştırmak gerekiyor.",
+      );
+      return;
+    }
+
     setCourts((currentCourts) =>
       currentCourts
         .map((currentCourt) =>
-          currentCourt.id === court.id ? updatedCourt : currentCourt,
+          currentCourt.id === court.id ? savedCourt : currentCourt,
         )
         .sort(
           (firstCourt, secondCourt) =>
@@ -1123,6 +1167,39 @@ export function ClubApp() {
         ),
     );
     setStatusMessage("Kort güncellendi.");
+  }
+
+  async function deleteCourt(court: Court) {
+    if (!supabase || !user || profile?.app_role !== "super_admin") {
+      return;
+    }
+
+    const shouldDelete = window.confirm(
+      `${court.name} silinsin mi? Bu işlem geri alınamaz.`,
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    const rpcResult = await supabase.rpc("admin_delete_court", {
+      target_court_id: court.id,
+    });
+    const deleteResult = rpcResult.error
+      ? await supabase.from("courts").delete().eq("id", court.id)
+      : rpcResult;
+
+    if (deleteResult.error) {
+      setStatusMessage(
+        `${deleteResult.error.message} Kort silinmediyse Supabase baş admin silme SQL'ini çalıştırmak gerekiyor.`,
+      );
+      return;
+    }
+
+    setCourts((currentCourts) =>
+      currentCourts.filter((currentCourt) => currentCourt.id !== court.id),
+    );
+    setStatusMessage("Kort silindi.");
   }
 
   async function updateMember(memberId: string, fields: Partial<Profile>) {
@@ -1370,6 +1447,7 @@ export function ClubApp() {
               }
               onMemberUpdate={updateMember}
               onNewCourtNameChange={setNewCourtName}
+              onDeleteCourt={deleteCourt}
               onSaveCourt={saveCourt}
               onSaveSettings={saveSettings}
               onSettingsDraftChange={setSettingsDraft}
@@ -1549,6 +1627,8 @@ function CalendarPanel({
   settings: ClubSettings;
   timeSlots: string[];
 }) {
+  const isTodaySelected = isSameDay(selectedDate, currentTime);
+
   return (
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
@@ -1614,7 +1694,11 @@ function CalendarPanel({
           <span className="sr-only sm:not-sr-only">Önceki</span>
         </button>
         <button
-          className="h-10 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
+          className={`h-10 rounded-md border px-2 text-sm font-medium ${
+            isTodaySelected
+              ? "border-[#00C7FF] bg-[#00C7FF] text-[#17211c]"
+              : "border-[#cfc8b8] bg-white hover:bg-[#eee9dd]"
+          }`}
           onClick={() => setSelectedDate(new Date())}
           type="button"
         >
@@ -1754,10 +1838,10 @@ function DayCalendar({
 
                 if (reservation) {
                   const owner = getReservationOwner(reservation);
-                  const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#e6f0e7] hover:bg-[#dbe8dc]`;
+                  const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#00C7FF] hover:bg-[#00b7ea]`;
                   const reservedCellContent = (
                     <p
-                      className="w-full truncate text-[12px] font-semibold text-[#237000] sm:text-sm"
+                      className="w-full truncate text-[12px] font-semibold text-[#17211c] sm:text-sm"
                       title={owner}
                     >
                       {owner}
@@ -2192,6 +2276,7 @@ function AdminPanel({
   newCourtName,
   onAddCourt,
   onCourtChange,
+  onDeleteCourt,
   onMemberUpdate,
   onNewCourtNameChange,
   onSaveCourt,
@@ -2206,9 +2291,10 @@ function AdminPanel({
   newCourtName: string;
   onAddCourt: (event: FormEvent<HTMLFormElement>) => void;
   onCourtChange: (courtId: string, fields: Partial<Court>) => void;
+  onDeleteCourt: (court: Court) => void;
   onMemberUpdate: (memberId: string, fields: Partial<Profile>) => void;
   onNewCourtNameChange: (value: string) => void;
-  onSaveCourt: (court: Court) => void;
+  onSaveCourt: (courtId: string) => void;
   onSaveSettings: (event: FormEvent<HTMLFormElement>) => void;
   onSettingsDraftChange: (settings: ClubSettings) => void;
   settingsDraft: ClubSettings;
@@ -2344,7 +2430,11 @@ function AdminPanel({
         <div className="space-y-3">
           {courts.map((court) => (
             <div
-              className="grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 md:grid-cols-[1fr_110px_120px_96px]"
+              className={`grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 ${
+                canManageRoles
+                  ? "md:grid-cols-[1fr_110px_120px_96px_80px]"
+                  : "md:grid-cols-[1fr_110px_120px_96px]"
+              }`}
               key={court.id}
             >
               <input
@@ -2377,11 +2467,20 @@ function AdminPanel({
               </label>
               <button
                 className="secondary-button"
-                onClick={() => onSaveCourt(court)}
+                onClick={() => onSaveCourt(court.id)}
                 type="button"
               >
                 Kaydet
               </button>
+              {canManageRoles ? (
+                <button
+                  className="secondary-button border-[#a0543b] text-[#a0543b]"
+                  onClick={() => onDeleteCourt(court)}
+                  type="button"
+                >
+                  Sil
+                </button>
+              ) : null}
             </div>
           ))}
         </div>
