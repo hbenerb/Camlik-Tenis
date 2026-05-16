@@ -543,6 +543,7 @@ export function ClubApp() {
       const memberResult = await supabase
         .from("profiles")
         .select("*")
+        .order("full_name", { ascending: true, nullsFirst: false })
         .order("email", { ascending: true });
 
       if (memberResult.error) {
@@ -950,7 +951,7 @@ export function ClubApp() {
     setIsSaving(true);
     setStatusMessage(null);
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("club_settings")
       .update({
         opening_time: settingsDraft.opening_time,
@@ -967,17 +968,23 @@ export function ClubApp() {
           settingsDraft.cancellation_deadline_hours,
         ),
       })
-      .eq("id", 1);
+      .eq("id", 1)
+      .select("*")
+      .single();
 
     setIsSaving(false);
 
-    if (error) {
-      setStatusMessage(error.message);
+    if (error || !data) {
+      setStatusMessage(
+        error?.message ??
+          "Kulüp ayarları güncellenemedi. Admin yetkilerini kontrol edelim.",
+      );
       return;
     }
 
+    setSettings(data as ClubSettings);
+    setSettingsDraft(data as ClubSettings);
     setStatusMessage("Kulüp ayarları güncellendi.");
-    await loadData(user);
   }
 
   async function addCourt(event: FormEvent<HTMLFormElement>) {
@@ -987,20 +994,31 @@ export function ClubApp() {
       return;
     }
 
-    const { error } = await supabase.from("courts").insert({
-      name: newCourtName.trim(),
-      display_order: courts.length + 1,
-      is_active: true,
-    });
+    const { data, error } = await supabase
+      .from("courts")
+      .insert({
+        name: newCourtName.trim(),
+        display_order: courts.length + 1,
+        is_active: true,
+      })
+      .select("*")
+      .single();
 
-    if (error) {
-      setStatusMessage(error.message);
+    if (error || !data) {
+      setStatusMessage(
+        error?.message ?? "Kort eklenemedi. Admin yetkilerini kontrol edelim.",
+      );
       return;
     }
 
     setNewCourtName("");
+    setCourts((currentCourts) =>
+      [...currentCourts, data as Court].sort(
+        (firstCourt, secondCourt) =>
+          firstCourt.display_order - secondCourt.display_order,
+      ),
+    );
     setStatusMessage("Kort eklendi.");
-    await loadData(user);
   }
 
   async function saveCourt(court: Court) {
@@ -1008,22 +1026,36 @@ export function ClubApp() {
       return;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("courts")
       .update({
         name: court.name,
         display_order: Number(court.display_order),
         is_active: court.is_active,
       })
-      .eq("id", court.id);
+      .eq("id", court.id)
+      .select("*")
+      .single();
 
-    if (error) {
-      setStatusMessage(error.message);
+    if (error || !data) {
+      setStatusMessage(
+        error?.message ??
+          "Kort güncellenemedi. Admin yetkilerini kontrol edelim.",
+      );
       return;
     }
 
+    setCourts((currentCourts) =>
+      currentCourts
+        .map((currentCourt) =>
+          currentCourt.id === court.id ? (data as Court) : currentCourt,
+        )
+        .sort(
+          (firstCourt, secondCourt) =>
+            firstCourt.display_order - secondCourt.display_order,
+        ),
+    );
     setStatusMessage("Kort güncellendi.");
-    await loadData(user);
   }
 
   async function updateMember(memberId: string, fields: Partial<Profile>) {
@@ -1031,18 +1063,31 @@ export function ClubApp() {
       return;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .update(fields)
-      .eq("id", memberId);
+      .eq("id", memberId)
+      .select("*")
+      .single();
 
-    if (error) {
-      setStatusMessage(error.message);
+    if (error || !data) {
+      setStatusMessage(
+        error?.message ??
+          "Üye güncellenemedi. Admin yetkilerini kontrol edelim.",
+      );
       return;
     }
 
+    const updatedMember = data as Profile;
+    setMembers((currentMembers) =>
+      currentMembers.map((member) =>
+        member.id === memberId ? updatedMember : member,
+      ),
+    );
+    if (profile?.id === memberId) {
+      setProfile(updatedMember);
+    }
     setStatusMessage("Üye güncellendi.");
-    await loadData(user);
   }
 
   function moveCalendar(direction: -1 | 1) {
@@ -1395,7 +1440,7 @@ function LandingShell({
           className="absolute inset-0 z-10 grid min-h-[calc(100vh-3rem)] place-items-center bg-[#f7f6f1]/90 px-4 backdrop-blur-sm"
         >
           <div className="grid justify-items-center gap-4 rounded-md border border-[#ddd7c8] bg-[#fffdf8] px-8 py-7 text-center shadow-sm">
-            <ClubMark size="sm" />
+            <ClubMark size="banner" />
             <RefreshCw className="animate-spin text-[#237000]" size={24} />
             <p className="text-sm font-semibold text-[#17211c]">
               {loadingLabel}
@@ -2283,8 +2328,8 @@ function AdminPanel({
           <table className="min-w-[980px] w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
-                <th className="py-3 pr-3 font-medium">E-posta</th>
                 <th className="py-3 pr-3 font-medium">Ad soyad</th>
+                <th className="py-3 pr-3 font-medium">E-posta</th>
                 <th className="py-3 pr-3 font-medium">Seviye</th>
                 <th className="py-3 pr-3 font-medium">Kulüp üyesi</th>
                 <th className="py-3 pr-3 font-medium">Gün limiti</th>
@@ -2301,12 +2346,6 @@ function AdminPanel({
                 return (
                   <tr className="border-b border-[#eee7db]" key={member.id}>
                     <td className="py-3 pr-3">
-                      <div className="font-medium">{member.email}</div>
-                      <div className="text-xs text-[#68756b]">
-                        {roleLabels[member.app_role]}
-                      </div>
-                    </td>
-                    <td className="py-3 pr-3">
                       <input
                         className="input min-w-44"
                         defaultValue={member.full_name ?? ""}
@@ -2319,6 +2358,12 @@ function AdminPanel({
                         }
                         placeholder="İsim yok"
                       />
+                    </td>
+                    <td className="py-3 pr-3">
+                      <div className="font-medium">{member.email}</div>
+                      <div className="text-xs text-[#68756b]">
+                        {roleLabels[member.app_role]}
+                      </div>
                     </td>
                     <td className="py-3 pr-3">
                       <select
