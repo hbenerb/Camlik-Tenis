@@ -110,6 +110,7 @@ const skillLevelLabels: Record<SkillLevel, string> = {
 const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
 
 const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
+const THEME_STORAGE_KEY = "camlik-tenis-theme";
 
 function normalizeFullName(value: string) {
   return value.trim().replace(/\s+/g, " ");
@@ -346,10 +347,13 @@ export function ClubApp() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [signingInProvider, setSigningInProvider] =
+    useState<OAuthProvider | null>(null);
   const [isProfileSchemaReady, setIsProfileSchemaReady] = useState(false);
   const [showAllReservations, setShowAllReservations] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [theme, setTheme] = useState<ThemeMode>("light");
+  const [isThemeReady, setIsThemeReady] = useState(false);
 
   const themeClassName = theme === "dark" ? "theme-dark" : "theme-light";
 
@@ -395,12 +399,30 @@ export function ClubApp() {
   }, [calendarView, reservations, selectedDate]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((currentTheme) => {
-      return currentTheme === "dark" ? "light" : "dark";
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+    setTheme(nextTheme);
+  }, [theme]);
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+
+      if (storedTheme === "dark") {
+        setTheme("dark");
+      }
+
+      setIsThemeReady(true);
     });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
 
   useEffect(() => {
+    if (isThemeReady) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    }
+
     document.documentElement.classList.toggle(
       "theme-dark-root",
       theme === "dark",
@@ -409,7 +431,7 @@ export function ClubApp() {
       "theme-light-root",
       theme === "light",
     );
-  }, [theme]);
+  }, [isThemeReady, theme]);
 
   const loadData = useCallback(async (currentUser: User) => {
     if (!supabase) {
@@ -600,6 +622,11 @@ export function ClubApp() {
     }
 
     setStatusMessage(null);
+    setSigningInProvider(provider);
+    await new Promise<void>((resolve) => {
+      window.requestAnimationFrame(() => resolve());
+    });
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -609,6 +636,7 @@ export function ClubApp() {
 
     if (error) {
       setStatusMessage(error.message);
+      setSigningInProvider(null);
     }
   }
 
@@ -1054,6 +1082,7 @@ export function ClubApp() {
           statusMessage="Supabase bilgileri henüz .env.local dosyasına eklenmemiş."
           theme={theme}
           onSignIn={signIn}
+          signingInProvider={signingInProvider}
           isAuthDisabled
         />
       </main>
@@ -1070,6 +1099,7 @@ export function ClubApp() {
           statusMessage={statusMessage}
           theme={theme}
           onSignIn={signIn}
+          signingInProvider={signingInProvider}
         />
       </main>
     );
@@ -1286,15 +1316,24 @@ function LandingShell({
   isAuthDisabled = false,
   onToggleTheme,
   onSignIn,
+  signingInProvider,
   statusMessage,
   theme,
 }: {
   isAuthDisabled?: boolean;
   onToggleTheme: () => void;
   onSignIn: (provider: OAuthProvider) => void;
+  signingInProvider: OAuthProvider | null;
   statusMessage: string | null;
   theme: ThemeMode;
 }) {
+  const isSigningIn = Boolean(signingInProvider);
+  const loadingLabel =
+    signingInProvider === "apple"
+      ? "Apple ile bağlanılıyor"
+      : "Google ile bağlanılıyor";
+  const isAuthActionDisabled = isAuthDisabled || isSigningIn;
+
   return (
     <div className="relative mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl content-start gap-5 pt-20 sm:pt-16 lg:grid-cols-[1fr_420px] lg:content-center lg:gap-10 lg:pt-14">
       <div className="absolute right-4 top-4 sm:right-8">
@@ -1323,7 +1362,7 @@ function LandingShell({
         <div className="grid gap-3">
           <button
             className="inline-flex h-12 items-center justify-center gap-3 rounded-md border border-[#cfc8b8] bg-white px-4 text-sm font-semibold hover:bg-[#f1ede2] disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isAuthDisabled}
+            disabled={isAuthActionDisabled}
             onClick={() => onSignIn("google")}
             type="button"
           >
@@ -1334,7 +1373,7 @@ function LandingShell({
           </button>
           <button
             className="inline-flex h-12 items-center justify-center gap-3 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500] disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isAuthDisabled}
+            disabled={isAuthActionDisabled}
             onClick={() => onSignIn("apple")}
             type="button"
           >
@@ -1349,6 +1388,21 @@ function LandingShell({
           </div>
         ) : null}
       </section>
+
+      {isSigningIn ? (
+        <div
+          aria-live="polite"
+          className="absolute inset-0 z-10 grid min-h-[calc(100vh-3rem)] place-items-center bg-[#f7f6f1]/90 px-4 backdrop-blur-sm"
+        >
+          <div className="grid justify-items-center gap-4 rounded-md border border-[#ddd7c8] bg-[#fffdf8] px-8 py-7 text-center shadow-sm">
+            <ClubMark size="sm" />
+            <RefreshCw className="animate-spin text-[#237000]" size={24} />
+            <p className="text-sm font-semibold text-[#17211c]">
+              {loadingLabel}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
