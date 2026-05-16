@@ -133,6 +133,38 @@ function getReservationOwner(reservation: Reservation) {
   );
 }
 
+function attachReservationProfiles(
+  reservations: Reservation[],
+  profiles: Profile[],
+) {
+  const profileMap = new Map(
+    profiles.map((profile) => [
+      profile.id,
+      {
+        email: profile.email,
+        full_name: profile.full_name,
+      },
+    ]),
+  );
+
+  return reservations.map((reservation) => {
+    if (reservation.profiles?.full_name || reservation.profiles?.email) {
+      return reservation;
+    }
+
+    const reservationProfile = profileMap.get(reservation.user_id);
+
+    if (!reservationProfile) {
+      return reservation;
+    }
+
+    return {
+      ...reservation,
+      profiles: reservationProfile,
+    };
+  });
+}
+
 function isFutureReservation(reservation: Reservation, currentTime: Date) {
   return new Date(reservation.starts_at).getTime() >= currentTime.getTime();
 }
@@ -423,11 +455,7 @@ export function ClubApp() {
       .select("*, courts(name), profiles(email, full_name)")
       .order("starts_at", { ascending: true });
 
-    if (reservationResult.error) {
-      setStatusMessage(reservationResult.error.message);
-    } else {
-      setReservations((reservationResult.data as Reservation[] | null) ?? []);
-    }
+    let loadedMembers: Profile[] = [];
 
     if (isAdmin(loadedProfile)) {
       const memberResult = await supabase
@@ -438,10 +466,24 @@ export function ClubApp() {
       if (memberResult.error) {
         setStatusMessage(memberResult.error.message);
       } else {
-        setMembers((memberResult.data as Profile[] | null) ?? []);
+        loadedMembers = (memberResult.data as Profile[] | null) ?? [];
+        setMembers(loadedMembers);
       }
     } else {
       setMembers([]);
+    }
+
+    if (reservationResult.error) {
+      setStatusMessage(reservationResult.error.message);
+    } else {
+      const loadedReservations =
+        (reservationResult.data as Reservation[] | null) ?? [];
+      setReservations(
+        attachReservationProfiles(loadedReservations, [
+          loadedProfile,
+          ...loadedMembers,
+        ]),
+      );
     }
 
     setIsLoading(false);
