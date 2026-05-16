@@ -116,6 +116,10 @@ function normalizeFullName(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
+function normalizeNullableFullName(value: string | null | undefined) {
+  return normalizeFullName(value ?? "") || null;
+}
+
 function hasCompleteFullName(value: string | null | undefined) {
   return normalizeFullName(value ?? "").split(" ").filter(Boolean).length >= 2;
 }
@@ -1282,14 +1286,20 @@ export function ClubApp() {
       ...currentMember,
       ...fields,
     };
+    const expectedMember: Profile = {
+      ...nextMember,
+      full_name: normalizeNullableFullName(nextMember.full_name),
+      reservation_days_ahead: nextMember.reservation_days_ahead ?? null,
+      skill_level: nextMember.skill_level ?? "beginner",
+    };
 
     const rpcResult = await supabase.rpc("admin_update_profile", {
-      profile_app_role: nextMember.app_role,
-      profile_full_name: nextMember.full_name,
+      profile_app_role: expectedMember.app_role,
+      profile_full_name: expectedMember.full_name,
       profile_id: memberId,
-      profile_is_club_member: nextMember.is_club_member,
-      profile_reservation_days_ahead: nextMember.reservation_days_ahead,
-      profile_skill_level: nextMember.skill_level ?? "beginner",
+      profile_is_club_member: expectedMember.is_club_member,
+      profile_reservation_days_ahead: expectedMember.reservation_days_ahead,
+      profile_skill_level: expectedMember.skill_level,
     });
     const updateResult = rpcResult.error
       ? await supabase.from("profiles").update(fields).eq("id", memberId)
@@ -1302,33 +1312,39 @@ export function ClubApp() {
       return;
     }
 
-    const refreshedMemberResult = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", memberId)
-      .maybeSingle();
+    let savedMember = rpcResult.error ? null : (rpcResult.data as Profile | null);
 
-    if (refreshedMemberResult.error || !refreshedMemberResult.data) {
-      setStatusMessage(
-        refreshedMemberResult.error?.message ??
-          "Üye güncellendi ama doğrulama için tekrar okunamadı.",
-      );
-      return;
+    if (!savedMember) {
+      const refreshedMemberResult = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", memberId)
+        .maybeSingle();
+
+      if (refreshedMemberResult.error || !refreshedMemberResult.data) {
+        setStatusMessage(
+          refreshedMemberResult.error?.message ??
+            "Üye güncellendi ama doğrulama için tekrar okunamadı.",
+        );
+        return;
+      }
+
+      savedMember = refreshedMemberResult.data as Profile;
     }
-
-    const savedMember = refreshedMemberResult.data as Profile;
 
     if (
       (fields.full_name !== undefined &&
-        savedMember.full_name !== nextMember.full_name) ||
+        normalizeNullableFullName(savedMember.full_name) !==
+          expectedMember.full_name) ||
       (fields.skill_level !== undefined &&
-        savedMember.skill_level !== nextMember.skill_level) ||
+        savedMember.skill_level !== expectedMember.skill_level) ||
       (fields.is_club_member !== undefined &&
-        savedMember.is_club_member !== nextMember.is_club_member) ||
+        savedMember.is_club_member !== expectedMember.is_club_member) ||
       (fields.reservation_days_ahead !== undefined &&
-        savedMember.reservation_days_ahead !==
-          nextMember.reservation_days_ahead) ||
-      (fields.app_role !== undefined && savedMember.app_role !== nextMember.app_role)
+        (savedMember.reservation_days_ahead ?? null) !==
+          expectedMember.reservation_days_ahead) ||
+      (fields.app_role !== undefined &&
+        savedMember.app_role !== expectedMember.app_role)
     ) {
       setMembers((currentMembers) =>
         currentMembers.map((member) =>
