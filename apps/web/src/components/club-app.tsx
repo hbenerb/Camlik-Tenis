@@ -198,9 +198,7 @@ function uniqueProfiles(profiles: Array<Profile | null>) {
 }
 
 function profileOptionLabel(profile: Profile) {
-  return profile.full_name
-    ? `${profile.full_name} (${profile.email})`
-    : profile.email;
+  return profile.full_name || "İsim yok";
 }
 
 function isFutureReservation(reservation: Reservation, currentTime: Date) {
@@ -951,39 +949,49 @@ export function ClubApp() {
     setIsSaving(true);
     setStatusMessage(null);
 
-    const { data, error } = await supabase
+    const updatedSettings: ClubSettings = {
+      ...settingsDraft,
+      opening_time: settingsDraft.opening_time,
+      closing_time: settingsDraft.closing_time,
+      reservation_slot_minutes: Number(settingsDraft.reservation_slot_minutes),
+      max_active_reservations: Number(settingsDraft.max_active_reservations),
+      default_booking_days_ahead: Number(
+        settingsDraft.default_booking_days_ahead,
+      ),
+      club_member_booking_days_ahead: Number(
+        settingsDraft.club_member_booking_days_ahead,
+      ),
+      cancellation_deadline_hours: Number(
+        settingsDraft.cancellation_deadline_hours,
+      ),
+    };
+
+    const { error } = await supabase
       .from("club_settings")
       .update({
-        opening_time: settingsDraft.opening_time,
-        closing_time: settingsDraft.closing_time,
-        reservation_slot_minutes: Number(settingsDraft.reservation_slot_minutes),
-        max_active_reservations: Number(settingsDraft.max_active_reservations),
-        default_booking_days_ahead: Number(
-          settingsDraft.default_booking_days_ahead,
-        ),
-        club_member_booking_days_ahead: Number(
-          settingsDraft.club_member_booking_days_ahead,
-        ),
-        cancellation_deadline_hours: Number(
-          settingsDraft.cancellation_deadline_hours,
-        ),
+        opening_time: updatedSettings.opening_time,
+        closing_time: updatedSettings.closing_time,
+        reservation_slot_minutes: updatedSettings.reservation_slot_minutes,
+        max_active_reservations: updatedSettings.max_active_reservations,
+        default_booking_days_ahead: updatedSettings.default_booking_days_ahead,
+        club_member_booking_days_ahead:
+          updatedSettings.club_member_booking_days_ahead,
+        cancellation_deadline_hours:
+          updatedSettings.cancellation_deadline_hours,
       })
-      .eq("id", 1)
-      .select("*")
-      .single();
+      .eq("id", 1);
 
     setIsSaving(false);
 
-    if (error || !data) {
+    if (error) {
       setStatusMessage(
-        error?.message ??
-          "Kulüp ayarları güncellenemedi. Admin yetkilerini kontrol edelim.",
+        `${error.message} Ayarlar kaydolmadıysa Supabase admin izin SQL'ini çalıştırmak gerekiyor.`,
       );
       return;
     }
 
-    setSettings(data as ClubSettings);
-    setSettingsDraft(data as ClubSettings);
+    setSettings(updatedSettings);
+    setSettingsDraft(updatedSettings);
     setStatusMessage("Kulüp ayarları güncellendi.");
   }
 
@@ -994,19 +1002,27 @@ export function ClubApp() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("courts")
-      .insert({
-        name: newCourtName.trim(),
-        display_order: courts.length + 1,
-        is_active: true,
-      })
-      .select("*")
-      .single();
+    const nextDisplayOrder =
+      Math.max(0, ...courts.map((court) => Number(court.display_order) || 0)) + 1;
+    const insertedCourtDraft = {
+      name: newCourtName.trim(),
+      display_order: nextDisplayOrder,
+      is_active: true,
+    };
+
+    const rpcResult = await supabase.rpc("admin_create_court", {
+      court_display_order: insertedCourtDraft.display_order,
+      court_name: insertedCourtDraft.name,
+    });
+    const insertResult = rpcResult.error
+      ? await supabase.from("courts").insert(insertedCourtDraft).select("*").single()
+      : rpcResult;
+    const { data, error } = insertResult;
 
     if (error || !data) {
       setStatusMessage(
-        error?.message ?? "Kort eklenemedi. Admin yetkilerini kontrol edelim.",
+        error?.message ??
+          "Kort eklenemedi. Supabase admin izin SQL'ini çalıştırmak gerekiyor.",
       );
       return;
     }
@@ -1026,21 +1042,25 @@ export function ClubApp() {
       return;
     }
 
-    const { data, error } = await supabase
+    const updatedCourt: Court = {
+      ...court,
+      name: court.name,
+      display_order: Number(court.display_order),
+      is_active: court.is_active,
+    };
+
+    const { error } = await supabase
       .from("courts")
       .update({
-        name: court.name,
-        display_order: Number(court.display_order),
-        is_active: court.is_active,
+        name: updatedCourt.name,
+        display_order: updatedCourt.display_order,
+        is_active: updatedCourt.is_active,
       })
-      .eq("id", court.id)
-      .select("*")
-      .single();
+      .eq("id", court.id);
 
-    if (error || !data) {
+    if (error) {
       setStatusMessage(
-        error?.message ??
-          "Kort güncellenemedi. Admin yetkilerini kontrol edelim.",
+        `${error.message} Kort kaydolmadıysa Supabase admin izin SQL'ini çalıştırmak gerekiyor.`,
       );
       return;
     }
@@ -1048,7 +1068,7 @@ export function ClubApp() {
     setCourts((currentCourts) =>
       currentCourts
         .map((currentCourt) =>
-          currentCourt.id === court.id ? (data as Court) : currentCourt,
+          currentCourt.id === court.id ? updatedCourt : currentCourt,
         )
         .sort(
           (firstCourt, secondCourt) =>
@@ -1063,29 +1083,25 @@ export function ClubApp() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("profiles")
       .update(fields)
-      .eq("id", memberId)
-      .select("*")
-      .single();
+      .eq("id", memberId);
 
-    if (error || !data) {
+    if (error) {
       setStatusMessage(
-        error?.message ??
-          "Üye güncellenemedi. Admin yetkilerini kontrol edelim.",
+        `${error.message} Üye kaydolmadıysa Supabase admin izin SQL'ini çalıştırmak gerekiyor.`,
       );
       return;
     }
 
-    const updatedMember = data as Profile;
     setMembers((currentMembers) =>
       currentMembers.map((member) =>
-        member.id === memberId ? updatedMember : member,
+        member.id === memberId ? { ...member, ...fields } : member,
       ),
     );
     if (profile?.id === memberId) {
-      setProfile(updatedMember);
+      setProfile({ ...profile, ...fields });
     }
     setStatusMessage("Üye güncellendi.");
   }
@@ -1488,31 +1504,7 @@ function CalendarPanel({
   return (
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm text-[#68756b]">
-              {normalizeTime(settings.opening_time)} -{" "}
-              {normalizeTime(settings.closing_time)} ·{" "}
-              {settings.reservation_slot_minutes} dk
-            </p>
-            <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
-              {calendarView === "month"
-                ? format(selectedDate, "MMMM yyyy")
-                : formatDateTitle(selectedDate)}
-            </h2>
-          </div>
-          <button
-            aria-label="Yenile"
-            className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
-            onClick={onRefresh}
-            title="Yenile"
-            type="button"
-          >
-            <RefreshCw size={16} />
-          </button>
-        </div>
-
-        <div className="mt-3 grid gap-2">
+        <div className="grid gap-2">
           <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
             {(Object.keys(viewLabels) as CalendarView[]).map((view) => (
               <button
@@ -1536,6 +1528,30 @@ function CalendarPanel({
           >
             <Plus size={18} />
             Rezervasyon yap
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-[#68756b]">
+              {normalizeTime(settings.opening_time)} -{" "}
+              {normalizeTime(settings.closing_time)} ·{" "}
+              {settings.reservation_slot_minutes} dk
+            </p>
+            <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
+              {calendarView === "month"
+                ? format(selectedDate, "MMMM yyyy")
+                : formatDateTitle(selectedDate)}
+            </h2>
+          </div>
+          <button
+            aria-label="Yenile"
+            className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+            onClick={onRefresh}
+            title="Yenile"
+            type="button"
+          >
+            <RefreshCw size={16} />
           </button>
         </div>
       </div>
