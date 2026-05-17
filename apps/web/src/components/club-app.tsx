@@ -24,6 +24,7 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
+  SlidersHorizontal,
   Sun,
   User as UserIcon,
   Users,
@@ -2883,6 +2884,7 @@ function AdminPanel({
   settingsDraft: ClubSettings;
 }) {
   const canManageRoles = currentProfile.app_role === "super_admin";
+  const [memberFiltersOpen, setMemberFiltersOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [skillFilter, setSkillFilter] = useState<SkillLevel | "all">("all");
@@ -2920,6 +2922,13 @@ function AdminPanel({
       matchesBooking
     );
   });
+  const activeMemberFilterCount =
+    Number(Boolean(normalizedMemberSearch)) +
+    Number(roleFilter !== "all") +
+    Number(skillFilter !== "all") +
+    Number(trainerFilter !== "all") +
+    Number(bookingFilter !== "all");
+  const hasMemberFilters = activeMemberFilterCount > 0;
 
   return (
     <div className="space-y-6">
@@ -3107,64 +3116,91 @@ function AdminPanel({
       </AdminFoldout>
 
       <AdminFoldout icon={<Users size={20} />} title="Üyeler">
-        <div className="mb-4 grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 md:grid-cols-5">
-          <input
-            className="input input-compact md:col-span-2"
-            onChange={(event) => setMemberSearch(event.target.value)}
-            placeholder="İsim veya e-posta ara"
-            value={memberSearch}
-          />
-          <select
-            className="input input-compact"
-            onChange={(event) =>
-              setTrainerFilter(event.target.value as "all" | "yes" | "no")
-            }
-            value={trainerFilter}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="text-sm font-medium text-[#68756b]">
+            {visibleMembers.length} / {members.length} üye
+          </div>
+          <button
+            aria-expanded={memberFiltersOpen}
+            className={`inline-flex h-10 items-center justify-center gap-2 rounded-md border px-3 text-sm font-semibold ${
+              memberFiltersOpen || hasMemberFilters
+                ? "border-[#237000] bg-[#eff7ec] text-[#237000]"
+                : "border-[#ddd7c8] bg-white text-[#31382f]"
+            }`}
+            onClick={() => setMemberFiltersOpen((isOpen) => !isOpen)}
+            type="button"
           >
-            <option value="all">Tüm hocalar</option>
-            <option value="yes">Sadece eğitmen</option>
-            <option value="no">Eğitmen değil</option>
-          </select>
-          <select
-            className="input input-compact"
-            onChange={(event) =>
-              setBookingFilter(event.target.value as "all" | "yes" | "no")
-            }
-            value={bookingFilter}
-          >
-            <option value="all">Tüm yetkiler</option>
-            <option value="yes">Rez. yetkili</option>
-            <option value="no">Yetkisiz</option>
-          </select>
-          <select
-            className="input input-compact"
-            onChange={(event) =>
-              setRoleFilter(event.target.value as AppRole | "all")
-            }
-            value={roleFilter}
-          >
-            <option value="all">Tüm roller</option>
-            {(Object.keys(roleLabels) as AppRole[]).map((role) => (
-              <option key={role} value={role}>
-                {roleLabels[role]}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input input-compact md:col-start-5"
-            onChange={(event) =>
-              setSkillFilter(event.target.value as SkillLevel | "all")
-            }
-            value={skillFilter}
-          >
-            <option value="all">Tüm seviyeler</option>
-            {skillLevels.map((level) => (
-              <option key={level} value={level}>
-                {skillLevelLabels[level]}
-              </option>
-            ))}
-          </select>
+            <SlidersHorizontal size={17} />
+            Filtreler
+            {hasMemberFilters ? (
+              <span className="rounded-full bg-[#237000] px-2 py-0.5 text-xs text-white">
+                {activeMemberFilterCount}
+              </span>
+            ) : null}
+          </button>
         </div>
+
+        {memberFiltersOpen ? (
+          <div className="mb-4 grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 md:grid-cols-5">
+            <input
+              className="input input-compact md:col-span-2"
+              onChange={(event) => setMemberSearch(event.target.value)}
+              placeholder="İsim veya e-posta ara"
+              value={memberSearch}
+            />
+            <select
+              className="input input-compact"
+              onChange={(event) =>
+                setTrainerFilter(event.target.value as "all" | "yes" | "no")
+              }
+              value={trainerFilter}
+            >
+              <option value="all">Tüm hocalar</option>
+              <option value="yes">Sadece eğitmen</option>
+              <option value="no">Eğitmen değil</option>
+            </select>
+            <select
+              className="input input-compact"
+              onChange={(event) =>
+                setBookingFilter(event.target.value as "all" | "yes" | "no")
+              }
+              value={bookingFilter}
+            >
+              <option value="all">Tüm yetkiler</option>
+              <option value="yes">Rez. yetkili</option>
+              <option value="no">Yetkisiz</option>
+            </select>
+            <select
+              className="input input-compact"
+              onChange={(event) =>
+                setRoleFilter(event.target.value as AppRole | "all")
+              }
+              value={roleFilter}
+            >
+              <option value="all">Tüm roller</option>
+              {(Object.keys(roleLabels) as AppRole[]).map((role) => (
+                <option key={role} value={role}>
+                  {roleLabels[role]}
+                </option>
+              ))}
+            </select>
+            <select
+              className="input input-compact md:col-start-5"
+              onChange={(event) =>
+                setSkillFilter(event.target.value as SkillLevel | "all")
+              }
+              value={skillFilter}
+            >
+              <option value="all">Tüm seviyeler</option>
+              {skillLevels.map((level) => (
+                <option key={level} value={level}>
+                  {skillLevelLabels[level]}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+
         <div className="overflow-x-auto">
           <table className="min-w-[1160px] w-full border-collapse text-sm">
             <thead>
