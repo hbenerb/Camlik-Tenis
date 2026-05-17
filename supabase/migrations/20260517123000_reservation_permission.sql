@@ -88,20 +88,20 @@ security definer
 set search_path = public
 as $$
 declare
-  settings public.club_settings%rowtype;
+  club_settings_row public.club_settings%rowtype;
   active_count integer;
   latest_booking_date date;
   can_book_allowed boolean;
 begin
-  select * into settings from public.club_settings where id = 1;
+  select * into club_settings_row from public.club_settings where id = 1;
 
   if new.status = 'confirmed' then
     if new.starts_at < now() then
       raise exception 'Gecmis tarihli rezervasyon yapilamaz.';
     end if;
 
-    if new.ends_at <> new.starts_at + make_interval(mins => settings.reservation_slot_minutes) then
-      raise exception 'Rezervasyon suresi % dakika olmalidir.', settings.reservation_slot_minutes;
+    if new.ends_at <> new.starts_at + make_interval(mins => club_settings_row.reservation_slot_minutes) then
+      raise exception 'Rezervasyon suresi % dakika olmalidir.', club_settings_row.reservation_slot_minutes;
     end if;
 
     if not public.is_within_club_hours(new.starts_at, new.ends_at) then
@@ -119,10 +119,10 @@ begin
       end if;
 
       latest_booking_date :=
-        (now() at time zone settings.timezone)::date
+        (now() at time zone club_settings_row.timezone)::date
         + public.booking_window_days(new.user_id);
 
-      if (new.starts_at at time zone settings.timezone)::date > latest_booking_date then
+      if (new.starts_at at time zone club_settings_row.timezone)::date > latest_booking_date then
         raise exception 'Bu tarih icin rezervasyon yetkiniz yok.';
       end if;
 
@@ -134,7 +134,7 @@ begin
         and r.ends_at > now()
         and (tg_op = 'INSERT' or r.id <> new.id);
 
-      if active_count >= settings.max_active_reservations then
+      if active_count >= club_settings_row.max_active_reservations then
         raise exception 'Aktif rezervasyon limitiniz dolu.';
       end if;
     end if;
