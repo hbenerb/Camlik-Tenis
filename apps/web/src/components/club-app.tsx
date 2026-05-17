@@ -2360,7 +2360,7 @@ function DayCalendar({
                   const isLesson = isLessonReservation(reservation);
                   const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center ${
                     isLesson
-                      ? "bg-[#f3b340] text-[#17211c] hover:bg-[#e7a530]"
+                      ? "bg-[#f3b340] !text-black hover:bg-[#e7a530]"
                       : "bg-[#237000] text-white hover:bg-[#1f6500]"
                   }`;
                   const reservedCellContent = (
