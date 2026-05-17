@@ -238,14 +238,25 @@ function getReservationDisplayLines(reservation: Reservation) {
     ];
   }
 
+  const firstTeamNames = [
+    normalizePlayerName(match.team1_player1_name),
+    normalizePlayerName(match.team1_player2_name),
+  ].filter(Boolean);
+  const secondTeamNames = [
+    normalizePlayerName(match.team2_player1_name),
+    normalizePlayerName(match.team2_player2_name),
+  ].filter(Boolean);
+
   return [
-    `${displayPlayerName(match.team1_player1_name)}-${displayPlayerName(
-      match.team1_player2_name,
-    )}`,
-    `${displayPlayerName(match.team2_player1_name)}-${displayPlayerName(
-      match.team2_player2_name,
-    )}`,
+    firstTeamNames.join("-") || EMPTY_PLAYER_LABEL,
+    secondTeamNames.join("-") || EMPTY_PLAYER_LABEL,
   ];
+}
+
+function getReservationCustomInfo(reservation: Reservation) {
+  return reservation.note && !parseReservationMatchNote(reservation.note)
+    ? reservation.note
+    : "";
 }
 
 function getReservationMatchFormFields(reservation: Reservation) {
@@ -610,6 +621,49 @@ export function ClubApp() {
   }, []);
 
   useEffect(() => {
+    function preventMultiTouchZoom(event: TouchEvent) {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+      }
+    }
+
+    function preventGestureZoom(event: Event) {
+      event.preventDefault();
+    }
+
+    function preventShortcutZoom(event: KeyboardEvent) {
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        ["+", "-", "=", "0"].includes(event.key)
+      ) {
+        event.preventDefault();
+      }
+    }
+
+    function preventWheelZoom(event: WheelEvent) {
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+      }
+    }
+
+    document.addEventListener("touchmove", preventMultiTouchZoom, {
+      passive: false,
+    });
+    document.addEventListener("gesturestart", preventGestureZoom);
+    document.addEventListener("gesturechange", preventGestureZoom);
+    document.addEventListener("keydown", preventShortcutZoom);
+    document.addEventListener("wheel", preventWheelZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener("touchmove", preventMultiTouchZoom);
+      document.removeEventListener("gesturestart", preventGestureZoom);
+      document.removeEventListener("gesturechange", preventGestureZoom);
+      document.removeEventListener("keydown", preventShortcutZoom);
+      document.removeEventListener("wheel", preventWheelZoom);
+    };
+  }, []);
+
+  useEffect(() => {
     if (isThemeReady) {
       window.localStorage.setItem(THEME_STORAGE_KEY, theme);
     }
@@ -951,6 +1005,7 @@ export function ClubApp() {
 
   function openEditReservation(reservation: Reservation) {
     const startsAt = new Date(reservation.starts_at);
+    const customInfo = getReservationCustomInfo(reservation);
 
     if (startsAt < currentTime) {
       setStatusMessage("Geçmiş rezervasyonlar düzenlenemez.");
@@ -959,9 +1014,9 @@ export function ClubApp() {
 
     setReservationEditForm({
       court_id: reservation.court_id,
-      custom_info: reservation.note ?? "",
+      custom_info: customInfo,
       date: dateInputValue(startsAt),
-      is_custom: Boolean(reservation.note),
+      is_custom: Boolean(customInfo),
       ...getReservationMatchFormFields(reservation),
       start_time: formatTime(startsAt),
       user_id: reservation.user_id,
@@ -995,6 +1050,13 @@ export function ClubApp() {
       return;
     }
 
+    const customInfo = normalizeFullName(reservationForm.custom_info);
+
+    if (canManageReservations && reservationForm.is_custom && !customInfo) {
+      setStatusMessage("Özel rezervasyon bilgisi girilmeli.");
+      return;
+    }
+
     setIsSaving(true);
     setStatusMessage(null);
 
@@ -1009,7 +1071,10 @@ export function ClubApp() {
       user_id: canManageReservations ? reservationForm.user_id || user.id : user.id,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
-      note: buildReservationMatchNote(reservationForm),
+      note:
+        canManageReservations && reservationForm.is_custom
+          ? customInfo
+          : buildReservationMatchNote(reservationForm),
       status: "confirmed",
     });
 
@@ -1065,6 +1130,13 @@ export function ClubApp() {
       return;
     }
 
+    const customInfo = normalizeFullName(reservationEditForm.custom_info);
+
+    if (reservationEditForm.is_custom && !customInfo) {
+      setStatusMessage("Özel rezervasyon bilgisi girilmeli.");
+      return;
+    }
+
     setIsSaving(true);
     setStatusMessage(null);
 
@@ -1081,7 +1153,9 @@ export function ClubApp() {
         user_id: reservationEditForm.user_id || editingReservation.user_id,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
-        note: buildReservationMatchNote(reservationEditForm),
+        note: reservationEditForm.is_custom
+          ? customInfo
+          : buildReservationMatchNote(reservationEditForm),
         status: reservationEditForm.status,
       })
       .eq("id", editingReservation.id);
@@ -2970,8 +3044,39 @@ function MatchSetupFields<T extends ReservationFormState>({
     setForm({ ...form, [key]: value });
   }
 
+  function renderPlayerRow(label: string, key: MatchPlayerKey) {
+    return (
+      <div
+        className="grid grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-2"
+        key={key}
+      >
+        <span className="text-xs font-semibold text-[#34443a]">{label}</span>
+        <input
+          className="input input-compact"
+          list={listId}
+          onChange={(event) => setPlayerName(key, event.target.value)}
+          placeholder="İsim yaz"
+          value={form[key]}
+        />
+        <select
+          aria-label={`${label} seç`}
+          className="h-9 rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a]"
+          onChange={(event) => setPlayerName(key, event.target.value)}
+          value=""
+        >
+          <option value="">Seç</option>
+          {playerOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-3 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-3">
+    <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5">
       <div className="grid grid-cols-2 rounded-md border border-[#cfc8b8] bg-white p-1">
         {(Object.keys(matchTypeLabels) as MatchType[]).map((matchType) => (
           <button
@@ -2996,87 +3101,16 @@ function MatchSetupFields<T extends ReservationFormState>({
       </datalist>
 
       {form.match_type === "singles" ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Oyuncu">
-            <input
-              className="input"
-              list={listId}
-              onChange={(event) =>
-                setPlayerName("team1_player1_name", event.target.value)
-              }
-              placeholder={EMPTY_PLAYER_LABEL}
-              value={form.team1_player1_name}
-            />
-          </Field>
-          <Field label="Rakip">
-            <input
-              className="input"
-              list={listId}
-              onChange={(event) =>
-                setPlayerName("team2_player1_name", event.target.value)
-              }
-              placeholder={EMPTY_PLAYER_LABEL}
-              value={form.team2_player1_name}
-            />
-          </Field>
+        <div className="grid gap-2">
+          {renderPlayerRow("Oyuncu", "team1_player1_name")}
+          {renderPlayerRow("Rakip", "team2_player1_name")}
         </div>
       ) : (
-        <div className="grid gap-4">
-          <div className="grid gap-3">
-            <p className="text-sm font-semibold text-[#34443a]">Takım 1</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Oyuncu 1">
-                <input
-                  className="input"
-                  list={listId}
-                  onChange={(event) =>
-                    setPlayerName("team1_player1_name", event.target.value)
-                  }
-                  placeholder={EMPTY_PLAYER_LABEL}
-                  value={form.team1_player1_name}
-                />
-              </Field>
-              <Field label="Oyuncu 2">
-                <input
-                  className="input"
-                  list={listId}
-                  onChange={(event) =>
-                    setPlayerName("team1_player2_name", event.target.value)
-                  }
-                  placeholder={EMPTY_PLAYER_LABEL}
-                  value={form.team1_player2_name}
-                />
-              </Field>
-            </div>
-          </div>
-
-          <div className="grid gap-3">
-            <p className="text-sm font-semibold text-[#34443a]">Takım 2</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Oyuncu 1">
-                <input
-                  className="input"
-                  list={listId}
-                  onChange={(event) =>
-                    setPlayerName("team2_player1_name", event.target.value)
-                  }
-                  placeholder={EMPTY_PLAYER_LABEL}
-                  value={form.team2_player1_name}
-                />
-              </Field>
-              <Field label="Oyuncu 2">
-                <input
-                  className="input"
-                  list={listId}
-                  onChange={(event) =>
-                    setPlayerName("team2_player2_name", event.target.value)
-                  }
-                  placeholder={EMPTY_PLAYER_LABEL}
-                  value={form.team2_player2_name}
-                />
-              </Field>
-            </div>
-          </div>
+        <div className="grid gap-2">
+          {renderPlayerRow("Takım 1", "team1_player1_name")}
+          {renderPlayerRow("Eşi", "team1_player2_name")}
+          {renderPlayerRow("Takım 2", "team2_player1_name")}
+          {renderPlayerRow("Eşi", "team2_player2_name")}
         </div>
       )}
     </div>
@@ -3158,11 +3192,11 @@ function ReservationDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
-      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-5 shadow-xl sm:max-w-xl sm:rounded-lg">
-        <div className="mb-5 flex items-center justify-between">
+      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-4 shadow-xl sm:max-w-xl sm:rounded-lg">
+        <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-sm text-[#68756b]">Yeni rezervasyon</p>
-            <h2 className="text-2xl font-semibold">Kort ve saat seç</h2>
+            <h2 className="text-xl font-semibold">Kort ve saat seç</h2>
           </div>
           <button
             className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] hover:bg-[#eee9dd]"
@@ -3174,86 +3208,131 @@ function ReservationDialog({
           </button>
         </div>
 
-        <form className="grid gap-4" onSubmit={onSubmit}>
+        <form className="grid gap-3" onSubmit={onSubmit}>
           {canChooseOwner ? (
-            <Field label="Bağlı üye">
+            <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold text-[#34443a]">
+                  Rezervasyon Bilgisi
+                </span>
+                <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                  Özel
+                  <input
+                    checked={form.is_custom}
+                    className="size-4"
+                    onChange={(event) =>
+                      setForm({ ...form, is_custom: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                </label>
+              </div>
+              {form.is_custom ? (
+                <input
+                  className="input input-compact"
+                  onChange={(event) =>
+                    setForm({ ...form, custom_info: event.target.value })
+                  }
+                  placeholder="Örn. Turnuva, antrenman, misafir"
+                  required
+                  value={form.custom_info}
+                />
+              ) : (
+                <>
+                  <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
+                    <span className="text-xs font-semibold text-[#34443a]">
+                      Bağlı üye
+                    </span>
+                    <select
+                      className="input input-compact"
+                      onChange={(event) => handleOwnerChange(event.target.value)}
+                      required
+                      value={form.user_id}
+                    >
+                      {ownerOptions.map((owner) => (
+                        <option key={owner.id} value={owner.id}>
+                          {profileOptionLabel(owner)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <MatchSetupFields
+                    form={form}
+                    listId="reservation-player-options"
+                    ownerOptions={ownerOptions}
+                    setForm={setForm}
+                  />
+                </>
+              )}
+            </div>
+          ) : (
+            <MatchSetupFields
+              form={form}
+              listId="reservation-player-options"
+              ownerOptions={ownerOptions}
+              setForm={setForm}
+            />
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Kort">
               <select
                 className="input"
-                onChange={(event) => handleOwnerChange(event.target.value)}
+                onChange={(event) =>
+                  setForm({ ...form, court_id: event.target.value })
+                }
                 required
-                value={form.user_id}
+                value={form.court_id}
               >
-                {ownerOptions.map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {profileOptionLabel(owner)}
+                {activeCourts.map((court) => (
+                  <option key={court.id} value={court.id}>
+                    {court.name}
                   </option>
                 ))}
               </select>
             </Field>
-          ) : null}
 
-          <MatchSetupFields
-            form={form}
-            listId="reservation-player-options"
-            ownerOptions={ownerOptions}
-            setForm={setForm}
-          />
+            <Field label="Tarih">
+              <input
+                className="input"
+                max={maxBookingDate}
+                min={minBookingDate}
+                onChange={(event) => handleDateChange(event.target.value)}
+                required
+                type="date"
+                value={form.date}
+              />
+            </Field>
 
-          <Field label="Kort">
-            <select
-              className="input"
-              onChange={(event) => setForm({ ...form, court_id: event.target.value })}
-              required
-              value={form.court_id}
-            >
-              {activeCourts.map((court) => (
-                <option key={court.id} value={court.id}>
-                  {court.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+            <Field label="Başlangıç saati">
+              <select
+                className="input"
+                onChange={(event) =>
+                  setForm({ ...form, start_time: event.target.value })
+                }
+                required
+                value={form.start_time}
+              >
+                {timeSlots.map((slot) => {
+                  const optionBookable = isBookableStart(
+                    form.date,
+                    slot,
+                    bookingWindowDays,
+                    currentTime,
+                  );
 
-          <Field label="Tarih">
-            <input
-              className="input"
-              max={maxBookingDate}
-              min={minBookingDate}
-              onChange={(event) => handleDateChange(event.target.value)}
-              required
-              type="date"
-              value={form.date}
-            />
-          </Field>
+                  return (
+                    <option disabled={!optionBookable} key={slot} value={slot}>
+                      {slot}
+                      {optionBookable ? "" : " - uygun değil"}
+                    </option>
+                  );
+                })}
+              </select>
+            </Field>
+          </div>
 
-          <Field label="Başlangıç saati">
-            <select
-              className="input"
-              onChange={(event) =>
-                setForm({ ...form, start_time: event.target.value })
-              }
-              required
-              value={form.start_time}
-            >
-              {timeSlots.map((slot) => {
-                const optionBookable = isBookableStart(
-                  form.date,
-                  slot,
-                  bookingWindowDays,
-                  currentTime,
-                );
-
-                return (
-                  <option disabled={!optionBookable} key={slot} value={slot}>
-                    {slot}
-                    {optionBookable ? "" : " - uygun değil"}
-                  </option>
-                );
-              })}
-            </select>
-          </Field>
-
-          <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-3 text-sm text-[#546257]">
+          <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5 text-xs text-[#546257] sm:text-sm">
             Seçilen aralık: {formatDateTitle(parseDateInput(form.date))},{" "}
             {formatTime(selectedStart)} - {formatTime(selectedEnd)}
             {!selectedSlotBookable ? (
@@ -3351,11 +3430,11 @@ function ReservationEditDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
-      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-5 shadow-xl sm:max-w-xl sm:rounded-lg">
-        <div className="mb-5 flex items-center justify-between">
+      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-4 shadow-xl sm:max-w-xl sm:rounded-lg">
+        <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-sm text-[#68756b]">Admin düzenleme</p>
-            <h2 className="text-2xl font-semibold">Rezervasyonu düzenle</h2>
+            <h2 className="text-xl font-semibold">Rezervasyonu düzenle</h2>
           </div>
           <button
             className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] hover:bg-[#eee9dd]"
@@ -3367,104 +3446,144 @@ function ReservationEditDialog({
           </button>
         </div>
 
-        <form className="grid gap-4" onSubmit={onSubmit}>
-          <Field label="Bağlı üye">
-            <select
-              className="input"
-              onChange={(event) => handleOwnerChange(event.target.value)}
-              required
-              value={form.user_id}
-            >
-              {ownerOptions.map((owner) => (
-                <option key={owner.id} value={owner.id}>
-                  {profileOptionLabel(owner)}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <MatchSetupFields
-            form={form}
-            listId="reservation-edit-player-options"
-            ownerOptions={ownerOptions}
-            setForm={setForm}
-          />
-
-          <Field label="Kort">
-            <select
-              className="input"
-              onChange={(event) => setForm({ ...form, court_id: event.target.value })}
-              required
-              value={form.court_id}
-            >
-              {activeCourts.map((court) => (
-                <option key={court.id} value={court.id}>
-                  {court.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Durum">
-            <select
-              className="input"
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  status: event.target.value as ReservationStatus,
-                })
-              }
-              value={form.status}
-            >
-              <option value="confirmed">Onaylı</option>
-              <option value="canceled">İptal edildi</option>
-            </select>
-          </Field>
-
-          <Field label="Tarih">
-            <input
-              className="input"
-              onChange={(event) => handleDateChange(event.target.value)}
-              required
-              type="date"
-              value={form.date}
-            />
-          </Field>
-
-          <Field label="Başlangıç saati">
-            <select
-              className="input"
-              onChange={(event) =>
-                setForm({ ...form, start_time: event.target.value })
-              }
-              required
-              value={form.start_time}
-            >
-              {timeSlots.map((slot) => {
-                const optionBookable = isBookableStart(
-                  form.date,
-                  slot,
-                  bookingWindowDays,
-                  currentTime,
-                );
-
-                return (
-                  <option
-                    disabled={form.status === "confirmed" && !optionBookable}
-                    key={slot}
-                    value={slot}
+        <form className="grid gap-3" onSubmit={onSubmit}>
+          <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold text-[#34443a]">
+                Rezervasyon Bilgisi
+              </span>
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                Özel
+                <input
+                  checked={form.is_custom}
+                  className="size-4"
+                  onChange={(event) =>
+                    setForm({ ...form, is_custom: event.target.checked })
+                  }
+                  type="checkbox"
+                />
+              </label>
+            </div>
+            {form.is_custom ? (
+              <input
+                className="input input-compact"
+                onChange={(event) =>
+                  setForm({ ...form, custom_info: event.target.value })
+                }
+                placeholder="Örn. Turnuva, antrenman, misafir"
+                required
+                value={form.custom_info}
+              />
+            ) : (
+              <>
+                <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
+                  <span className="text-xs font-semibold text-[#34443a]">
+                    Bağlı üye
+                  </span>
+                  <select
+                    className="input input-compact"
+                    onChange={(event) => handleOwnerChange(event.target.value)}
+                    required
+                    value={form.user_id}
                   >
-                    {slot}
-                    {optionBookable || form.status === "canceled"
-                      ? ""
-                      : " - uygun değil"}
-                  </option>
-                );
-              })}
-            </select>
-          </Field>
+                    {ownerOptions.map((owner) => (
+                      <option key={owner.id} value={owner.id}>
+                        {profileOptionLabel(owner)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <MatchSetupFields
+                  form={form}
+                  listId="reservation-edit-player-options"
+                  ownerOptions={ownerOptions}
+                  setForm={setForm}
+                />
+              </>
+            )}
+          </div>
 
-          <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-3 text-sm text-[#546257]">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Kort">
+              <select
+                className="input"
+                onChange={(event) =>
+                  setForm({ ...form, court_id: event.target.value })
+                }
+                required
+                value={form.court_id}
+              >
+                {activeCourts.map((court) => (
+                  <option key={court.id} value={court.id}>
+                    {court.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Durum">
+              <select
+                className="input"
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    status: event.target.value as ReservationStatus,
+                  })
+                }
+                value={form.status}
+              >
+                <option value="confirmed">Onaylı</option>
+                <option value="canceled">İptal edildi</option>
+              </select>
+            </Field>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Tarih">
+              <input
+                className="input"
+                onChange={(event) => handleDateChange(event.target.value)}
+                required
+                type="date"
+                value={form.date}
+              />
+            </Field>
+
+            <Field label="Başlangıç saati">
+              <select
+                className="input"
+                onChange={(event) =>
+                  setForm({ ...form, start_time: event.target.value })
+                }
+                required
+                value={form.start_time}
+              >
+                {timeSlots.map((slot) => {
+                  const optionBookable = isBookableStart(
+                    form.date,
+                    slot,
+                    bookingWindowDays,
+                    currentTime,
+                  );
+
+                  return (
+                    <option
+                      disabled={form.status === "confirmed" && !optionBookable}
+                      key={slot}
+                      value={slot}
+                    >
+                      {slot}
+                      {optionBookable || form.status === "canceled"
+                        ? ""
+                        : " - uygun değil"}
+                    </option>
+                  );
+                })}
+              </select>
+            </Field>
+          </div>
+
+          <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5 text-xs text-[#546257] sm:text-sm">
             Seçilen aralık: {formatDateTitle(parseDateInput(form.date))},{" "}
             {formatTime(selectedStart)} - {formatTime(selectedEnd)}
             {!selectedSlotBookable ? (

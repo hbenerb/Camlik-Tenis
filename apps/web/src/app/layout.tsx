@@ -34,10 +34,14 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   initialScale: 1,
+  maximumScale: 1,
+  minimumScale: 1,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#237000" },
     { media: "(prefers-color-scheme: dark)", color: "#0e1512" },
   ],
+  userScalable: false,
+  viewportFit: "cover",
   width: "device-width",
 };
 
