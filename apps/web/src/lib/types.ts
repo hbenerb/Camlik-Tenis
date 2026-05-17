@@ -11,6 +11,7 @@ export type Profile = {
   avatar_url: string | null;
   app_role: AppRole;
   is_club_member: boolean;
+  is_trainer?: boolean | null;
   reservation_days_ahead: number | null;
   created_at: string;
   updated_at: string;

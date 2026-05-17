@@ -79,13 +79,21 @@ type ReservationMatchNote = {
   team2_player1_name: string | null;
   team2_player2_name: string | null;
 };
+type ReservationLessonNote = {
+  kind: "lesson";
+  version: 1;
+  trainer_name: string | null;
+  student_name: string | null;
+};
 type ReservationFormState = {
   court_id: string;
   custom_info: string;
   date: string;
   is_custom: boolean;
+  is_lesson: boolean;
   match_type: MatchType;
   start_time: string;
+  student_name: string;
   team1_player1_name: string;
   team1_player2_name: string;
   team2_player1_name: string;
@@ -236,6 +244,29 @@ function parseReservationMatchNote(note: string | null | undefined) {
   }
 }
 
+function parseReservationLessonNote(note: string | null | undefined) {
+  if (!note) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(note) as Partial<ReservationLessonNote>;
+
+    if (parsed.kind !== "lesson") {
+      return null;
+    }
+
+    return {
+      kind: "lesson",
+      version: 1,
+      trainer_name: normalizePlayerName(parsed.trainer_name),
+      student_name: normalizePlayerName(parsed.student_name),
+    } satisfies ReservationLessonNote;
+  } catch {
+    return null;
+  }
+}
+
 function getLegacyReservationOwner(reservation: Reservation) {
   return (
     reservation.note ||
@@ -247,8 +278,16 @@ function getLegacyReservationOwner(reservation: Reservation) {
 
 function getReservationDisplayLines(reservation: Reservation) {
   const match = parseReservationMatchNote(reservation.note);
+  const lesson = parseReservationLessonNote(reservation.note);
 
   if (!match) {
+    if (lesson) {
+      return [
+        displayPlayerName(lesson.trainer_name),
+        displayPlayerName(lesson.student_name),
+      ];
+    }
+
     return [getLegacyReservationOwner(reservation)];
   }
 
@@ -275,17 +314,22 @@ function getReservationDisplayLines(reservation: Reservation) {
 }
 
 function getReservationCustomInfo(reservation: Reservation) {
-  return reservation.note && !parseReservationMatchNote(reservation.note)
+  return reservation.note &&
+    !parseReservationMatchNote(reservation.note) &&
+    !parseReservationLessonNote(reservation.note)
     ? reservation.note
     : "";
 }
 
 function getReservationMatchFormFields(reservation: Reservation) {
   const match = parseReservationMatchNote(reservation.note);
+  const lesson = parseReservationLessonNote(reservation.note);
 
   if (match) {
     return {
+      is_lesson: false,
       match_type: match.match_type,
+      student_name: "",
       team1_player1_name: match.team1_player1_name ?? "",
       team1_player2_name: match.team1_player2_name ?? "",
       team2_player1_name: match.team2_player1_name ?? "",
@@ -293,10 +337,24 @@ function getReservationMatchFormFields(reservation: Reservation) {
     };
   }
 
+  if (lesson) {
+    return {
+      is_lesson: true,
+      match_type: "singles" as MatchType,
+      student_name: lesson.student_name ?? "",
+      team1_player1_name: lesson.trainer_name ?? "",
+      team1_player2_name: "",
+      team2_player1_name: "",
+      team2_player2_name: "",
+    };
+  }
+
   const legacyOwner = getLegacyReservationOwner(reservation);
 
   return {
+    is_lesson: false,
     match_type: "singles" as MatchType,
+    student_name: "",
     team1_player1_name: legacyOwner === "İsim yok" ? "" : legacyOwner,
     team1_player2_name: "",
     team2_player1_name: "",
@@ -322,6 +380,21 @@ function buildReservationMatchNote(form: ReservationFormState) {
   };
 
   return JSON.stringify(matchNote);
+}
+
+function buildReservationLessonNote(form: ReservationFormState, trainerName: string) {
+  const lessonNote: ReservationLessonNote = {
+    kind: "lesson",
+    version: 1,
+    trainer_name: normalizeNullableFullName(trainerName),
+    student_name: normalizeNullableFullName(form.student_name),
+  };
+
+  return JSON.stringify(lessonNote);
+}
+
+function isLessonReservation(reservation: Reservation) {
+  return Boolean(parseReservationLessonNote(reservation.note));
 }
 
 function attachReservationProfiles(
@@ -375,6 +448,24 @@ function uniqueProfiles(profiles: Array<Profile | null>) {
 
 function profileOptionLabel(profile: Profile) {
   return profile.full_name || "İsim yok";
+}
+
+function canUseLessonForSelectedOwner(
+  form: ReservationFormState,
+  ownerOptions: Profile[],
+  canChooseOwner: boolean,
+  canMarkLesson: boolean,
+) {
+  if (!canMarkLesson) {
+    return false;
+  }
+
+  if (!canChooseOwner) {
+    return true;
+  }
+
+  const selectedOwner = ownerOptions.find((owner) => owner.id === form.user_id);
+  return Boolean(selectedOwner?.is_trainer) || form.is_lesson;
 }
 
 function isFutureReservation(reservation: Reservation, currentTime: Date) {
@@ -500,8 +591,10 @@ export function ClubApp() {
     custom_info: "",
     date: dateInputValue(new Date()),
     is_custom: false,
+    is_lesson: false,
     match_type: "singles",
     start_time: "09:00",
+    student_name: "",
     team1_player1_name: "",
     team1_player2_name: "",
     team2_player1_name: "",
@@ -514,8 +607,10 @@ export function ClubApp() {
     custom_info: "",
     date: dateInputValue(new Date()),
     is_custom: false,
+    is_lesson: false,
     match_type: "singles",
     start_time: "09:00",
+    student_name: "",
     team1_player1_name: "",
     team1_player2_name: "",
     team2_player1_name: "",
@@ -570,6 +665,7 @@ export function ClubApp() {
   );
 
   const canManageReservations = isAdmin(profile);
+  const canMarkLesson = Boolean(profile?.is_trainer) || canManageReservations;
 
   const effectiveBookingWindowDays = canManageReservations
     ? ADMIN_EDIT_BOOKING_WINDOW_DAYS
@@ -1012,8 +1108,10 @@ export function ClubApp() {
       custom_info: "",
       date: dateValue,
       is_custom: false,
+      is_lesson: canMarkLesson ? reservationForm.is_lesson : false,
       match_type: reservationForm.match_type,
       start_time: slotForForm ?? timeSlots[0] ?? "09:00",
+      student_name: "",
       team1_player1_name: selectedOwnerName,
       team1_player2_name: "",
       team2_player1_name: "",
@@ -1086,16 +1184,27 @@ export function ClubApp() {
       reservationForm.start_time,
     );
     const endsAt = addSlotDuration(startsAt, settings);
+    const selectedOwner =
+      reservationOwnerOptions.find(
+        (owner) => owner.id === (reservationForm.user_id || user.id),
+      ) ?? profile;
+    const trainerName =
+      selectedOwner && profileOptionLabel(selectedOwner) !== "İsim yok"
+        ? profileOptionLabel(selectedOwner)
+        : getDisplayName(profile, user);
+    const reservationNote =
+      canManageReservations && reservationForm.is_custom
+        ? customInfo
+        : canMarkLesson && reservationForm.is_lesson
+          ? buildReservationLessonNote(reservationForm, trainerName)
+          : buildReservationMatchNote(reservationForm);
 
     const { error } = await supabase.from("reservations").insert({
       court_id: reservationForm.court_id,
       user_id: canManageReservations ? reservationForm.user_id || user.id : user.id,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
-      note:
-        canManageReservations && reservationForm.is_custom
-          ? customInfo
-          : buildReservationMatchNote(reservationForm),
+      note: reservationNote,
       status: "confirmed",
     });
 
@@ -1166,6 +1275,21 @@ export function ClubApp() {
       reservationEditForm.start_time,
     );
     const endsAt = addSlotDuration(startsAt, settings);
+    const selectedOwner =
+      reservationOwnerOptions.find(
+        (owner) =>
+          owner.id ===
+          (reservationEditForm.user_id || editingReservation.user_id),
+      ) ?? profile;
+    const trainerName =
+      selectedOwner && profileOptionLabel(selectedOwner) !== "İsim yok"
+        ? profileOptionLabel(selectedOwner)
+        : getDisplayName(profile, user);
+    const reservationNote = reservationEditForm.is_custom
+      ? customInfo
+      : reservationEditForm.is_lesson
+        ? buildReservationLessonNote(reservationEditForm, trainerName)
+        : buildReservationMatchNote(reservationEditForm);
 
     const { error } = await supabase
       .from("reservations")
@@ -1174,9 +1298,7 @@ export function ClubApp() {
         user_id: reservationEditForm.user_id || editingReservation.user_id,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
-        note: reservationEditForm.is_custom
-          ? customInfo
-          : buildReservationMatchNote(reservationEditForm),
+        note: reservationNote,
         status: reservationEditForm.status,
       })
       .eq("id", editingReservation.id);
@@ -1518,18 +1640,26 @@ export function ClubApp() {
     const expectedMember: Profile = {
       ...nextMember,
       full_name: normalizeNullableFullName(nextMember.full_name),
+      is_trainer: Boolean(nextMember.is_trainer),
       reservation_days_ahead: nextMember.reservation_days_ahead ?? null,
       skill_level: nextMember.skill_level ?? "beginner",
     };
 
-    const rpcResult = await supabase.rpc("admin_update_profile", {
+    const profileUpdatePayload = {
       profile_app_role: expectedMember.app_role,
       profile_full_name: expectedMember.full_name,
       profile_id: memberId,
       profile_is_club_member: expectedMember.is_club_member,
       profile_reservation_days_ahead: expectedMember.reservation_days_ahead,
       profile_skill_level: expectedMember.skill_level,
-    });
+    };
+    const rpcResult =
+      fields.is_trainer !== undefined
+        ? await supabase.rpc("admin_update_profile", {
+            ...profileUpdatePayload,
+            profile_is_trainer: expectedMember.is_trainer,
+          })
+        : await supabase.rpc("admin_update_profile", profileUpdatePayload);
     const updateResult = rpcResult.error
       ? await supabase.from("profiles").update(fields).eq("id", memberId)
       : rpcResult;
@@ -1569,6 +1699,8 @@ export function ClubApp() {
         savedMember.skill_level !== expectedMember.skill_level) ||
       (fields.is_club_member !== undefined &&
         savedMember.is_club_member !== expectedMember.is_club_member) ||
+      (fields.is_trainer !== undefined &&
+        Boolean(savedMember.is_trainer) !== Boolean(expectedMember.is_trainer)) ||
       (fields.reservation_days_ahead !== undefined &&
         (savedMember.reservation_days_ahead ?? null) !==
           expectedMember.reservation_days_ahead) ||
@@ -1831,6 +1963,7 @@ export function ClubApp() {
         <ReservationDialog
           activeCourts={activeCourts}
           bookingWindowDays={effectiveBookingWindowDays}
+          canMarkLesson={canMarkLesson}
           canChooseOwner={canManageReservations}
           currentTime={currentTime}
           form={reservationForm}
@@ -1848,6 +1981,9 @@ export function ClubApp() {
         <ReservationEditDialog
           activeCourts={activeCourts}
           bookingWindowDays={ADMIN_EDIT_BOOKING_WINDOW_DAYS}
+          canMarkLesson={
+            canMarkLesson || Boolean(parseReservationLessonNote(editingReservation.note))
+          }
           currentTime={currentTime}
           form={reservationEditForm}
           isSaving={isSaving}
@@ -2221,10 +2357,15 @@ function DayCalendar({
 
                 if (reservation) {
                   const reservationLines = getReservationDisplayLines(reservation);
-                  const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#237000] hover:bg-[#1f6500]`;
+                  const isLesson = isLessonReservation(reservation);
+                  const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center ${
+                    isLesson
+                      ? "bg-[#f3b340] text-[#17211c] hover:bg-[#e7a530]"
+                      : "bg-[#237000] text-white hover:bg-[#1f6500]"
+                  }`;
                   const reservedCellContent = (
                     <div
-                      className="grid w-full gap-0.5 text-white"
+                      className="grid w-full gap-0.5"
                       title={reservationLines.join(" / ")}
                     >
                       {reservationLines.map((line, index) => (
@@ -2891,13 +3032,14 @@ function AdminPanel({
 
       <AdminFoldout icon={<Users size={20} />} title="Üyeler">
         <div className="overflow-x-auto">
-          <table className="min-w-[980px] w-full border-collapse text-sm">
+          <table className="min-w-[1060px] w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
                 <th className="py-3 pr-3 font-medium">Ad soyad</th>
                 <th className="py-3 pr-3 font-medium">E-posta</th>
                 <th className="py-3 pr-3 font-medium">Seviye</th>
                 <th className="py-3 pr-3 font-medium">Kulüp üyesi</th>
+                <th className="py-3 pr-3 font-medium">Eğitmen</th>
                 <th className="py-3 pr-3 font-medium">Gün limiti</th>
                 {canManageRoles ? (
                   <th className="py-3 pr-3 font-medium">Rol</th>
@@ -2956,6 +3098,18 @@ function AdminPanel({
                         onChange={(event) =>
                           onMemberUpdate(member.id, {
                             is_club_member: event.target.checked,
+                          })
+                        }
+                        type="checkbox"
+                      />
+                    </td>
+                    <td className="py-3 pr-3">
+                      <input
+                        checked={Boolean(member.is_trainer)}
+                        disabled={!canEditMember}
+                        onChange={(event) =>
+                          onMemberUpdate(member.id, {
+                            is_trainer: event.target.checked,
                           })
                         }
                         type="checkbox"
@@ -3138,9 +3292,67 @@ function MatchSetupFields<T extends ReservationFormState>({
   );
 }
 
+function LessonSetupFields<T extends ReservationFormState>({
+  form,
+  listId,
+  ownerOptions,
+  setForm,
+}: {
+  form: T;
+  listId: string;
+  ownerOptions: Profile[];
+  setForm: (form: T) => void;
+}) {
+  const playerOptions = Array.from(
+    new Set(
+      ownerOptions
+        .map((owner) => profileOptionLabel(owner))
+        .filter((name) => name !== "İsim yok"),
+    ),
+  );
+
+  return (
+    <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#fff8df] p-2.5">
+      <datalist id={listId}>
+        {playerOptions.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+      <div className="grid grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-2">
+        <span className="text-xs font-semibold text-[#34443a]">Öğrenci</span>
+        <input
+          className="input input-compact"
+          list={listId}
+          onChange={(event) =>
+            setForm({ ...form, student_name: event.target.value })
+          }
+          placeholder="Öğrenci adı"
+          value={form.student_name}
+        />
+        <select
+          aria-label="Öğrenci seç"
+          className="h-9 rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a]"
+          onChange={(event) =>
+            setForm({ ...form, student_name: event.target.value })
+          }
+          value=""
+        >
+          <option value="">Seç</option>
+          {playerOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
 function ReservationDialog({
   activeCourts,
   bookingWindowDays,
+  canMarkLesson,
   canChooseOwner,
   currentTime,
   form,
@@ -3154,6 +3366,7 @@ function ReservationDialog({
 }: {
   activeCourts: Court[];
   bookingWindowDays: number;
+  canMarkLesson: boolean;
   canChooseOwner: boolean;
   currentTime: Date;
   form: ReservationFormState;
@@ -3172,6 +3385,12 @@ function ReservationDialog({
     form.start_time,
     bookingWindowDays,
     currentTime,
+  );
+  const canUseLesson = canUseLessonForSelectedOwner(
+    form,
+    ownerOptions,
+    canChooseOwner,
+    canMarkLesson,
   );
   const maxBookingDate = dateInputValue(addDays(currentTime, bookingWindowDays));
   const minBookingDate = dateInputValue(currentTime);
@@ -3277,22 +3496,68 @@ function ReservationDialog({
                       ))}
                     </select>
                   </div>
-                  <MatchSetupFields
-                    form={form}
-                    listId="reservation-player-options"
-                    ownerOptions={ownerOptions}
-                    setForm={setForm}
-                  />
+                  {canUseLesson ? (
+                    <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                      Ders
+                      <input
+                        checked={form.is_lesson}
+                        className="size-4"
+                        onChange={(event) =>
+                          setForm({ ...form, is_lesson: event.target.checked })
+                        }
+                        type="checkbox"
+                      />
+                    </label>
+                  ) : null}
+                  {canUseLesson && form.is_lesson ? (
+                    <LessonSetupFields
+                      form={form}
+                      listId="reservation-student-options"
+                      ownerOptions={ownerOptions}
+                      setForm={setForm}
+                    />
+                  ) : (
+                    <MatchSetupFields
+                      form={form}
+                      listId="reservation-player-options"
+                      ownerOptions={ownerOptions}
+                      setForm={setForm}
+                    />
+                  )}
                 </>
               )}
             </div>
           ) : (
-            <MatchSetupFields
-              form={form}
-              listId="reservation-player-options"
-              ownerOptions={ownerOptions}
-              setForm={setForm}
-            />
+            <div className="grid gap-2">
+              {canUseLesson ? (
+                <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                  Ders
+                  <input
+                    checked={form.is_lesson}
+                    className="size-4"
+                    onChange={(event) =>
+                      setForm({ ...form, is_lesson: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                </label>
+              ) : null}
+              {canUseLesson && form.is_lesson ? (
+                <LessonSetupFields
+                  form={form}
+                  listId="reservation-student-options"
+                  ownerOptions={ownerOptions}
+                  setForm={setForm}
+                />
+              ) : (
+                <MatchSetupFields
+                  form={form}
+                  listId="reservation-player-options"
+                  ownerOptions={ownerOptions}
+                  setForm={setForm}
+                />
+              )}
+            </div>
           )}
 
           <div className="grid gap-3 sm:grid-cols-3">
@@ -3379,6 +3644,7 @@ function ReservationDialog({
 function ReservationEditDialog({
   activeCourts,
   bookingWindowDays,
+  canMarkLesson,
   currentTime,
   form,
   isSaving,
@@ -3392,6 +3658,7 @@ function ReservationEditDialog({
 }: {
   activeCourts: Court[];
   bookingWindowDays: number;
+  canMarkLesson: boolean;
   currentTime: Date;
   form: ReservationEditFormState;
   isSaving: boolean;
@@ -3413,6 +3680,12 @@ function ReservationEditDialog({
       bookingWindowDays,
       currentTime,
     );
+  const canUseLesson = canUseLessonForSelectedOwner(
+    form,
+    ownerOptions,
+    true,
+    canMarkLesson,
+  );
 
   function handleDateChange(dateValue: string) {
     setForm({
@@ -3514,12 +3787,34 @@ function ReservationEditDialog({
                     ))}
                   </select>
                 </div>
-                <MatchSetupFields
-                  form={form}
-                  listId="reservation-edit-player-options"
-                  ownerOptions={ownerOptions}
-                  setForm={setForm}
-                />
+                {canUseLesson ? (
+                  <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                    Ders
+                    <input
+                      checked={form.is_lesson}
+                      className="size-4"
+                      onChange={(event) =>
+                        setForm({ ...form, is_lesson: event.target.checked })
+                      }
+                      type="checkbox"
+                    />
+                  </label>
+                ) : null}
+                {canUseLesson && form.is_lesson ? (
+                  <LessonSetupFields
+                    form={form}
+                    listId="reservation-edit-student-options"
+                    ownerOptions={ownerOptions}
+                    setForm={setForm}
+                  />
+                ) : (
+                  <MatchSetupFields
+                    form={form}
+                    listId="reservation-edit-player-options"
+                    ownerOptions={ownerOptions}
+                    setForm={setForm}
+                  />
+                )}
               </>
             )}
           </div>
