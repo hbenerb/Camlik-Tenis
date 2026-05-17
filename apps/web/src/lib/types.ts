@@ -10,6 +10,7 @@ export type Profile = {
   skill_level?: SkillLevel | null;
   avatar_url: string | null;
   app_role: AppRole;
+  can_book?: boolean | null;
   is_club_member: boolean;
   is_trainer?: boolean | null;
   reservation_days_ahead: number | null;

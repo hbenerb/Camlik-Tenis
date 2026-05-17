@@ -665,6 +665,12 @@ export function ClubApp() {
   );
 
   const canManageReservations = isAdmin(profile);
+  const reservationPermissionSchemaReady = Boolean(
+    profile && Object.prototype.hasOwnProperty.call(profile, "can_book"),
+  );
+  const canCreateReservation =
+    canManageReservations ||
+    (reservationPermissionSchemaReady ? Boolean(profile?.can_book) : true);
   const canMarkLesson = Boolean(profile?.is_trainer) || canManageReservations;
 
   const effectiveBookingWindowDays = canManageReservations
@@ -1072,6 +1078,13 @@ export function ClubApp() {
 
   function openReservationForm(courtId?: string, date?: Date, slot?: string) {
     if (!user) {
+      return;
+    }
+
+    if (!canCreateReservation) {
+      setStatusMessage(
+        "Rezervasyon yetkiniz henüz açılmadı. Takvimi görebilir, rezervasyon için admin onayını bekleyebilirsiniz.",
+      );
       return;
     }
 
@@ -1639,6 +1652,7 @@ export function ClubApp() {
     };
     const expectedMember: Profile = {
       ...nextMember,
+      can_book: Boolean(nextMember.can_book),
       full_name: normalizeNullableFullName(nextMember.full_name),
       is_trainer: Boolean(nextMember.is_trainer),
       reservation_days_ahead: nextMember.reservation_days_ahead ?? null,
@@ -1647,6 +1661,7 @@ export function ClubApp() {
 
     const profileUpdatePayload = {
       profile_app_role: expectedMember.app_role,
+      profile_can_book: expectedMember.can_book,
       profile_full_name: expectedMember.full_name,
       profile_id: memberId,
       profile_is_club_member: expectedMember.is_club_member,
@@ -1654,12 +1669,20 @@ export function ClubApp() {
       profile_skill_level: expectedMember.skill_level,
     };
     const rpcResult =
-      fields.is_trainer !== undefined
+      fields.can_book !== undefined || fields.is_trainer !== undefined
         ? await supabase.rpc("admin_update_profile", {
             ...profileUpdatePayload,
             profile_is_trainer: expectedMember.is_trainer,
           })
-        : await supabase.rpc("admin_update_profile", profileUpdatePayload);
+        : await supabase.rpc("admin_update_profile", {
+            profile_app_role: expectedMember.app_role,
+            profile_full_name: expectedMember.full_name,
+            profile_id: memberId,
+            profile_is_club_member: expectedMember.is_club_member,
+            profile_reservation_days_ahead:
+              expectedMember.reservation_days_ahead,
+            profile_skill_level: expectedMember.skill_level,
+          });
     const updateResult = rpcResult.error
       ? await supabase.from("profiles").update(fields).eq("id", memberId)
       : rpcResult;
@@ -1695,6 +1718,8 @@ export function ClubApp() {
       (fields.full_name !== undefined &&
         normalizeNullableFullName(savedMember.full_name) !==
           expectedMember.full_name) ||
+      (fields.can_book !== undefined &&
+        Boolean(savedMember.can_book) !== Boolean(expectedMember.can_book)) ||
       (fields.skill_level !== undefined &&
         savedMember.skill_level !== expectedMember.skill_level) ||
       (fields.is_club_member !== undefined &&
@@ -1890,6 +1915,7 @@ export function ClubApp() {
               activeCourts={activeCourts}
               bookingWindowDays={effectiveBookingWindowDays}
               calendarView={calendarView}
+              canCreateReservation={canCreateReservation}
               courts={courts}
               currentTime={currentTime}
               moveCalendar={moveCalendar}
@@ -2104,6 +2130,7 @@ function CalendarPanel({
   activeCourts,
   bookingWindowDays,
   calendarView,
+  canCreateReservation,
   courts,
   currentTime,
   moveCalendar,
@@ -2120,6 +2147,7 @@ function CalendarPanel({
   activeCourts: Court[];
   bookingWindowDays: number;
   calendarView: CalendarView;
+  canCreateReservation: boolean;
   courts: Court[];
   currentTime: Date;
   moveCalendar: (direction: -1 | 1) => void;
@@ -2168,14 +2196,20 @@ function CalendarPanel({
               </button>
             ))}
           </div>
-          <button
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
-            onClick={() => onCreateReservation()}
-            type="button"
-          >
-            <Plus size={18} />
-            Rezervasyon yap
-          </button>
+          {canCreateReservation ? (
+            <button
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
+              onClick={() => onCreateReservation()}
+              type="button"
+            >
+              <Plus size={18} />
+              Rezervasyon yap
+            </button>
+          ) : (
+            <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] px-3 py-2 text-center text-sm font-medium text-[#68756b]">
+              Rezervasyon yetkisi için admin onayı bekleniyor.
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex items-start justify-between gap-3">
@@ -2243,6 +2277,7 @@ function CalendarPanel({
       {activeCourts.length > 0 && calendarView === "day" ? (
         <DayCalendar
           bookingWindowDays={bookingWindowDays}
+          canCreateReservation={canCreateReservation}
           courts={activeCourts}
           currentTime={currentTime}
           onEditReservation={onEditReservation}
@@ -2282,6 +2317,7 @@ function CalendarPanel({
 
 function DayCalendar({
   bookingWindowDays,
+  canCreateReservation,
   courts,
   currentTime,
   onEditReservation,
@@ -2291,6 +2327,7 @@ function DayCalendar({
   timeSlots,
 }: {
   bookingWindowDays: number;
+  canCreateReservation: boolean;
   courts: Court[];
   currentTime: Date;
   onEditReservation?: (reservation: Reservation) => void;
@@ -2405,11 +2442,13 @@ function DayCalendar({
                 return (
                   <button
                     className={`${cellClassName} flex items-center justify-center ${
-                      slotBookable
+                      slotBookable && canCreateReservation
                         ? "cursor-pointer bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
-                        : "cursor-not-allowed bg-white text-[#8b8f86]"
+                        : slotBookable
+                          ? "cursor-not-allowed bg-[#f0f8ef] text-[#237000]"
+                          : "cursor-not-allowed bg-white text-[#8b8f86]"
                     }`}
-                    disabled={!slotBookable}
+                    disabled={!slotBookable || !canCreateReservation}
                     key={`${court.id}-${slot}`}
                     onClick={() =>
                       onCreateReservation(court.id, selectedDate, slot)
@@ -2844,6 +2883,43 @@ function AdminPanel({
   settingsDraft: ClubSettings;
 }) {
   const canManageRoles = currentProfile.app_role === "super_admin";
+  const [memberSearch, setMemberSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
+  const [skillFilter, setSkillFilter] = useState<SkillLevel | "all">("all");
+  const [trainerFilter, setTrainerFilter] = useState<"all" | "yes" | "no">(
+    "all",
+  );
+  const [bookingFilter, setBookingFilter] = useState<"all" | "yes" | "no">(
+    "all",
+  );
+  const normalizedMemberSearch = normalizeFullName(memberSearch).toLocaleLowerCase(
+    "tr-TR",
+  );
+  const visibleMembers = members.filter((member) => {
+    const matchesSearch =
+      !normalizedMemberSearch ||
+      `${member.full_name ?? ""} ${member.email}`
+        .toLocaleLowerCase("tr-TR")
+        .includes(normalizedMemberSearch);
+    const matchesRole = roleFilter === "all" || member.app_role === roleFilter;
+    const matchesSkill =
+      skillFilter === "all" ||
+      (member.skill_level ?? "beginner") === skillFilter;
+    const matchesTrainer =
+      trainerFilter === "all" ||
+      Boolean(member.is_trainer) === (trainerFilter === "yes");
+    const matchesBooking =
+      bookingFilter === "all" ||
+      Boolean(member.can_book) === (bookingFilter === "yes");
+
+    return (
+      matchesSearch &&
+      matchesRole &&
+      matchesSkill &&
+      matchesTrainer &&
+      matchesBooking
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -3031,14 +3107,73 @@ function AdminPanel({
       </AdminFoldout>
 
       <AdminFoldout icon={<Users size={20} />} title="Üyeler">
+        <div className="mb-4 grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 md:grid-cols-5">
+          <input
+            className="input input-compact md:col-span-2"
+            onChange={(event) => setMemberSearch(event.target.value)}
+            placeholder="İsim veya e-posta ara"
+            value={memberSearch}
+          />
+          <select
+            className="input input-compact"
+            onChange={(event) =>
+              setTrainerFilter(event.target.value as "all" | "yes" | "no")
+            }
+            value={trainerFilter}
+          >
+            <option value="all">Tüm hocalar</option>
+            <option value="yes">Sadece eğitmen</option>
+            <option value="no">Eğitmen değil</option>
+          </select>
+          <select
+            className="input input-compact"
+            onChange={(event) =>
+              setBookingFilter(event.target.value as "all" | "yes" | "no")
+            }
+            value={bookingFilter}
+          >
+            <option value="all">Tüm yetkiler</option>
+            <option value="yes">Rez. yetkili</option>
+            <option value="no">Yetkisiz</option>
+          </select>
+          <select
+            className="input input-compact"
+            onChange={(event) =>
+              setRoleFilter(event.target.value as AppRole | "all")
+            }
+            value={roleFilter}
+          >
+            <option value="all">Tüm roller</option>
+            {(Object.keys(roleLabels) as AppRole[]).map((role) => (
+              <option key={role} value={role}>
+                {roleLabels[role]}
+              </option>
+            ))}
+          </select>
+          <select
+            className="input input-compact md:col-start-5"
+            onChange={(event) =>
+              setSkillFilter(event.target.value as SkillLevel | "all")
+            }
+            value={skillFilter}
+          >
+            <option value="all">Tüm seviyeler</option>
+            {skillLevels.map((level) => (
+              <option key={level} value={level}>
+                {skillLevelLabels[level]}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="overflow-x-auto">
-          <table className="min-w-[1060px] w-full border-collapse text-sm">
+          <table className="min-w-[1160px] w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
                 <th className="py-3 pr-3 font-medium">Ad soyad</th>
                 <th className="py-3 pr-3 font-medium">E-posta</th>
                 <th className="py-3 pr-3 font-medium">Seviye</th>
                 <th className="py-3 pr-3 font-medium">Kulüp üyesi</th>
+                <th className="py-3 pr-3 font-medium">Rez. yetkisi</th>
                 <th className="py-3 pr-3 font-medium">Eğitmen</th>
                 <th className="py-3 pr-3 font-medium">Gün limiti</th>
                 {canManageRoles ? (
@@ -3047,7 +3182,7 @@ function AdminPanel({
               </tr>
             </thead>
             <tbody>
-              {members.map((member) => {
+              {visibleMembers.map((member) => {
                 const canEditMember =
                   canManageRoles || member.app_role !== "super_admin";
 
@@ -3098,6 +3233,18 @@ function AdminPanel({
                         onChange={(event) =>
                           onMemberUpdate(member.id, {
                             is_club_member: event.target.checked,
+                          })
+                        }
+                        type="checkbox"
+                      />
+                    </td>
+                    <td className="py-3 pr-3">
+                      <input
+                        checked={Boolean(member.can_book)}
+                        disabled={!canEditMember}
+                        onChange={(event) =>
+                          onMemberUpdate(member.id, {
+                            can_book: event.target.checked,
                           })
                         }
                         type="checkbox"
@@ -3819,7 +3966,7 @@ function ReservationEditDialog({
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3">
             <Field label="Kort">
               <select
                 className="input"
@@ -3834,22 +3981,6 @@ function ReservationEditDialog({
                     {court.name}
                   </option>
                 ))}
-              </select>
-            </Field>
-
-            <Field label="Durum">
-              <select
-                className="input"
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    status: event.target.value as ReservationStatus,
-                  })
-                }
-                value={form.status}
-              >
-                <option value="confirmed">Onaylı</option>
-                <option value="canceled">İptal edildi</option>
               </select>
             </Field>
           </div>

@@ -1,0 +1,147 @@
+grant usage on schema public to anon, authenticated;
+grant select, update on public.profiles to authenticated;
+
+alter table public.profiles
+add column if not exists is_trainer boolean not null default false;
+
+alter table public.profiles
+add column if not exists can_book boolean not null default false;
+
+update public.profiles
+set can_book = true
+where can_book = false;
+
+create or replace function public.admin_update_profile(
+  profile_id uuid,
+  profile_full_name text,
+  profile_skill_level text,
+  profile_is_club_member boolean,
+  profile_is_trainer boolean,
+  profile_can_book boolean,
+  profile_reservation_days_ahead integer,
+  profile_app_role text
+)
+returns public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  existing_profile public.profiles%rowtype;
+  profile_row public.profiles%rowtype;
+  next_role public.app_role;
+  normalized_name text := nullif(regexp_replace(trim(coalesce(profile_full_name, '')), '\s+', ' ', 'g'), '');
+  normalized_skill text := coalesce(profile_skill_level, 'beginner');
+begin
+  if not public.is_admin() then
+    raise exception 'Sadece admin uye bilgilerini guncelleyebilir.';
+  end if;
+
+  select * into existing_profile
+  from public.profiles
+  where id = profile_id;
+
+  if not found then
+    raise exception 'Uye bulunamadi.';
+  end if;
+
+  if profile_app_role not in ('user', 'admin', 'super_admin') then
+    raise exception 'Rol gecersiz.';
+  end if;
+
+  if normalized_skill not in ('beginner', 'intermediate', 'advanced', 'master') then
+    raise exception 'Seviye gecersiz.';
+  end if;
+
+  next_role := profile_app_role::public.app_role;
+
+  if existing_profile.app_role is distinct from next_role and not public.is_super_admin() then
+    raise exception 'Sadece bas admin kullanici rollerini degistirebilir.';
+  end if;
+
+  if existing_profile.app_role = 'super_admin' and not public.is_super_admin() then
+    raise exception 'Bas admin hesabi sadece bas admin tarafindan degistirilebilir.';
+  end if;
+
+  update public.profiles
+  set
+    full_name = normalized_name,
+    skill_level = normalized_skill,
+    is_club_member = coalesce(profile_is_club_member, false),
+    is_trainer = coalesce(profile_is_trainer, false),
+    can_book = coalesce(profile_can_book, false),
+    reservation_days_ahead = profile_reservation_days_ahead,
+    app_role = next_role
+  where id = profile_id
+  returning * into profile_row;
+
+  return profile_row;
+end;
+$$;
+
+grant execute on function public.admin_update_profile(uuid, text, text, boolean, boolean, boolean, integer, text) to authenticated;
+
+create or replace function public.validate_reservation()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  settings public.club_settings%rowtype;
+  active_count integer;
+  latest_booking_date date;
+  can_book_allowed boolean;
+begin
+  select * into settings from public.club_settings where id = 1;
+
+  if new.status = 'confirmed' then
+    if new.starts_at < now() then
+      raise exception 'Gecmis tarihli rezervasyon yapilamaz.';
+    end if;
+
+    if new.ends_at <> new.starts_at + make_interval(mins => settings.reservation_slot_minutes) then
+      raise exception 'Rezervasyon suresi % dakika olmalidir.', settings.reservation_slot_minutes;
+    end if;
+
+    if not public.is_within_club_hours(new.starts_at, new.ends_at) then
+      raise exception 'Rezervasyon kulup acilis saatleri disinda.';
+    end if;
+
+    if not public.is_admin() then
+      select coalesce(p.can_book, false)
+        into can_book_allowed
+      from public.profiles p
+      where p.id = new.user_id;
+
+      if not coalesce(can_book_allowed, false) then
+        raise exception 'Rezervasyon yetkiniz admin tarafindan acilmali.';
+      end if;
+
+      latest_booking_date :=
+        (now() at time zone settings.timezone)::date
+        + public.booking_window_days(new.user_id);
+
+      if (new.starts_at at time zone settings.timezone)::date > latest_booking_date then
+        raise exception 'Bu tarih icin rezervasyon yetkiniz yok.';
+      end if;
+
+      select count(*)
+        into active_count
+      from public.reservations r
+      where r.user_id = new.user_id
+        and r.status = 'confirmed'
+        and r.ends_at > now()
+        and (tg_op = 'INSERT' or r.id <> new.id);
+
+      if active_count >= settings.max_active_reservations then
+        raise exception 'Aktif rezervasyon limitiniz dolu.';
+      end if;
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+notify pgrst, 'reload schema';
