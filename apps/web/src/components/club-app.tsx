@@ -186,6 +186,27 @@ function displayPlayerName(value: string | null | undefined) {
   return normalizePlayerName(value) || EMPTY_PLAYER_LABEL;
 }
 
+function displayDoublesPlayerName(value: string | null | undefined) {
+  const normalizedName = normalizePlayerName(value);
+
+  if (!normalizedName) {
+    return "";
+  }
+
+  const nameParts = normalizedName.split(" ").filter(Boolean);
+
+  if (nameParts.length === 1) {
+    return nameParts[0];
+  }
+
+  const firstName = nameParts[0];
+  const lastNameInitial = nameParts[nameParts.length - 1]
+    .charAt(0)
+    .toLocaleUpperCase("tr-TR");
+
+  return `${firstName} ${lastNameInitial}.`;
+}
+
 function parseReservationMatchNote(note: string | null | undefined) {
   if (!note) {
     return null;
@@ -239,12 +260,12 @@ function getReservationDisplayLines(reservation: Reservation) {
   }
 
   const firstTeamNames = [
-    normalizePlayerName(match.team1_player1_name),
-    normalizePlayerName(match.team1_player2_name),
+    displayDoublesPlayerName(match.team1_player1_name),
+    displayDoublesPlayerName(match.team1_player2_name),
   ].filter(Boolean);
   const secondTeamNames = [
-    normalizePlayerName(match.team2_player1_name),
-    normalizePlayerName(match.team2_player2_name),
+    displayDoublesPlayerName(match.team2_player1_name),
+    displayDoublesPlayerName(match.team2_player2_name),
   ].filter(Boolean);
 
   return [
