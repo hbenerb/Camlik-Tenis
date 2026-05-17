@@ -64,12 +64,32 @@ type AppTab = "calendar" | "reservations" | "profile" | "admin";
 type OAuthProvider = "google" | "apple";
 type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
+type MatchType = "singles" | "doubles";
+type MatchPlayerKey =
+  | "team1_player1_name"
+  | "team1_player2_name"
+  | "team2_player1_name"
+  | "team2_player2_name";
+type ReservationMatchNote = {
+  kind: "match";
+  version: 1;
+  match_type: MatchType;
+  team1_player1_name: string | null;
+  team1_player2_name: string | null;
+  team2_player1_name: string | null;
+  team2_player2_name: string | null;
+};
 type ReservationFormState = {
   court_id: string;
   custom_info: string;
   date: string;
   is_custom: boolean;
+  match_type: MatchType;
   start_time: string;
+  team1_player1_name: string;
+  team1_player2_name: string;
+  team2_player1_name: string;
+  team2_player2_name: string;
   user_id: string;
 };
 type ReservationEditFormState = ReservationFormState & {
@@ -101,6 +121,11 @@ const viewLabels: Record<CalendarView, string> = {
   month: "Aylık",
 };
 
+const matchTypeLabels: Record<MatchType, string> = {
+  singles: "Tekler",
+  doubles: "Çiftler",
+};
+
 const skillLevelLabels: Record<SkillLevel, string> = {
   beginner: "Başlangıç",
   intermediate: "Orta",
@@ -112,6 +137,7 @@ const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
 
 const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
 const THEME_STORAGE_KEY = "camlik-tenis-theme";
+const EMPTY_PLAYER_LABEL = "-";
 
 function normalizeFullName(value: string) {
   return value.trim().replace(/\s+/g, " ");
@@ -152,13 +178,118 @@ function getDisplayName(profile: Profile | null, user: User | null) {
   return profile?.full_name || user?.user_metadata?.full_name || profile?.email || "";
 }
 
-function getReservationOwner(reservation: Reservation) {
+function normalizePlayerName(value: string | null | undefined) {
+  return normalizeFullName(value ?? "");
+}
+
+function displayPlayerName(value: string | null | undefined) {
+  return normalizePlayerName(value) || EMPTY_PLAYER_LABEL;
+}
+
+function parseReservationMatchNote(note: string | null | undefined) {
+  if (!note) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(note) as Partial<ReservationMatchNote>;
+
+    if (
+      parsed.kind !== "match" ||
+      (parsed.match_type !== "singles" && parsed.match_type !== "doubles")
+    ) {
+      return null;
+    }
+
+    return {
+      kind: "match",
+      version: 1,
+      match_type: parsed.match_type,
+      team1_player1_name: normalizePlayerName(parsed.team1_player1_name),
+      team1_player2_name: normalizePlayerName(parsed.team1_player2_name),
+      team2_player1_name: normalizePlayerName(parsed.team2_player1_name),
+      team2_player2_name: normalizePlayerName(parsed.team2_player2_name),
+    } satisfies ReservationMatchNote;
+  } catch {
+    return null;
+  }
+}
+
+function getLegacyReservationOwner(reservation: Reservation) {
   return (
     reservation.note ||
     reservation.profiles?.full_name ||
     reservation.profiles?.email ||
     "İsim yok"
   );
+}
+
+function getReservationDisplayLines(reservation: Reservation) {
+  const match = parseReservationMatchNote(reservation.note);
+
+  if (!match) {
+    return [getLegacyReservationOwner(reservation)];
+  }
+
+  if (match.match_type === "singles") {
+    return [
+      displayPlayerName(match.team1_player1_name),
+      displayPlayerName(match.team2_player1_name),
+    ];
+  }
+
+  return [
+    `${displayPlayerName(match.team1_player1_name)}-${displayPlayerName(
+      match.team1_player2_name,
+    )}`,
+    `${displayPlayerName(match.team2_player1_name)}-${displayPlayerName(
+      match.team2_player2_name,
+    )}`,
+  ];
+}
+
+function getReservationMatchFormFields(reservation: Reservation) {
+  const match = parseReservationMatchNote(reservation.note);
+
+  if (match) {
+    return {
+      match_type: match.match_type,
+      team1_player1_name: match.team1_player1_name ?? "",
+      team1_player2_name: match.team1_player2_name ?? "",
+      team2_player1_name: match.team2_player1_name ?? "",
+      team2_player2_name: match.team2_player2_name ?? "",
+    };
+  }
+
+  const legacyOwner = getLegacyReservationOwner(reservation);
+
+  return {
+    match_type: "singles" as MatchType,
+    team1_player1_name: legacyOwner === "İsim yok" ? "" : legacyOwner,
+    team1_player2_name: "",
+    team2_player1_name: "",
+    team2_player2_name: "",
+  };
+}
+
+function buildReservationMatchNote(form: ReservationFormState) {
+  const matchNote: ReservationMatchNote = {
+    kind: "match",
+    version: 1,
+    match_type: form.match_type,
+    team1_player1_name: normalizeNullableFullName(form.team1_player1_name),
+    team1_player2_name:
+      form.match_type === "doubles"
+        ? normalizeNullableFullName(form.team1_player2_name)
+        : null,
+    team2_player1_name: normalizeNullableFullName(form.team2_player1_name),
+    team2_player2_name:
+      form.match_type === "doubles"
+        ? normalizeNullableFullName(form.team2_player2_name)
+        : null,
+  };
+
+  return JSON.stringify(matchNote);
 }
 
 function attachReservationProfiles(
@@ -337,7 +468,12 @@ export function ClubApp() {
     custom_info: "",
     date: dateInputValue(new Date()),
     is_custom: false,
+    match_type: "singles",
     start_time: "09:00",
+    team1_player1_name: "",
+    team1_player2_name: "",
+    team2_player1_name: "",
+    team2_player2_name: "",
     user_id: "",
   });
   const [reservationEditForm, setReservationEditForm] =
@@ -346,7 +482,12 @@ export function ClubApp() {
     custom_info: "",
     date: dateInputValue(new Date()),
     is_custom: false,
+    match_type: "singles",
     start_time: "09:00",
+    team1_player1_name: "",
+    team1_player2_name: "",
+    team2_player1_name: "",
+    team2_player2_name: "",
     user_id: "",
     status: "confirmed" as ReservationStatus,
   });
@@ -782,13 +923,26 @@ export function ClubApp() {
             effectiveBookingWindowDays,
             currentTime,
           );
+    const selectedOwner =
+      reservationOwnerOptions.find(
+        (owner) => owner.id === (reservationForm.user_id || user.id),
+      ) ?? profile;
+    const selectedOwnerName =
+      selectedOwner && profileOptionLabel(selectedOwner) !== "İsim yok"
+        ? profileOptionLabel(selectedOwner)
+        : getDisplayName(profile, user);
 
     setReservationForm({
       court_id: courtId ?? activeCourts[0]?.id ?? "",
-      custom_info: reservationForm.custom_info,
+      custom_info: "",
       date: dateValue,
-      is_custom: reservationForm.is_custom,
+      is_custom: false,
+      match_type: reservationForm.match_type,
       start_time: slotForForm ?? timeSlots[0] ?? "09:00",
+      team1_player1_name: selectedOwnerName,
+      team1_player2_name: "",
+      team2_player1_name: "",
+      team2_player2_name: "",
       user_id: reservationForm.user_id || user.id,
     });
     setStatusMessage(null);
@@ -808,6 +962,7 @@ export function ClubApp() {
       custom_info: reservation.note ?? "",
       date: dateInputValue(startsAt),
       is_custom: Boolean(reservation.note),
+      ...getReservationMatchFormFields(reservation),
       start_time: formatTime(startsAt),
       user_id: reservation.user_id,
       status: reservation.status,
@@ -840,13 +995,6 @@ export function ClubApp() {
       return;
     }
 
-    const customInfo = normalizeFullName(reservationForm.custom_info);
-
-    if (canManageReservations && reservationForm.is_custom && !customInfo) {
-      setStatusMessage("Özel rezervasyon bilgisi girilmeli.");
-      return;
-    }
-
     setIsSaving(true);
     setStatusMessage(null);
 
@@ -858,16 +1006,10 @@ export function ClubApp() {
 
     const { error } = await supabase.from("reservations").insert({
       court_id: reservationForm.court_id,
-      user_id:
-        canManageReservations && !reservationForm.is_custom
-          ? reservationForm.user_id || user.id
-          : user.id,
+      user_id: canManageReservations ? reservationForm.user_id || user.id : user.id,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
-      note:
-        canManageReservations && reservationForm.is_custom
-          ? customInfo
-          : null,
+      note: buildReservationMatchNote(reservationForm),
       status: "confirmed",
     });
 
@@ -923,13 +1065,6 @@ export function ClubApp() {
       return;
     }
 
-    const customInfo = normalizeFullName(reservationEditForm.custom_info);
-
-    if (reservationEditForm.is_custom && !customInfo) {
-      setStatusMessage("Özel rezervasyon bilgisi girilmeli.");
-      return;
-    }
-
     setIsSaving(true);
     setStatusMessage(null);
 
@@ -943,12 +1078,10 @@ export function ClubApp() {
       .from("reservations")
       .update({
         court_id: reservationEditForm.court_id,
-        user_id: reservationEditForm.is_custom
-          ? user.id
-          : reservationEditForm.user_id || editingReservation.user_id,
+        user_id: reservationEditForm.user_id || editingReservation.user_id,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
-        note: reservationEditForm.is_custom ? customInfo : null,
+        note: buildReservationMatchNote(reservationEditForm),
         status: reservationEditForm.status,
       })
       .eq("id", editingReservation.id);
@@ -1992,15 +2125,22 @@ function DayCalendar({
                   "min-h-12 border-r border-t border-[#eee7db] p-1 text-center transition sm:min-h-20 sm:p-2";
 
                 if (reservation) {
-                  const owner = getReservationOwner(reservation);
+                  const reservationLines = getReservationDisplayLines(reservation);
                   const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center bg-[#237000] hover:bg-[#1f6500]`;
                   const reservedCellContent = (
-                    <p
-                      className="w-full truncate text-[12px] font-semibold text-white sm:text-sm"
-                      title={owner}
+                    <div
+                      className="grid w-full gap-0.5 text-white"
+                      title={reservationLines.join(" / ")}
                     >
-                      {owner}
-                    </p>
+                      {reservationLines.map((line, index) => (
+                        <p
+                          className="truncate text-[11px] font-semibold leading-tight sm:text-sm"
+                          key={`${line}-${index}`}
+                        >
+                          {line}
+                        </p>
+                      ))}
+                    </div>
                   );
 
                   if (onEditReservation) {
@@ -2263,6 +2403,7 @@ function ReservationsPanel({
       ) : null}
       {sorted.map((reservation) => {
         const startsAt = new Date(reservation.starts_at);
+        const reservationLines = getReservationDisplayLines(reservation);
         const isMine = reservation.user_id === userId;
         const isFuture = isFutureReservation(reservation, currentTime);
         const canCancel = isMine && isFuture && reservation.status === "confirmed";
@@ -2274,9 +2415,16 @@ function ReservationsPanel({
             key={reservation.id}
           >
             <div className="min-w-0">
-              <h3 className="truncate text-sm font-semibold sm:text-base">
-                {getReservationOwner(reservation)}
-              </h3>
+              <div className="space-y-0.5">
+                {reservationLines.map((line, index) => (
+                  <p
+                    className="truncate text-sm font-semibold sm:text-base"
+                    key={`${line}-${index}`}
+                  >
+                    {line}
+                  </p>
+                ))}
+              </div>
               <div className="mt-1 space-y-0.5 text-xs leading-5 text-[#68756b] sm:text-sm">
                 <p className="truncate">
                   {reservation.courts?.name ?? "Kort"}
@@ -2788,6 +2936,153 @@ function AdminFoldout({
   );
 }
 
+function MatchSetupFields<T extends ReservationFormState>({
+  form,
+  listId,
+  ownerOptions,
+  setForm,
+}: {
+  form: T;
+  listId: string;
+  ownerOptions: Profile[];
+  setForm: (form: T) => void;
+}) {
+  const playerOptions = Array.from(
+    new Set(
+      ownerOptions
+        .map((owner) => profileOptionLabel(owner))
+        .filter((name) => name !== "İsim yok"),
+    ),
+  );
+
+  function setMatchType(matchType: MatchType) {
+    setForm({
+      ...form,
+      match_type: matchType,
+      team1_player2_name:
+        matchType === "singles" ? "" : form.team1_player2_name,
+      team2_player2_name:
+        matchType === "singles" ? "" : form.team2_player2_name,
+    });
+  }
+
+  function setPlayerName(key: MatchPlayerKey, value: string) {
+    setForm({ ...form, [key]: value });
+  }
+
+  return (
+    <div className="grid gap-3 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-3">
+      <div className="grid grid-cols-2 rounded-md border border-[#cfc8b8] bg-white p-1">
+        {(Object.keys(matchTypeLabels) as MatchType[]).map((matchType) => (
+          <button
+            className={`h-9 rounded px-2 text-sm font-semibold ${
+              form.match_type === matchType
+                ? "bg-[#237000] text-white"
+                : "text-[#546257] hover:bg-[#eee9dd]"
+            }`}
+            key={matchType}
+            onClick={() => setMatchType(matchType)}
+            type="button"
+          >
+            {matchTypeLabels[matchType]}
+          </button>
+        ))}
+      </div>
+
+      <datalist id={listId}>
+        {playerOptions.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+
+      {form.match_type === "singles" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Oyuncu">
+            <input
+              className="input"
+              list={listId}
+              onChange={(event) =>
+                setPlayerName("team1_player1_name", event.target.value)
+              }
+              placeholder={EMPTY_PLAYER_LABEL}
+              value={form.team1_player1_name}
+            />
+          </Field>
+          <Field label="Rakip">
+            <input
+              className="input"
+              list={listId}
+              onChange={(event) =>
+                setPlayerName("team2_player1_name", event.target.value)
+              }
+              placeholder={EMPTY_PLAYER_LABEL}
+              value={form.team2_player1_name}
+            />
+          </Field>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          <div className="grid gap-3">
+            <p className="text-sm font-semibold text-[#34443a]">Takım 1</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Oyuncu 1">
+                <input
+                  className="input"
+                  list={listId}
+                  onChange={(event) =>
+                    setPlayerName("team1_player1_name", event.target.value)
+                  }
+                  placeholder={EMPTY_PLAYER_LABEL}
+                  value={form.team1_player1_name}
+                />
+              </Field>
+              <Field label="Oyuncu 2">
+                <input
+                  className="input"
+                  list={listId}
+                  onChange={(event) =>
+                    setPlayerName("team1_player2_name", event.target.value)
+                  }
+                  placeholder={EMPTY_PLAYER_LABEL}
+                  value={form.team1_player2_name}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <p className="text-sm font-semibold text-[#34443a]">Takım 2</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Oyuncu 1">
+                <input
+                  className="input"
+                  list={listId}
+                  onChange={(event) =>
+                    setPlayerName("team2_player1_name", event.target.value)
+                  }
+                  placeholder={EMPTY_PLAYER_LABEL}
+                  value={form.team2_player1_name}
+                />
+              </Field>
+              <Field label="Oyuncu 2">
+                <input
+                  className="input"
+                  list={listId}
+                  onChange={(event) =>
+                    setPlayerName("team2_player2_name", event.target.value)
+                  }
+                  placeholder={EMPTY_PLAYER_LABEL}
+                  value={form.team2_player2_name}
+                />
+              </Field>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReservationDialog({
   activeCourts,
   bookingWindowDays,
@@ -2842,9 +3137,28 @@ function ReservationDialog({
     });
   }
 
+  function handleOwnerChange(ownerId: string) {
+    const currentOwnerName =
+      ownerOptions.find((owner) => owner.id === form.user_id)?.full_name ?? "";
+    const nextOwnerName =
+      ownerOptions.find((owner) => owner.id === ownerId)?.full_name ?? "";
+    const firstPlayer = normalizePlayerName(form.team1_player1_name);
+    const shouldReplaceFirstPlayer =
+      !firstPlayer ||
+      (currentOwnerName && firstPlayer === normalizePlayerName(currentOwnerName));
+
+    setForm({
+      ...form,
+      user_id: ownerId,
+      team1_player1_name: shouldReplaceFirstPlayer
+        ? nextOwnerName
+        : form.team1_player1_name,
+    });
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
-      <section className="w-full rounded-t-lg bg-[#fffdf8] p-5 shadow-xl sm:max-w-lg sm:rounded-lg">
+      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-5 shadow-xl sm:max-w-xl sm:rounded-lg">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className="text-sm text-[#68756b]">Yeni rezervasyon</p>
@@ -2862,54 +3176,28 @@ function ReservationDialog({
 
         <form className="grid gap-4" onSubmit={onSubmit}>
           {canChooseOwner ? (
-            <div className="grid gap-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-medium text-[#34443a]">
-                  Rezervasyon Bilgisi
-                </span>
-                <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
-                  Özel
-                  <input
-                    checked={form.is_custom}
-                    className="size-4"
-                    onChange={(event) =>
-                      setForm({
-                        ...form,
-                        is_custom: event.target.checked,
-                      })
-                    }
-                    type="checkbox"
-                  />
-                </label>
-              </div>
-              {form.is_custom ? (
-                <input
-                  className="input"
-                  onChange={(event) =>
-                    setForm({ ...form, custom_info: event.target.value })
-                  }
-                  placeholder="Örn. Misafir oyuncu, turnuva, antrenman"
-                  required
-                  value={form.custom_info}
-                />
-              ) : (
-                <select
-                  className="input"
-                  onChange={(event) =>
-                    setForm({ ...form, user_id: event.target.value })
-                  }
-                  required
-                  value={form.user_id}
-                >
-                  {ownerOptions.map((owner) => (
-                    <option key={owner.id} value={owner.id}>
-                      {profileOptionLabel(owner)}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+            <Field label="Bağlı üye">
+              <select
+                className="input"
+                onChange={(event) => handleOwnerChange(event.target.value)}
+                required
+                value={form.user_id}
+              >
+                {ownerOptions.map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {profileOptionLabel(owner)}
+                  </option>
+                ))}
+              </select>
+            </Field>
           ) : null}
+
+          <MatchSetupFields
+            form={form}
+            listId="reservation-player-options"
+            ownerOptions={ownerOptions}
+            setForm={setForm}
+          />
 
           <Field label="Kort">
             <select
@@ -3042,9 +3330,28 @@ function ReservationEditDialog({
     });
   }
 
+  function handleOwnerChange(ownerId: string) {
+    const currentOwnerName =
+      ownerOptions.find((owner) => owner.id === form.user_id)?.full_name ?? "";
+    const nextOwnerName =
+      ownerOptions.find((owner) => owner.id === ownerId)?.full_name ?? "";
+    const firstPlayer = normalizePlayerName(form.team1_player1_name);
+    const shouldReplaceFirstPlayer =
+      !firstPlayer ||
+      (currentOwnerName && firstPlayer === normalizePlayerName(currentOwnerName));
+
+    setForm({
+      ...form,
+      user_id: ownerId,
+      team1_player1_name: shouldReplaceFirstPlayer
+        ? nextOwnerName
+        : form.team1_player1_name,
+    });
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
-      <section className="w-full rounded-t-lg bg-[#fffdf8] p-5 shadow-xl sm:max-w-lg sm:rounded-lg">
+      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-5 shadow-xl sm:max-w-xl sm:rounded-lg">
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className="text-sm text-[#68756b]">Admin düzenleme</p>
@@ -3061,50 +3368,27 @@ function ReservationEditDialog({
         </div>
 
         <form className="grid gap-4" onSubmit={onSubmit}>
-          <div className="grid gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-[#34443a]">
-                Rezervasyon Bilgisi
-              </span>
-              <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
-                Özel
-                <input
-                  checked={form.is_custom}
-                  className="size-4"
-                  onChange={(event) =>
-                    setForm({ ...form, is_custom: event.target.checked })
-                  }
-                  type="checkbox"
-                />
-              </label>
-            </div>
-            {form.is_custom ? (
-              <input
-                className="input"
-                onChange={(event) =>
-                  setForm({ ...form, custom_info: event.target.value })
-                }
-                placeholder="Örn. Misafir oyuncu, turnuva, antrenman"
-                required
-                value={form.custom_info}
-              />
-            ) : (
-              <select
-                className="input"
-                onChange={(event) =>
-                  setForm({ ...form, user_id: event.target.value })
-                }
-                required
-                value={form.user_id}
-              >
-                {ownerOptions.map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {profileOptionLabel(owner)}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          <Field label="Bağlı üye">
+            <select
+              className="input"
+              onChange={(event) => handleOwnerChange(event.target.value)}
+              required
+              value={form.user_id}
+            >
+              {ownerOptions.map((owner) => (
+                <option key={owner.id} value={owner.id}>
+                  {profileOptionLabel(owner)}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <MatchSetupFields
+            form={form}
+            listId="reservation-edit-player-options"
+            ownerOptions={ownerOptions}
+            setForm={setForm}
+          />
 
           <Field label="Kort">
             <select
