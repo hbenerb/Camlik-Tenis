@@ -1528,10 +1528,63 @@ export function ClubApp() {
 
     const timer = window.setInterval(() => {
       void processDueNotifications(user, profile);
-    }, 30000);
+    }, 10000);
 
     return () => window.clearInterval(timer);
   }, [processDueNotifications, profile, user]);
+
+  useEffect(() => {
+    if (!user || !profile?.notification_enabled) {
+      return;
+    }
+
+    const currentProfile = profile;
+    const currentUser = user;
+
+    function processVisibleNotifications() {
+      if (document.visibilityState === "visible") {
+        void processDueNotifications(currentUser, currentProfile);
+      }
+    }
+
+    window.addEventListener("focus", processVisibleNotifications);
+    document.addEventListener("visibilitychange", processVisibleNotifications);
+
+    return () => {
+      window.removeEventListener("focus", processVisibleNotifications);
+      document.removeEventListener(
+        "visibilitychange",
+        processVisibleNotifications,
+      );
+    };
+  }, [processDueNotifications, profile, user]);
+
+  useEffect(() => {
+    if (!supabase || !user || !profile?.notification_enabled) {
+      return;
+    }
+
+    const currentProfile = profile;
+    const currentUser = user;
+    const channel = supabase
+      .channel(`app-notifications-${currentUser.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "app_notifications",
+        },
+        () => {
+          void processDueNotifications(currentUser, currentProfile);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [processDueNotifications, profile, supabase, user]);
 
   useEffect(() => {
     if (
