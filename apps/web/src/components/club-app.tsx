@@ -831,6 +831,21 @@ async function showBrowserNotification(
   new Notification(DEFAULT_NOTIFICATION_TITLE, options);
 }
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = `${base64String}${padding}`
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let index = 0; index < rawData.length; index += 1) {
+    outputArray[index] = rawData.charCodeAt(index);
+  }
+
+  return outputArray;
+}
+
 export function ClubApp() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [user, setUser] = useState<User | null>(null);
@@ -848,6 +863,8 @@ export function ClubApp() {
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermissionState>("unsupported");
   const [isNotificationPromptOpen, setIsNotificationPromptOpen] =
+    useState(false);
+  const [isPushSubscriptionSynced, setIsPushSubscriptionSynced] =
     useState(false);
   const [members, setMembers] = useState<Profile[]>([]);
   const [activeTab, setActiveTab] = useState<AppTab>("calendar");
@@ -953,6 +970,116 @@ export function ClubApp() {
       isReservationInRange(reservation, range.start, range.end),
     );
   }, [calendarView, reservations, selectedDate]);
+
+  const syncPushSubscription = useCallback(
+    async (currentUser: User, showErrors = false) => {
+      if (!supabase) {
+        return false;
+      }
+
+      const vapidPublicKey =
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ?? "";
+
+      if (!vapidPublicKey) {
+        if (showErrors) {
+          setStatusMessage(
+            "Web Push anahtarı Vercel ortam değişkenlerine eklenmeli.",
+          );
+        }
+        return false;
+      }
+
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        if (showErrors) {
+          setStatusMessage("Bu tarayıcı arka plan notification desteklemiyor.");
+        }
+        return false;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const existingSubscription =
+          await registration.pushManager.getSubscription();
+        const subscription =
+          existingSubscription ??
+          (await registration.pushManager.subscribe({
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+            userVisibleOnly: true,
+          }));
+        const subscriptionJson = subscription.toJSON();
+        const endpoint = subscriptionJson.endpoint;
+        const p256dh = subscriptionJson.keys?.p256dh;
+        const auth = subscriptionJson.keys?.auth;
+
+        if (!endpoint || !p256dh || !auth) {
+          if (showErrors) {
+            setStatusMessage("Notification aboneliği alınamadı.");
+          }
+          return false;
+        }
+
+        const { error } = await supabase.from("app_push_subscriptions").upsert(
+          {
+            auth,
+            endpoint,
+            p256dh,
+            user_agent: navigator.userAgent,
+            user_id: currentUser.id,
+          },
+          { onConflict: "endpoint" },
+        );
+
+        if (error) {
+          if (showErrors) {
+            setStatusMessage(
+              `${error.message} Push subscription SQL'i çalıştırılmalı.`,
+            );
+          }
+          return false;
+        }
+
+        setIsPushSubscriptionSynced(true);
+        return true;
+      } catch (error) {
+        if (showErrors) {
+          setStatusMessage(
+            error instanceof Error
+              ? error.message
+              : "Notification aboneliği oluşturulamadı.",
+          );
+        }
+        return false;
+      }
+    },
+    [supabase],
+  );
+
+  const removePushSubscription = useCallback(
+    async (currentUser: User) => {
+      if (!supabase || !("serviceWorker" in navigator)) {
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready.catch(() => null);
+      const subscription = await registration?.pushManager
+        .getSubscription()
+        .catch(() => null);
+
+      if (!subscription?.endpoint) {
+        setIsPushSubscriptionSynced(false);
+        return;
+      }
+
+      await supabase
+        .from("app_push_subscriptions")
+        .delete()
+        .eq("endpoint", subscription.endpoint)
+        .eq("user_id", currentUser.id);
+      await subscription.unsubscribe().catch(() => false);
+      setIsPushSubscriptionSynced(false);
+    },
+    [supabase],
+  );
 
   const toggleTheme = useCallback(() => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -1378,6 +1505,29 @@ export function ClubApp() {
   }, [processDueNotifications, profile, user]);
 
   useEffect(() => {
+    if (
+      !user ||
+      !profile?.notification_enabled ||
+      notificationPermission !== "granted" ||
+      isPushSubscriptionSynced
+    ) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      void syncPushSubscription(user);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [
+    isPushSubscriptionSynced,
+    notificationPermission,
+    profile?.notification_enabled,
+    syncPushSubscription,
+    user,
+  ]);
+
+  useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
       if (
         !user ||
@@ -1449,6 +1599,7 @@ export function ClubApp() {
     setAdminNotifications([]);
     setNotificationToast(null);
     setIsNotificationPromptOpen(false);
+    setIsPushSubscriptionSynced(false);
   }
 
   async function saveOwnProfile(event: FormEvent<HTMLFormElement>) {
@@ -1532,6 +1683,19 @@ export function ClubApp() {
       return;
     }
 
+    if (enabled && nextPermission !== "granted") {
+      setStatusMessage("Notification izni verilmeden bildirim açılamaz.");
+      return;
+    }
+
+    if (enabled) {
+      const didSyncPushSubscription = await syncPushSubscription(user, true);
+
+      if (!didSyncPushSubscription) {
+        return;
+      }
+    }
+
     setIsSaving(true);
     setStatusMessage(null);
 
@@ -1556,6 +1720,10 @@ export function ClubApp() {
     setStatusMessage(
       enabled ? "Notificationlar açıldı." : "Notificationlar kapatıldı.",
     );
+
+    if (!enabled) {
+      await removePushSubscription(user);
+    }
 
     if (enabled) {
       void processDueNotifications(user, updatedProfile);

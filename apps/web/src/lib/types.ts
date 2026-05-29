@@ -74,3 +74,14 @@ export type AppNotificationDelivery = {
   notification_id: string;
   occurrence_at: string;
 };
+
+export type AppPushSubscription = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+  updated_at: string;
+};
