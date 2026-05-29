@@ -1810,6 +1810,36 @@ export function ClubApp() {
     }
 
     const savedNotification = result.data as AppNotification;
+    let instantDispatchOk = true;
+    let instantDispatchSent = 0;
+
+    if (payload.schedule_type === "instant") {
+      instantDispatchOk = false;
+
+      const sessionResult = await supabase.auth.getSession();
+      const accessToken = sessionResult.data.session?.access_token;
+
+      if (accessToken) {
+        try {
+          const dispatchResponse = await fetch("/api/notifications/dispatch", {
+            body: JSON.stringify({ notificationId: savedNotification.id }),
+            headers: {
+              authorization: `Bearer ${accessToken}`,
+              "content-type": "application/json",
+            },
+            method: "POST",
+          });
+          const dispatchData = (await dispatchResponse
+            .json()
+            .catch(() => null)) as { sent?: number } | null;
+
+          instantDispatchOk = dispatchResponse.ok;
+          instantDispatchSent = Number(dispatchData?.sent ?? 0);
+        } catch {
+          instantDispatchOk = false;
+        }
+      }
+    }
 
     setAdminNotifications((current) =>
       sortNotifications(
@@ -1825,7 +1855,11 @@ export function ClubApp() {
 
     setStatusMessage(
       payload.schedule_type === "instant"
-        ? "Notification gönderildi."
+        ? instantDispatchOk
+          ? instantDispatchSent > 0
+            ? "Notification gönderildi."
+            : "Notification kaydedildi. Bildirim izni açık cihaz bulunamadı."
+          : "Notification kaydedildi ama push gönderimi tamamlanamadı."
         : "Notification ayarlandı.",
     );
     void processDueNotifications(user, profile);

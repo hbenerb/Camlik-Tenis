@@ -14,6 +14,9 @@ type DispatchCounters = {
   sent: number;
   stale: number;
 };
+type AdminProfileRow = {
+  app_role?: string | null;
+};
 
 function addMinutesToDate(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000);
@@ -129,61 +132,38 @@ async function sendPushToSubscriptions({
   return { didSend, sent, stale };
 }
 
-export async function GET(request: NextRequest) {
-  if (
-    !process.env.CRON_SECRET ||
-    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
-    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+async function dispatchDueNotifications({
+  notificationId,
+  now,
+  supabase,
+}: {
+  notificationId?: string;
+  now: Date;
+  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>;
+}) {
+  let notificationQuery = supabase
+    .from("app_notifications")
+    .select("*")
+    .eq("status", "active")
+    .lte("starts_at", now.toISOString());
+
+  if (notificationId) {
+    notificationQuery = notificationQuery.eq("id", notificationId);
   }
 
-  if (
-    !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-    !process.env.VAPID_PRIVATE_KEY
-  ) {
-    return Response.json(
-      { ok: false, error: "VAPID keys are not configured" },
-      { status: 500 },
-    );
-  }
-
-  const supabase = createSupabaseAdminClient();
-
-  if (!supabase) {
-    return Response.json(
-      { ok: false, error: "Supabase service role is not configured" },
-      { status: 500 },
-    );
-  }
-
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || "mailto:hbenerb@gmail.com",
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY,
-  );
-
-  const now = new Date();
   const [notificationsResult, subscriptionsResult] = await Promise.all([
-    supabase
-      .from("app_notifications")
-      .select("*")
-      .eq("status", "active")
-      .lte("starts_at", now.toISOString()),
+    notificationQuery,
     supabase
       .from("app_push_subscriptions")
       .select("*, profiles(notification_enabled)"),
   ]);
 
   if (notificationsResult.error || subscriptionsResult.error) {
-    return Response.json(
-      {
-        ok: false,
-        error:
-          notificationsResult.error?.message ??
-          subscriptionsResult.error?.message,
-      },
-      { status: 500 },
-    );
+    return {
+      counters: null,
+      error:
+        notificationsResult.error?.message ?? subscriptionsResult.error?.message,
+    };
   }
 
   const notifications =
@@ -247,6 +227,154 @@ export async function GET(request: NextRequest) {
         counters.deliveries += 1;
       }
     }
+  }
+
+  return { counters, error: null };
+}
+
+function getSupabaseAdminOrError() {
+  const supabase = createSupabaseAdminClient();
+
+  if (!supabase) {
+    return {
+      response: Response.json(
+        { ok: false, error: "Supabase service role is not configured" },
+        { status: 500 },
+      ),
+      supabase: null,
+    };
+  }
+
+  return { response: null, supabase };
+}
+
+function getVapidError() {
+  if (
+    !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+    !process.env.VAPID_PRIVATE_KEY
+  ) {
+    return Response.json(
+      { ok: false, error: "VAPID keys are not configured" },
+      { status: 500 },
+    );
+  }
+
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || "mailto:hbenerb@gmail.com",
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY,
+  );
+
+  return null;
+}
+
+export async function GET(request: NextRequest) {
+  if (
+    !process.env.CRON_SECRET ||
+    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const vapidError = getVapidError();
+
+  if (vapidError) {
+    return vapidError;
+  }
+
+  const { response, supabase } = getSupabaseAdminOrError();
+
+  if (response || !supabase) {
+    return response;
+  }
+
+  const { counters, error } = await dispatchDueNotifications({
+    now: new Date(),
+    supabase,
+  });
+
+  if (error || !counters) {
+    return Response.json({ ok: false, error }, { status: 500 });
+  }
+
+  return Response.json({
+    ok: true,
+    deliveries: counters.deliveries,
+    sent: counters.sent,
+    stale: counters.stale,
+  });
+}
+
+export async function POST(request: NextRequest) {
+  const vapidError = getVapidError();
+
+  if (vapidError) {
+    return vapidError;
+  }
+
+  const { response, supabase } = getSupabaseAdminOrError();
+
+  if (response || !supabase) {
+    return response;
+  }
+
+  const authorization = request.headers.get("authorization");
+  const accessToken = authorization?.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length)
+    : null;
+
+  if (!accessToken) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userResult = await supabase.auth.getUser(accessToken);
+  const user = userResult.data.user;
+
+  if (userResult.error || !user) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  const profileResult = await supabase
+    .from("profiles")
+    .select("app_role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileResult.error) {
+    return Response.json(
+      { ok: false, error: profileResult.error.message },
+      { status: 500 },
+    );
+  }
+
+  const adminProfile = profileResult.data as AdminProfileRow | null;
+
+  if (
+    adminProfile?.app_role !== "admin" &&
+    adminProfile?.app_role !== "super_admin"
+  ) {
+    return Response.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  }
+
+  const payload = (await request.json().catch(() => null)) as {
+    notificationId?: string;
+  } | null;
+
+  if (!payload?.notificationId) {
+    return Response.json(
+      { ok: false, error: "Notification id is required" },
+      { status: 400 },
+    );
+  }
+
+  const { counters, error } = await dispatchDueNotifications({
+    notificationId: payload.notificationId,
+    now: new Date(),
+    supabase,
+  });
+
+  if (error || !counters) {
+    return Response.json({ ok: false, error }, { status: 500 });
   }
 
   return Response.json({
