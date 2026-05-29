@@ -2,32 +2,18 @@ import type { NextRequest } from "next/server";
 import webpush from "web-push";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import type {
-  AppNotification,
-  AppPushSubscription,
-  AppReservationReminderDelivery,
-} from "@/lib/types";
+import type { AppNotification, AppPushSubscription } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 type PushSubscriptionRow = AppPushSubscription & {
   profiles?: { notification_enabled?: boolean | null } | null;
 };
-type ReservationReminderRow = {
-  id: string;
-  user_id: string;
-  created_at: string;
-  starts_at: string;
-  status: "confirmed" | "canceled";
-  courts?: { name?: string | null } | null;
-};
 type DispatchCounters = {
   deliveries: number;
   sent: number;
   stale: number;
 };
-
-const RESERVATION_REMINDER_MINUTES = [60, 30] as const;
 
 function addMinutesToDate(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000);
@@ -90,16 +76,6 @@ function groupSubscriptionsByUser(subscriptions: PushSubscriptionRow[]) {
   return subscriptionsByUser;
 }
 
-function formatReminderTime(date: Date) {
-  return new Intl.DateTimeFormat("tr-TR", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    timeZone: "Europe/Istanbul",
-  }).format(date);
-}
-
 async function sendPushToSubscriptions({
   body,
   tag,
@@ -151,118 +127,6 @@ async function sendPushToSubscriptions({
   }
 
   return { didSend, sent, stale };
-}
-
-async function dispatchReservationReminders(
-  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
-  subscriptionsByUser: Map<string, PushSubscriptionRow[]>,
-  now: Date,
-) {
-  const counters: DispatchCounters = {
-    deliveries: 0,
-    sent: 0,
-    stale: 0,
-  };
-  const latestReminderTime = addMinutesToDate(
-    now,
-    Math.max(...RESERVATION_REMINDER_MINUTES),
-  );
-
-  const reservationsResult = await supabase
-    .from("reservations")
-    .select("id, user_id, created_at, starts_at, status, courts(name)")
-    .eq("status", "confirmed")
-    .gt("starts_at", now.toISOString())
-    .lte("starts_at", latestReminderTime.toISOString());
-
-  if (reservationsResult.error) {
-    return counters;
-  }
-
-  const reservations =
-    (reservationsResult.data as ReservationReminderRow[] | null) ?? [];
-
-  for (const reservation of reservations) {
-    const userSubscriptions = subscriptionsByUser.get(reservation.user_id);
-
-    if (!userSubscriptions?.length) {
-      continue;
-    }
-
-    const startsAt = new Date(reservation.starts_at);
-    const createdAt = new Date(reservation.created_at);
-    const dueReminderMinutes = RESERVATION_REMINDER_MINUTES.filter(
-      (reminderMinutes, index) => {
-        const reminderAt = addMinutesToDate(startsAt, -reminderMinutes);
-        const nextReminderMinutes = RESERVATION_REMINDER_MINUTES[index + 1];
-        const reminderWindowEndsAt = nextReminderMinutes
-          ? addMinutesToDate(startsAt, -nextReminderMinutes)
-          : startsAt;
-
-        return (
-          createdAt <= reminderAt &&
-          now >= reminderAt &&
-          now < reminderWindowEndsAt
-        );
-      },
-    );
-
-    if (dueReminderMinutes.length === 0) {
-      continue;
-    }
-
-    const reminderDeliveriesResult = await supabase
-      .from("app_reservation_reminder_deliveries")
-      .select("reminder_minutes")
-      .eq("reservation_id", reservation.id)
-      .eq("user_id", reservation.user_id);
-
-    if (reminderDeliveriesResult.error) {
-      continue;
-    }
-
-    const deliveredReminderMinutes = new Set(
-      (
-        (reminderDeliveriesResult.data as
-          | AppReservationReminderDelivery[]
-          | null) ?? []
-      ).map((delivery) => delivery.reminder_minutes),
-    );
-
-    for (const reminderMinutes of dueReminderMinutes) {
-      if (deliveredReminderMinutes.has(reminderMinutes)) {
-        continue;
-      }
-
-      const courtName = reservation.courts?.name ?? "Kort";
-      const body =
-        reminderMinutes === 60
-          ? `${courtName} rezervasyonunuz 1 saat sonra başlıyor. Saat: ${formatReminderTime(startsAt)}`
-          : `${courtName} rezervasyonunuz 30 dakika sonra başlıyor. Saat: ${formatReminderTime(startsAt)}`;
-      const pushResult = await sendPushToSubscriptions({
-        body,
-        tag: `reservation:${reservation.id}:${reminderMinutes}`,
-        supabase,
-        subscriptions: userSubscriptions,
-      });
-
-      counters.sent += pushResult.sent;
-      counters.stale += pushResult.stale;
-
-      if (!pushResult.didSend) {
-        continue;
-      }
-
-      await supabase.from("app_reservation_reminder_deliveries").insert({
-        reminder_minutes: reminderMinutes,
-        reservation_id: reservation.id,
-        user_id: reservation.user_id,
-      });
-      counters.deliveries += 1;
-    }
-  }
-
-  return counters;
 }
 
 export async function GET(request: NextRequest) {
@@ -385,17 +249,10 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const reservationCounters = await dispatchReservationReminders(
-    supabase,
-    subscriptionsByUser,
-    now,
-  );
-
   return Response.json({
     ok: true,
-    deliveries: counters.deliveries + reservationCounters.deliveries,
-    reservationReminders: reservationCounters.deliveries,
-    sent: counters.sent + reservationCounters.sent,
-    stale: counters.stale + reservationCounters.stale,
+    deliveries: counters.deliveries,
+    sent: counters.sent,
+    stale: counters.stale,
   });
 }
