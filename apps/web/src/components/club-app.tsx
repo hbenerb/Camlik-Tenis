@@ -4070,9 +4070,9 @@ function AdminPanel({
         </form>
       </AdminFoldout>
 
-      <AdminFoldout icon={<Bell size={20} />} title="Notification">
+      <AdminFoldout icon={<Bell size={20} />} title="Bildirimler">
         <form className="grid gap-4" onSubmit={submitNotification}>
-          <Field label="Notification metni">
+          <Field label="Bildirim metni">
             <textarea
               className="input min-h-24 resize-y py-3"
               onChange={(event) =>
@@ -4233,7 +4233,7 @@ function AdminPanel({
               type="submit"
             >
               <Send size={16} />
-              Send
+              Gönder
             </button>
             {notificationDraft.id ? (
               <button
@@ -4250,12 +4250,12 @@ function AdminPanel({
         <div className="mt-6">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#34443a]">
             <CalendarClock size={17} />
-            Zamanlı / sürekli notificationlar
+            Zamanlı / sürekli bildirimler
           </div>
 
           {scheduledNotifications.length === 0 ? (
             <div className="rounded-md border border-[#eee7db] bg-white p-3 text-sm text-[#68756b]">
-              Aktif zamanlı veya sürekli notification yok.
+              Aktif zamanlı veya sürekli bildirim yok.
             </div>
           ) : (
             <div className="grid gap-2">
