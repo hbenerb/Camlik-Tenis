@@ -196,11 +196,16 @@ const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
 
 const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
 const THEME_STORAGE_KEY = "camlik-tenis-theme";
+const NOTIFICATION_PROMPT_STORAGE_PREFIX = "camlik-tenis-notification-prompt";
 const EMPTY_PLAYER_LABEL = "-";
 const DEFAULT_NOTIFICATION_TITLE = "Çamlık Tenis";
 
 function normalizeFullName(value: string) {
   return value.trim().replace(/\s+/g, " ");
+}
+
+function notificationPromptStorageKey(userId: string) {
+  return `${NOTIFICATION_PROMPT_STORAGE_PREFIX}:${userId}`;
 }
 
 function normalizeNullableFullName(value: string | null | undefined) {
@@ -842,6 +847,8 @@ export function ClubApp() {
     useState<NotificationToast | null>(null);
   const [notificationPermission, setNotificationPermission] =
     useState<NotificationPermissionState>("unsupported");
+  const [isNotificationPromptOpen, setIsNotificationPromptOpen] =
+    useState(false);
   const [members, setMembers] = useState<Profile[]>([]);
   const [activeTab, setActiveTab] = useState<AppTab>("calendar");
   const [calendarView, setCalendarView] = useState<CalendarView>("day");
@@ -1370,6 +1377,39 @@ export function ClubApp() {
     return () => window.clearInterval(timer);
   }, [processDueNotifications, profile, user]);
 
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      if (
+        !user ||
+        !profile ||
+        isLoading ||
+        mustCompleteProfile ||
+        isNotificationPromptOpen ||
+        notificationPermission === "unsupported" ||
+        notificationPermission === "denied" ||
+        !Object.prototype.hasOwnProperty.call(profile, "notification_enabled") ||
+        profile.notification_enabled
+      ) {
+        return;
+      }
+
+      if (window.localStorage.getItem(notificationPromptStorageKey(user.id))) {
+        return;
+      }
+
+      setIsNotificationPromptOpen(true);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [
+    isLoading,
+    isNotificationPromptOpen,
+    mustCompleteProfile,
+    notificationPermission,
+    profile,
+    user,
+  ]);
+
   async function signIn(provider: OAuthProvider) {
     if (!supabase) {
       return;
@@ -1408,6 +1448,7 @@ export function ClubApp() {
     setMembers([]);
     setAdminNotifications([]);
     setNotificationToast(null);
+    setIsNotificationPromptOpen(false);
   }
 
   async function saveOwnProfile(event: FormEvent<HTMLFormElement>) {
@@ -1519,6 +1560,23 @@ export function ClubApp() {
     if (enabled) {
       void processDueNotifications(user, updatedProfile);
     }
+  }
+
+  function dismissNotificationPrompt() {
+    if (user) {
+      window.localStorage.setItem(notificationPromptStorageKey(user.id), "1");
+    }
+
+    setIsNotificationPromptOpen(false);
+  }
+
+  async function enableNotificationsFromPrompt() {
+    if (user) {
+      window.localStorage.setItem(notificationPromptStorageKey(user.id), "1");
+    }
+
+    setIsNotificationPromptOpen(false);
+    await saveNotificationPreference(true);
   }
 
   async function saveAdminNotification(
@@ -2573,6 +2631,14 @@ export function ClubApp() {
           ) : null}
         </section>
       </div>
+
+      {isNotificationPromptOpen ? (
+        <NotificationOptInDialog
+          isSaving={isSaving}
+          onClose={dismissNotificationPrompt}
+          onEnable={enableNotificationsFromPrompt}
+        />
+      ) : null}
 
       {isReservationOpen ? (
         <ReservationDialog
@@ -4436,6 +4502,67 @@ function LessonSetupFields<T extends ReservationFormState>({
           ))}
         </select>
       </div>
+    </div>
+  );
+}
+
+function NotificationOptInDialog({
+  isSaving,
+  onClose,
+  onEnable,
+}: {
+  isSaving: boolean;
+  onClose: () => void;
+  onEnable: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
+      <section className="w-full rounded-t-lg bg-[#fffdf8] p-4 shadow-xl sm:max-w-md sm:rounded-lg">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="flex min-w-0 gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#e6f0e7] text-[#237000]">
+              <Bell size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm text-[#68756b]">Notificationlar</p>
+              <h2 className="text-xl font-semibold">Duyuruları aç</h2>
+            </div>
+          </div>
+          <button
+            aria-label="Kapat"
+            className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] hover:bg-[#eee9dd]"
+            onClick={onClose}
+            title="Kapat"
+            type="button"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <p className="text-sm leading-6 text-[#546257]">
+          Kulüp duyurularını ve önemli bilgilendirmeleri almak için
+          notificationları açabilirsiniz.
+        </p>
+
+        <div className="mt-5 grid gap-2 sm:grid-cols-2">
+          <button
+            className="secondary-button"
+            disabled={isSaving}
+            onClick={onClose}
+            type="button"
+          >
+            Şimdilik hayır
+          </button>
+          <button
+            className="primary-button"
+            disabled={isSaving}
+            onClick={onEnable}
+            type="button"
+          >
+            Aç
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
