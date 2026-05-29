@@ -1,4 +1,4 @@
-const CACHE_NAME = "camlik-tenis-v3";
+const CACHE_NAME = "camlik-tenis-v4";
 const SHELL_ASSETS = [
   "/",
   "/manifest.webmanifest",
@@ -78,4 +78,49 @@ self.addEventListener("fetch", (event) => {
       }),
     );
   }
+});
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {};
+  }
+
+  const title = payload.title || "Çamlık Tenis";
+  const options = {
+    body: payload.body || payload.message || "",
+    badge: "/tenis-icon-192.png",
+    data: {
+      url: payload.url || "/",
+    },
+    icon: "/tenis-icon-192.png",
+    tag: payload.tag || "camlik-tenis-notification",
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const appClient = clients.find((client) => {
+        const clientUrl = new URL(client.url);
+        return clientUrl.origin === self.location.origin;
+      });
+
+      if (appClient) {
+        appClient.focus();
+        return;
+      }
+
+      return self.clients.openWindow(targetUrl);
+    }),
+  );
 });

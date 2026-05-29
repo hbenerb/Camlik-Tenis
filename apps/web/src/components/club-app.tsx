@@ -14,7 +14,9 @@ import {
 } from "date-fns";
 import {
   Apple,
+  Bell,
   CalendarDays,
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -23,6 +25,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
   Sun,
@@ -52,9 +55,12 @@ import {
 } from "@/lib/time";
 import type {
   AppRole,
+  AppNotification,
+  AppNotificationDelivery,
   CalendarView,
   ClubSettings,
   Court,
+  NotificationScheduleType,
   Profile,
   Reservation,
   ReservationStatus,
@@ -104,6 +110,32 @@ type ReservationFormState = {
 type ReservationEditFormState = ReservationFormState & {
   status: ReservationStatus;
 };
+type NotificationIntervalUnit = "minutes" | "hours" | "days";
+type AdminNotificationDraft = {
+  id: string | null;
+  interval_count: number;
+  interval_unit: NotificationIntervalUnit;
+  message: string;
+  schedule_type: NotificationScheduleType;
+  starts_date: string;
+  starts_time: string;
+  expires_date: string;
+  expires_time: string;
+};
+type AdminNotificationPayload = {
+  id?: string;
+  interval_minutes: number | null;
+  expires_at: string | null;
+  message: string;
+  schedule_type: NotificationScheduleType;
+  starts_at: string;
+};
+type NotificationPermissionState = NotificationPermission | "unsupported";
+type NotificationToast = {
+  id: string;
+  message: string;
+  occurrence_at: string;
+};
 
 const defaultSettings: ClubSettings = {
   id: 1,
@@ -135,6 +167,24 @@ const matchTypeLabels: Record<MatchType, string> = {
   doubles: "Çiftler",
 };
 
+const notificationScheduleTypeLabels: Record<NotificationScheduleType, string> = {
+  instant: "Anında",
+  scheduled: "Zamanlı",
+  recurring: "Sürekli",
+};
+
+const notificationIntervalUnitLabels: Record<NotificationIntervalUnit, string> = {
+  minutes: "Dakika",
+  hours: "Saat",
+  days: "Gün",
+};
+
+const notificationIntervalUnitMinutes: Record<NotificationIntervalUnit, number> = {
+  minutes: 1,
+  hours: 60,
+  days: 1440,
+};
+
 const skillLevelLabels: Record<SkillLevel, string> = {
   beginner: "Başlangıç",
   intermediate: "Orta",
@@ -147,6 +197,7 @@ const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
 const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
 const THEME_STORAGE_KEY = "camlik-tenis-theme";
 const EMPTY_PLAYER_LABEL = "-";
+const DEFAULT_NOTIFICATION_TITLE = "Çamlık Tenis";
 
 function normalizeFullName(value: string) {
   return value.trim().replace(/\s+/g, " ");
@@ -571,6 +622,210 @@ function visibleDayAvailability(
     : "future";
 }
 
+function dateTimeInputParts(date: Date) {
+  return {
+    date: dateInputValue(date),
+    time: formatTime(date),
+  };
+}
+
+function addMinutesToDate(date: Date, minutes: number) {
+  return new Date(date.getTime() + minutes * 60 * 1000);
+}
+
+function defaultNotificationDraft(): AdminNotificationDraft {
+  const startsAt = addMinutesToDate(new Date(), 60);
+  const startParts = dateTimeInputParts(startsAt);
+
+  return {
+    id: null,
+    interval_count: 1,
+    interval_unit: "days",
+    message: "",
+    schedule_type: "instant",
+    starts_date: startParts.date,
+    starts_time: startParts.time,
+    expires_date: "",
+    expires_time: "",
+  };
+}
+
+function intervalPartsFromMinutes(minutes: number | null) {
+  if (!minutes) {
+    return { count: 1, unit: "days" as NotificationIntervalUnit };
+  }
+
+  if (minutes % notificationIntervalUnitMinutes.days === 0) {
+    return {
+      count: minutes / notificationIntervalUnitMinutes.days,
+      unit: "days" as NotificationIntervalUnit,
+    };
+  }
+
+  if (minutes % notificationIntervalUnitMinutes.hours === 0) {
+    return {
+      count: minutes / notificationIntervalUnitMinutes.hours,
+      unit: "hours" as NotificationIntervalUnit,
+    };
+  }
+
+  return {
+    count: minutes,
+    unit: "minutes" as NotificationIntervalUnit,
+  };
+}
+
+function draftFromNotification(
+  notification: AppNotification,
+): AdminNotificationDraft {
+  const startsAt = dateTimeInputParts(new Date(notification.starts_at));
+  const expiresAt = notification.expires_at
+    ? dateTimeInputParts(new Date(notification.expires_at))
+    : { date: "", time: "" };
+  const intervalParts = intervalPartsFromMinutes(notification.interval_minutes);
+
+  return {
+    id: notification.id,
+    interval_count: intervalParts.count,
+    interval_unit: intervalParts.unit,
+    message: notification.message,
+    schedule_type: notification.schedule_type,
+    starts_date: startsAt.date,
+    starts_time: startsAt.time,
+    expires_date: expiresAt.date,
+    expires_time: expiresAt.time,
+  };
+}
+
+function notificationDraftToPayload(
+  draft: AdminNotificationDraft,
+): AdminNotificationPayload {
+  const message = normalizeFullName(draft.message);
+  const now = new Date();
+  const startsAt =
+    draft.schedule_type === "instant"
+      ? now
+      : buildLocalDateTime(draft.starts_date, draft.starts_time);
+  const intervalMinutes =
+    draft.schedule_type === "recurring"
+      ? Math.max(1, Number(draft.interval_count) || 1) *
+        notificationIntervalUnitMinutes[draft.interval_unit]
+      : null;
+  const expiresAt =
+    draft.schedule_type === "recurring"
+      ? draft.expires_date
+        ? buildLocalDateTime(
+            draft.expires_date,
+            draft.expires_time || "23:59",
+          )
+        : null
+      : addMinutesToDate(startsAt, 7 * 24 * 60);
+
+  return {
+    ...(draft.id ? { id: draft.id } : {}),
+    interval_minutes: intervalMinutes,
+    expires_at: expiresAt ? expiresAt.toISOString() : null,
+    message,
+    schedule_type: draft.schedule_type,
+    starts_at: startsAt.toISOString(),
+  };
+}
+
+function getNotificationOccurrence(
+  notification: AppNotification,
+  currentTime: Date,
+) {
+  const startsAt = new Date(notification.starts_at);
+  const expiresAt = notification.expires_at
+    ? new Date(notification.expires_at)
+    : null;
+
+  if (startsAt > currentTime) {
+    return null;
+  }
+
+  if (expiresAt && expiresAt < currentTime) {
+    return null;
+  }
+
+  if (notification.schedule_type !== "recurring") {
+    return startsAt;
+  }
+
+  if (!notification.interval_minutes || notification.interval_minutes < 1) {
+    return null;
+  }
+
+  const elapsedMinutes = Math.floor(
+    (currentTime.getTime() - startsAt.getTime()) / 60000,
+  );
+  const occurrenceOffset =
+    Math.floor(elapsedMinutes / notification.interval_minutes) *
+    notification.interval_minutes;
+  const occurrenceAt = addMinutesToDate(startsAt, occurrenceOffset);
+
+  if (expiresAt && occurrenceAt > expiresAt) {
+    return null;
+  }
+
+  return occurrenceAt;
+}
+
+function notificationDeliveryKey(notificationId: string, occurrenceAt: Date) {
+  return `${notificationId}:${occurrenceAt.toISOString()}`;
+}
+
+function sortNotifications(notifications: AppNotification[]) {
+  return [...notifications].sort(
+    (first, second) =>
+      new Date(first.starts_at).getTime() - new Date(second.starts_at).getTime(),
+  );
+}
+
+function formatNotificationDate(value: string) {
+  const date = new Date(value);
+  return `${format(date, "dd.MM.yyyy")} ${formatTime(date)}`;
+}
+
+function formatNotificationInterval(minutes: number | null) {
+  const intervalParts = intervalPartsFromMinutes(minutes);
+  return `${intervalParts.count} ${
+    notificationIntervalUnitLabels[intervalParts.unit]
+  }`;
+}
+
+async function showBrowserNotification(
+  notification: NotificationToast,
+  permission: NotificationPermissionState,
+) {
+  if (
+    typeof window === "undefined" ||
+    permission !== "granted" ||
+    !("Notification" in window)
+  ) {
+    return;
+  }
+
+  const options: NotificationOptions = {
+    body: notification.message,
+    icon: "/tenis-icon-192.png",
+    badge: "/tenis-icon-192.png",
+    tag: notificationDeliveryKey(notification.id, new Date(notification.occurrence_at)),
+  };
+
+  if ("serviceWorker" in navigator) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(DEFAULT_NOTIFICATION_TITLE, options);
+      return;
+    } catch {
+      // Native Notification below is the fallback for browsers without an active SW.
+    }
+  }
+
+  new Notification(DEFAULT_NOTIFICATION_TITLE, options);
+}
+
 export function ClubApp() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [user, setUser] = useState<User | null>(null);
@@ -580,6 +835,13 @@ export function ClubApp() {
     useState<ClubSettings>(defaultSettings);
   const [courts, setCourts] = useState<Court[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [adminNotifications, setAdminNotifications] = useState<AppNotification[]>(
+    [],
+  );
+  const [notificationToast, setNotificationToast] =
+    useState<NotificationToast | null>(null);
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermissionState>("unsupported");
   const [members, setMembers] = useState<Profile[]>([]);
   const [activeTab, setActiveTab] = useState<AppTab>("calendar");
   const [calendarView, setCalendarView] = useState<CalendarView>("day");
@@ -706,6 +968,19 @@ export function ClubApp() {
   }, []);
 
   useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      if (!("Notification" in window)) {
+        setNotificationPermission("unsupported");
+        return;
+      }
+
+      setNotificationPermission(Notification.permission);
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
+
+  useEffect(() => {
     function handleButtonTouch(event: PointerEvent) {
       if (event.pointerType === "mouse") {
         return;
@@ -801,6 +1076,86 @@ export function ClubApp() {
       theme === "light",
     );
   }, [isThemeReady, theme]);
+
+  const processDueNotifications = useCallback(
+    async (currentUser: User, currentProfile: Profile | null) => {
+      if (!supabase || !currentProfile?.notification_enabled) {
+        return;
+      }
+
+      const now = new Date();
+      const [notificationsResult, deliveriesResult] = await Promise.all([
+        supabase
+          .from("app_notifications")
+          .select("*")
+          .eq("status", "active")
+          .lte("starts_at", now.toISOString())
+          .order("starts_at", { ascending: true }),
+        supabase
+          .from("app_notification_deliveries")
+          .select("notification_id, occurrence_at")
+          .eq("user_id", currentUser.id),
+      ]);
+
+      if (notificationsResult.error || deliveriesResult.error) {
+        return;
+      }
+
+      const deliveredKeys = new Set(
+        ((deliveriesResult.data as AppNotificationDelivery[] | null) ?? []).map(
+          (delivery) =>
+            notificationDeliveryKey(
+              delivery.notification_id,
+              new Date(delivery.occurrence_at),
+            ),
+        ),
+      );
+
+      const dueNotifications =
+        (notificationsResult.data as AppNotification[] | null) ?? [];
+
+      for (const notification of dueNotifications) {
+        const occurrenceAt = getNotificationOccurrence(notification, now);
+
+        if (!occurrenceAt) {
+          continue;
+        }
+
+        const deliveryKey = notificationDeliveryKey(
+          notification.id,
+          occurrenceAt,
+        );
+
+        if (deliveredKeys.has(deliveryKey)) {
+          continue;
+        }
+
+        const { error } = await supabase
+          .from("app_notification_deliveries")
+          .insert({
+            notification_id: notification.id,
+            occurrence_at: occurrenceAt.toISOString(),
+            user_id: currentUser.id,
+          });
+
+        if (error) {
+          continue;
+        }
+
+        deliveredKeys.add(deliveryKey);
+
+        const toast = {
+          id: notification.id,
+          message: notification.message,
+          occurrence_at: occurrenceAt.toISOString(),
+        };
+
+        setNotificationToast(toast);
+        void showBrowserNotification(toast, notificationPermission);
+      }
+    },
+    [notificationPermission, supabase],
+  );
 
   const loadData = useCallback(async (currentUser: User) => {
     if (!supabase) {
@@ -907,13 +1262,20 @@ export function ClubApp() {
       .order("starts_at", { ascending: true });
 
     let loadedMembers: Profile[] = [];
+    let loadedNotifications: AppNotification[] = [];
 
     if (isAdmin(loadedProfile)) {
-      const memberResult = await supabase
-        .from("profiles")
-        .select("*")
-        .order("full_name", { ascending: true, nullsFirst: false })
-        .order("email", { ascending: true });
+      const [memberResult, notificationResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .order("full_name", { ascending: true, nullsFirst: false })
+          .order("email", { ascending: true }),
+        supabase
+          .from("app_notifications")
+          .select("*")
+          .order("starts_at", { ascending: true }),
+      ]);
 
       if (memberResult.error) {
         setStatusMessage(memberResult.error.message);
@@ -921,8 +1283,17 @@ export function ClubApp() {
         loadedMembers = (memberResult.data as Profile[] | null) ?? [];
         setMembers(loadedMembers);
       }
+
+      if (notificationResult.error) {
+        setAdminNotifications([]);
+      } else {
+        loadedNotifications =
+          (notificationResult.data as AppNotification[] | null) ?? [];
+        setAdminNotifications(sortNotifications(loadedNotifications));
+      }
     } else {
       setMembers([]);
+      setAdminNotifications([]);
     }
 
     if (reservationResult.error) {
@@ -939,7 +1310,8 @@ export function ClubApp() {
     }
 
     setIsLoading(false);
-  }, [supabase]);
+    void processDueNotifications(currentUser, loadedProfile);
+  }, [processDueNotifications, supabase]);
 
   useEffect(() => {
     if (!supabase) {
@@ -986,6 +1358,18 @@ export function ClubApp() {
     return () => window.clearTimeout(timer);
   }, [loadData, user]);
 
+  useEffect(() => {
+    if (!user || !profile?.notification_enabled) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      void processDueNotifications(user, profile);
+    }, 30000);
+
+    return () => window.clearInterval(timer);
+  }, [processDueNotifications, profile, user]);
+
   async function signIn(provider: OAuthProvider) {
     if (!supabase) {
       return;
@@ -1022,6 +1406,8 @@ export function ClubApp() {
     setProfileForm({ full_name: "", skill_level: "beginner" });
     setReservations([]);
     setMembers([]);
+    setAdminNotifications([]);
+    setNotificationToast(null);
   }
 
   async function saveOwnProfile(event: FormEvent<HTMLFormElement>) {
@@ -1075,6 +1461,186 @@ export function ClubApp() {
     setActiveTab("calendar");
     await loadData(user);
     setStatusMessage("Profil güncellendi.");
+  }
+
+  async function saveNotificationPreference(enabled: boolean) {
+    if (!supabase || !user || !profile) {
+      return;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(profile, "notification_enabled")) {
+      setStatusMessage("Notification SQL'i henüz Supabase'de çalıştırılmadı.");
+      return;
+    }
+
+    let nextPermission = notificationPermission;
+
+    if (enabled && "Notification" in window) {
+      if (Notification.permission === "default") {
+        nextPermission = await Notification.requestPermission();
+        setNotificationPermission(nextPermission);
+      } else {
+        nextPermission = Notification.permission;
+      }
+    }
+
+    if (enabled && nextPermission === "denied") {
+      setStatusMessage(
+        "Tarayıcı notification izni kapalı. Telefon veya tarayıcı ayarlarından izin vermek gerekiyor.",
+      );
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+
+    const { data, error } = await supabase.rpc(
+      "update_own_notification_preference",
+      {
+        profile_notification_enabled: enabled,
+      },
+    );
+
+    setIsSaving(false);
+
+    if (error) {
+      setStatusMessage(
+        `${error.message} Notification SQL'i Supabase'de çalıştırılmalı.`,
+      );
+      return;
+    }
+
+    const updatedProfile = data as Profile;
+    setProfile(updatedProfile);
+    setStatusMessage(
+      enabled ? "Notificationlar açıldı." : "Notificationlar kapatıldı.",
+    );
+
+    if (enabled) {
+      void processDueNotifications(user, updatedProfile);
+    }
+  }
+
+  async function saveAdminNotification(
+    payload: AdminNotificationPayload,
+  ): Promise<boolean> {
+    if (!supabase || !user || !isAdmin(profile)) {
+      return false;
+    }
+
+    if (!payload.message) {
+      setStatusMessage("Notification metni boş olamaz.");
+      return false;
+    }
+
+    const startsAt = new Date(payload.starts_at);
+    const expiresAt = payload.expires_at ? new Date(payload.expires_at) : null;
+
+    if (payload.schedule_type === "scheduled" && startsAt <= new Date()) {
+      setStatusMessage("Zamanlı notification için gelecek bir tarih seçilmeli.");
+      return false;
+    }
+
+    if (payload.schedule_type === "recurring" && expiresAt && expiresAt < startsAt) {
+      setStatusMessage("Sürekli notification bitiş zamanı başlangıçtan önce olamaz.");
+      return false;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+
+    const notificationPayload = {
+      expires_at: payload.expires_at,
+      interval_minutes: payload.interval_minutes,
+      message: payload.message,
+      schedule_type: payload.schedule_type,
+      starts_at: payload.starts_at,
+      status: "active",
+    };
+
+    const result = payload.id
+      ? await supabase
+          .from("app_notifications")
+          .update(notificationPayload)
+          .eq("id", payload.id)
+          .select("*")
+          .single()
+      : await supabase
+          .from("app_notifications")
+          .insert({
+            ...notificationPayload,
+            created_by: user.id,
+          })
+          .select("*")
+          .single();
+
+    setIsSaving(false);
+
+    if (result.error || !result.data) {
+      setStatusMessage(
+        `${result.error?.message ?? "Notification kaydedilemedi."} Notification SQL'i Supabase'de çalıştırılmalı.`,
+      );
+      return false;
+    }
+
+    const savedNotification = result.data as AppNotification;
+
+    setAdminNotifications((current) =>
+      sortNotifications(
+        payload.id
+          ? current.map((notification) =>
+              notification.id === savedNotification.id
+                ? savedNotification
+                : notification,
+            )
+          : [...current, savedNotification],
+      ),
+    );
+
+    setStatusMessage(
+      payload.schedule_type === "instant"
+        ? "Notification gönderildi."
+        : "Notification ayarlandı.",
+    );
+    void processDueNotifications(user, profile);
+
+    return true;
+  }
+
+  async function cancelAdminNotification(notification: AppNotification) {
+    if (!supabase || !isAdmin(profile)) {
+      return;
+    }
+
+    const shouldCancel = window.confirm("Bu notification iptal edilsin mi?");
+
+    if (!shouldCancel) {
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("app_notifications")
+      .update({ status: "canceled" })
+      .eq("id", notification.id)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      setStatusMessage(
+        `${error?.message ?? "Notification iptal edilemedi."} Notification SQL'i Supabase'de çalıştırılmalı.`,
+      );
+      return;
+    }
+
+    const canceledNotification = data as AppNotification;
+    setAdminNotifications((current) =>
+      current.map((currentNotification) =>
+        currentNotification.id === canceledNotification.id
+          ? canceledNotification
+          : currentNotification,
+      ),
+    );
+    setStatusMessage("Notification iptal edildi.");
   }
 
   function openReservationForm(courtId?: string, date?: Date, slot?: string) {
@@ -1896,6 +2462,23 @@ export function ClubApp() {
         </aside>
 
         <section className="mx-auto w-full min-w-0 max-w-5xl">
+          {notificationToast ? (
+            <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-[#9ec596] bg-[#f0f8ef] px-4 py-3 text-sm text-[#1f6500]">
+              <div className="min-w-0">
+                <p className="font-semibold">Notification</p>
+                <p className="mt-1 leading-5">{notificationToast.message}</p>
+              </div>
+              <button
+                aria-label="Notification kapat"
+                className="grid size-8 shrink-0 place-items-center rounded-md hover:bg-[#e3f1df]"
+                onClick={() => setNotificationToast(null)}
+                type="button"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : null}
+
           {statusMessage ? (
             <div className="mb-4 rounded-md border border-[#d9c799] bg-[#fff8df] px-4 py-3 text-sm text-[#5f4b19]">
               {statusMessage}
@@ -1954,6 +2537,8 @@ export function ClubApp() {
               isSaving={isSaving}
               isSchemaReady={isProfileSchemaReady}
               onFormChange={setProfileForm}
+              notificationPermission={notificationPermission}
+              onNotificationPreferenceChange={saveNotificationPreference}
               onSubmit={saveOwnProfile}
               profile={profile}
             />
@@ -1961,6 +2546,7 @@ export function ClubApp() {
 
           {!isLoading && visibleActiveTab === "admin" && profile && isAdmin(profile) ? (
             <AdminPanel
+              adminNotifications={adminNotifications}
               courts={courts}
               currentProfile={profile}
               isSaving={isSaving}
@@ -1977,6 +2563,8 @@ export function ClubApp() {
               onMemberUpdate={updateMember}
               onNewCourtNameChange={setNewCourtName}
               onDeleteCourt={deleteCourt}
+              onCancelNotification={cancelAdminNotification}
+              onSaveNotification={saveAdminNotification}
               onSaveCourt={saveCourt}
               onSaveSettings={saveSettings}
               onSettingsDraftChange={setSettingsDraft}
@@ -2770,7 +3358,9 @@ function ProfilePanel({
   isRequired,
   isSaving,
   isSchemaReady,
+  notificationPermission,
   onFormChange,
+  onNotificationPreferenceChange,
   onSubmit,
   profile,
 }: {
@@ -2778,10 +3368,17 @@ function ProfilePanel({
   isRequired: boolean;
   isSaving: boolean;
   isSchemaReady: boolean;
+  notificationPermission: NotificationPermissionState;
   onFormChange: (form: { full_name: string; skill_level: SkillLevel }) => void;
+  onNotificationPreferenceChange: (enabled: boolean) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   profile: Profile;
 }) {
+  const notificationSchemaReady = Object.prototype.hasOwnProperty.call(
+    profile,
+    "notification_enabled",
+  );
+
   return (
     <section className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-5">
       <div className="mb-5 flex items-start gap-3">
@@ -2848,36 +3445,78 @@ function ProfilePanel({
           Profili kaydet
         </button>
       </form>
+
+      <div className="mt-5 rounded-md border border-[#eee7db] bg-white p-3 sm:max-w-lg">
+        <label className="flex items-center justify-between gap-3">
+          <span>
+            <span className="block text-sm font-semibold">Notificationlar</span>
+            <span className="mt-1 block text-xs leading-5 text-[#68756b]">
+              Admin duyuruları için tarayıcı bildirimi.
+            </span>
+          </span>
+          <input
+            checked={Boolean(profile.notification_enabled)}
+            className="size-5"
+            disabled={isSaving || !notificationSchemaReady}
+            onChange={(event) =>
+              onNotificationPreferenceChange(event.target.checked)
+            }
+            type="checkbox"
+          />
+        </label>
+        {!notificationSchemaReady ? (
+          <p className="mt-2 text-xs font-medium text-[#a0543b]">
+            {"Notification SQL'i Supabase'de çalıştırılınca aktifleşecek."}
+          </p>
+        ) : null}
+        {notificationSchemaReady && notificationPermission === "denied" ? (
+          <p className="mt-2 text-xs font-medium text-[#a0543b]">
+            Tarayıcı izni kapalı. Açmak için telefon veya tarayıcı ayarlarından
+            izin vermek gerekiyor.
+          </p>
+        ) : null}
+        {notificationSchemaReady && notificationPermission === "unsupported" ? (
+          <p className="mt-2 text-xs font-medium text-[#a0543b]">
+            Bu tarayıcı notification desteklemiyor.
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }
 
 function AdminPanel({
+  adminNotifications,
   courts,
   currentProfile,
   isSaving,
   members,
   newCourtName,
   onAddCourt,
+  onCancelNotification,
   onCourtChange,
   onDeleteCourt,
   onMemberUpdate,
   onNewCourtNameChange,
+  onSaveNotification,
   onSaveCourt,
   onSaveSettings,
   onSettingsDraftChange,
   settingsDraft,
 }: {
+  adminNotifications: AppNotification[];
   courts: Court[];
   currentProfile: Profile;
   isSaving: boolean;
   members: Profile[];
   newCourtName: string;
   onAddCourt: (event: FormEvent<HTMLFormElement>) => void;
+  onCancelNotification: (notification: AppNotification) => void;
   onCourtChange: (courtId: string, fields: Partial<Court>) => void;
   onDeleteCourt: (court: Court) => void;
   onMemberUpdate: (memberId: string, fields: Partial<Profile>) => void;
   onNewCourtNameChange: (value: string) => void;
+  onSaveNotification: (payload: AdminNotificationPayload) => Promise<boolean>;
   onSaveCourt: (courtId: string) => void;
   onSaveSettings: (event: FormEvent<HTMLFormElement>) => void;
   onSettingsDraftChange: (settings: ClubSettings) => void;
@@ -2929,6 +3568,34 @@ function AdminPanel({
     Number(trainerFilter !== "all") +
     Number(bookingFilter !== "all");
   const hasMemberFilters = activeMemberFilterCount > 0;
+  const [notificationDraft, setNotificationDraft] = useState(
+    defaultNotificationDraft,
+  );
+  const scheduledNotifications = adminNotifications.filter((notification) => {
+    if (notification.status !== "active") {
+      return false;
+    }
+
+    if (notification.schedule_type === "recurring") {
+      return true;
+    }
+
+    return (
+      notification.schedule_type === "scheduled" &&
+      new Date(notification.starts_at) > new Date()
+    );
+  });
+
+  async function submitNotification(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const didSave = await onSaveNotification(
+      notificationDraftToPayload(notificationDraft),
+    );
+
+    if (didSave) {
+      setNotificationDraft(defaultNotificationDraft());
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -3041,6 +3708,247 @@ function AdminPanel({
             </button>
           </div>
         </form>
+      </AdminFoldout>
+
+      <AdminFoldout icon={<Bell size={20} />} title="Notification">
+        <form className="grid gap-4" onSubmit={submitNotification}>
+          <Field label="Notification metni">
+            <textarea
+              className="input min-h-24 resize-y py-3"
+              onChange={(event) =>
+                setNotificationDraft({
+                  ...notificationDraft,
+                  message: event.target.value,
+                })
+              }
+              placeholder="Kullanıcılara gönderilecek metin"
+              required
+              value={notificationDraft.message}
+            />
+          </Field>
+
+          <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
+            {(Object.keys(notificationScheduleTypeLabels) as NotificationScheduleType[]).map(
+              (scheduleType) => (
+                <button
+                  className={`h-10 rounded px-2 text-sm font-semibold ${
+                    notificationDraft.schedule_type === scheduleType
+                      ? "bg-[#237000] text-white"
+                      : "text-[#546257] hover:bg-[#eee9dd]"
+                  }`}
+                  key={scheduleType}
+                  onClick={() =>
+                    setNotificationDraft({
+                      ...notificationDraft,
+                      schedule_type: scheduleType,
+                    })
+                  }
+                  type="button"
+                >
+                  {notificationScheduleTypeLabels[scheduleType]}
+                </button>
+              ),
+            )}
+          </div>
+
+          {notificationDraft.schedule_type !== "instant" ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              <Field
+                label={
+                  notificationDraft.schedule_type === "recurring"
+                    ? "Başlangıç tarihi"
+                    : "Gönderim tarihi"
+                }
+              >
+                <input
+                  className="input"
+                  onChange={(event) =>
+                    setNotificationDraft({
+                      ...notificationDraft,
+                      starts_date: event.target.value,
+                    })
+                  }
+                  required
+                  type="date"
+                  value={notificationDraft.starts_date}
+                />
+              </Field>
+              <Field
+                label={
+                  notificationDraft.schedule_type === "recurring"
+                    ? "Başlangıç saati"
+                    : "Gönderim saati"
+                }
+              >
+                <input
+                  className="input"
+                  onChange={(event) =>
+                    setNotificationDraft({
+                      ...notificationDraft,
+                      starts_time: event.target.value,
+                    })
+                  }
+                  required
+                  type="time"
+                  value={notificationDraft.starts_time}
+                />
+              </Field>
+            </div>
+          ) : null}
+
+          {notificationDraft.schedule_type === "recurring" ? (
+            <div className="grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 md:grid-cols-2">
+              <Field label="Aralık">
+                <div className="grid grid-cols-[1fr_120px] gap-2">
+                  <input
+                    className="input"
+                    min={1}
+                    onChange={(event) =>
+                      setNotificationDraft({
+                        ...notificationDraft,
+                        interval_count: Number(event.target.value),
+                      })
+                    }
+                    required
+                    type="number"
+                    value={notificationDraft.interval_count}
+                  />
+                  <select
+                    className="input"
+                    onChange={(event) =>
+                      setNotificationDraft({
+                        ...notificationDraft,
+                        interval_unit:
+                          event.target.value as NotificationIntervalUnit,
+                      })
+                    }
+                    value={notificationDraft.interval_unit}
+                  >
+                    {(Object.keys(notificationIntervalUnitLabels) as NotificationIntervalUnit[]).map(
+                      (unit) => (
+                        <option key={unit} value={unit}>
+                          {notificationIntervalUnitLabels[unit]}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+              </Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Bitiş tarihi">
+                  <input
+                    className="input"
+                    onChange={(event) =>
+                      setNotificationDraft({
+                        ...notificationDraft,
+                        expires_date: event.target.value,
+                      })
+                    }
+                    type="date"
+                    value={notificationDraft.expires_date}
+                  />
+                </Field>
+                <Field label="Bitiş saati">
+                  <input
+                    className="input"
+                    disabled={!notificationDraft.expires_date}
+                    onChange={(event) =>
+                      setNotificationDraft({
+                        ...notificationDraft,
+                        expires_time: event.target.value,
+                      })
+                    }
+                    type="time"
+                    value={notificationDraft.expires_time}
+                  />
+                </Field>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="primary-button inline-flex items-center gap-2"
+              disabled={isSaving}
+              type="submit"
+            >
+              <Send size={16} />
+              Send
+            </button>
+            {notificationDraft.id ? (
+              <button
+                className="secondary-button"
+                onClick={() => setNotificationDraft(defaultNotificationDraft())}
+                type="button"
+              >
+                Vazgeç
+              </button>
+            ) : null}
+          </div>
+        </form>
+
+        <div className="mt-6">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+            <CalendarClock size={17} />
+            Zamanlı / sürekli notificationlar
+          </div>
+
+          {scheduledNotifications.length === 0 ? (
+            <div className="rounded-md border border-[#eee7db] bg-white p-3 text-sm text-[#68756b]">
+              Aktif zamanlı veya sürekli notification yok.
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              {scheduledNotifications.map((notification) => (
+                <div
+                  className="flex items-start justify-between gap-3 rounded-md border border-[#eee7db] bg-white p-3"
+                  key={notification.id}
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#68756b]">
+                      <span>{notificationScheduleTypeLabels[notification.schedule_type]}</span>
+                      <span>{formatNotificationDate(notification.starts_at)}</span>
+                      {notification.schedule_type === "recurring" ? (
+                        <span>
+                          Her {formatNotificationInterval(notification.interval_minutes)}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-sm font-medium leading-5">
+                      {notification.message}
+                    </p>
+                    {notification.expires_at &&
+                    notification.schedule_type === "recurring" ? (
+                      <p className="mt-1 text-xs text-[#68756b]">
+                        Bitiş: {formatNotificationDate(notification.expires_at)}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      aria-label="Düzenle"
+                      className="grid size-9 place-items-center rounded-md border border-[#cfc8b8] hover:bg-[#eee9dd]"
+                      onClick={() =>
+                        setNotificationDraft(draftFromNotification(notification))
+                      }
+                      title="Düzenle"
+                      type="button"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      className="h-9 rounded-md border border-[#a0543b] px-3 text-sm font-semibold text-[#a0543b] hover:bg-[#f7ece7]"
+                      onClick={() => onCancelNotification(notification)}
+                      type="button"
+                    >
+                      İptal
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </AdminFoldout>
 
       <AdminFoldout icon={<CalendarDays size={20} />} title="Kortlar">

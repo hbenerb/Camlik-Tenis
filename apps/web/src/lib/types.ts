@@ -2,6 +2,8 @@ export type AppRole = "user" | "admin" | "super_admin";
 export type ReservationStatus = "confirmed" | "canceled";
 export type CalendarView = "day" | "week" | "month";
 export type SkillLevel = "beginner" | "intermediate" | "advanced" | "master";
+export type NotificationScheduleType = "instant" | "scheduled" | "recurring";
+export type AppNotificationStatus = "active" | "canceled";
 
 export type Profile = {
   id: string;
@@ -13,6 +15,7 @@ export type Profile = {
   can_book?: boolean | null;
   is_club_member: boolean;
   is_trainer?: boolean | null;
+  notification_enabled?: boolean | null;
   reservation_days_ahead: number | null;
   created_at: string;
   updated_at: string;
@@ -52,4 +55,22 @@ export type Reservation = {
   updated_at: string;
   courts?: Pick<Court, "name"> | null;
   profiles?: Pick<Profile, "email" | "full_name"> | null;
+};
+
+export type AppNotification = {
+  id: string;
+  message: string;
+  schedule_type: NotificationScheduleType;
+  status: AppNotificationStatus;
+  starts_at: string;
+  interval_minutes: number | null;
+  expires_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AppNotificationDelivery = {
+  notification_id: string;
+  occurrence_at: string;
 };
