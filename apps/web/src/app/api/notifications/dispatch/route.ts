@@ -11,6 +11,7 @@ type PushSubscriptionRow = AppPushSubscription & {
 };
 type DispatchCounters = {
   deliveries: number;
+  failed: number;
   sent: number;
   stale: number;
 };
@@ -91,6 +92,7 @@ async function sendPushToSubscriptions({
   subscriptions: PushSubscriptionRow[];
 }) {
   let didSend = false;
+  let failed = 0;
   let sent = 0;
   let stale = 0;
 
@@ -114,12 +116,19 @@ async function sendPushToSubscriptions({
       didSend = true;
       sent += 1;
     } catch (error) {
+      failed += 1;
       const statusCode =
         typeof error === "object" && error !== null && "statusCode" in error
           ? Number((error as { statusCode?: number }).statusCode)
           : null;
 
-      if (statusCode === 404 || statusCode === 410) {
+      if (
+        statusCode === 400 ||
+        statusCode === 401 ||
+        statusCode === 403 ||
+        statusCode === 404 ||
+        statusCode === 410
+      ) {
         stale += 1;
         await supabase
           .from("app_push_subscriptions")
@@ -129,7 +138,7 @@ async function sendPushToSubscriptions({
     }
   }
 
-  return { didSend, sent, stale };
+  return { didSend, failed, sent, stale };
 }
 
 async function dispatchDueNotifications({
@@ -174,6 +183,7 @@ async function dispatchDueNotifications({
 
   const counters: DispatchCounters = {
     deliveries: 0,
+    failed: 0,
     sent: 0,
     stale: 0,
   };
@@ -215,6 +225,7 @@ async function dispatchDueNotifications({
         subscriptions: userSubscriptions,
       });
       didSendToUser = pushResult.didSend;
+      counters.failed += pushResult.failed;
       counters.sent += pushResult.sent;
       counters.stale += pushResult.stale;
 
@@ -300,6 +311,7 @@ export async function GET(request: NextRequest) {
   return Response.json({
     ok: true,
     deliveries: counters.deliveries,
+    failed: counters.failed,
     sent: counters.sent,
     stale: counters.stale,
   });
@@ -380,6 +392,7 @@ export async function POST(request: NextRequest) {
   return Response.json({
     ok: true,
     deliveries: counters.deliveries,
+    failed: counters.failed,
     sent: counters.sent,
     stale: counters.stale,
   });

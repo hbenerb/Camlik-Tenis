@@ -846,6 +846,21 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+function normalizeBase64Url(base64String: string) {
+  return base64String.replace(/=+$/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function arrayBufferToBase64Url(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+
+  for (let index = 0; index < bytes.byteLength; index += 1) {
+    binary += String.fromCharCode(bytes[index]);
+  }
+
+  return normalizeBase64Url(window.btoa(binary));
+}
+
 export function ClubApp() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [user, setUser] = useState<User | null>(null);
@@ -998,12 +1013,26 @@ export function ClubApp() {
 
       try {
         const registration = await navigator.serviceWorker.ready;
-        const existingSubscription =
+        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+        let existingSubscription =
           await registration.pushManager.getSubscription();
+        const existingApplicationServerKey =
+          existingSubscription?.options.applicationServerKey;
+
+        if (
+          existingSubscription &&
+          existingApplicationServerKey &&
+          arrayBufferToBase64Url(existingApplicationServerKey) !==
+            normalizeBase64Url(vapidPublicKey)
+        ) {
+          await existingSubscription.unsubscribe().catch(() => false);
+          existingSubscription = null;
+        }
+
         const subscription =
           existingSubscription ??
           (await registration.pushManager.subscribe({
-            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+            applicationServerKey,
             userVisibleOnly: true,
           }));
         const subscriptionJson = subscription.toJSON();
@@ -1811,7 +1840,9 @@ export function ClubApp() {
 
     const savedNotification = result.data as AppNotification;
     let instantDispatchOk = true;
+    let instantDispatchFailed = 0;
     let instantDispatchSent = 0;
+    let instantDispatchStale = 0;
 
     if (payload.schedule_type === "instant") {
       instantDispatchOk = false;
@@ -1831,10 +1862,16 @@ export function ClubApp() {
           });
           const dispatchData = (await dispatchResponse
             .json()
-            .catch(() => null)) as { sent?: number } | null;
+            .catch(() => null)) as {
+            failed?: number;
+            sent?: number;
+            stale?: number;
+          } | null;
 
           instantDispatchOk = dispatchResponse.ok;
+          instantDispatchFailed = Number(dispatchData?.failed ?? 0);
           instantDispatchSent = Number(dispatchData?.sent ?? 0);
+          instantDispatchStale = Number(dispatchData?.stale ?? 0);
         } catch {
           instantDispatchOk = false;
         }
@@ -1858,6 +1895,8 @@ export function ClubApp() {
         ? instantDispatchOk
           ? instantDispatchSent > 0
             ? "Notification gönderildi."
+            : instantDispatchFailed > 0 || instantDispatchStale > 0
+              ? "Notification kaydedildi. Bazı cihazlarda eski push aboneliği vardı; kullanıcı app'i bir kez açınca yenilenecek."
             : "Notification kaydedildi. Bildirim izni açık cihaz bulunamadı."
           : "Notification kaydedildi ama push gönderimi tamamlanamadı."
         : "Notification ayarlandı.",
