@@ -1455,7 +1455,19 @@ export function ClubApp() {
         setAdminNotifications(sortNotifications(loadedNotifications));
       }
     } else {
-      setMembers([]);
+      const memberResult = await supabase
+        .from("profiles")
+        .select("*")
+        .order("full_name", { ascending: true, nullsFirst: false })
+        .order("email", { ascending: true });
+
+      if (memberResult.error) {
+        loadedMembers = [];
+      } else {
+        loadedMembers = (memberResult.data as Profile[] | null) ?? [];
+      }
+
+      setMembers(loadedMembers);
       setAdminNotifications([]);
     }
 
