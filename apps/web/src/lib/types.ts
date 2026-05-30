@@ -65,6 +65,7 @@ export type AppNotification = {
   starts_at: string;
   interval_minutes: number | null;
   expires_at: string | null;
+  target_user_id?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;

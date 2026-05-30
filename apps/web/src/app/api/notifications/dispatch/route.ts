@@ -212,8 +212,18 @@ async function dispatchDueNotifications({
       ),
     );
 
-    for (const [userId, userSubscriptions] of subscriptionsByUser) {
+    const recipientIds = notification.target_user_id
+      ? [notification.target_user_id]
+      : Array.from(subscriptionsByUser.keys());
+
+    for (const userId of recipientIds) {
       if (deliveredUsers.has(userId)) {
+        continue;
+      }
+
+      const userSubscriptions = subscriptionsByUser.get(userId);
+
+      if (!userSubscriptions?.length) {
         continue;
       }
 

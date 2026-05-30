@@ -121,6 +121,7 @@ type AdminNotificationDraft = {
   starts_time: string;
   expires_date: string;
   expires_time: string;
+  target_user_id: string;
 };
 type AdminNotificationPayload = {
   id?: string;
@@ -129,6 +130,7 @@ type AdminNotificationPayload = {
   message: string;
   schedule_type: NotificationScheduleType;
   starts_at: string;
+  target_user_id: string | null;
 };
 type NotificationPermissionState = NotificationPermission | "unsupported";
 type NotificationToast = {
@@ -652,6 +654,7 @@ function defaultNotificationDraft(): AdminNotificationDraft {
     starts_time: startParts.time,
     expires_date: "",
     expires_time: "",
+    target_user_id: "",
   };
 }
 
@@ -699,6 +702,7 @@ function draftFromNotification(
     starts_time: startsAt.time,
     expires_date: expiresAt.date,
     expires_time: expiresAt.time,
+    target_user_id: notification.target_user_id ?? "",
   };
 }
 
@@ -733,6 +737,7 @@ function notificationDraftToPayload(
     message,
     schedule_type: draft.schedule_type,
     starts_at: startsAt.toISOString(),
+    target_user_id: draft.target_user_id || null,
   };
 }
 
@@ -1278,6 +1283,13 @@ export function ClubApp() {
         (notificationsResult.data as AppNotification[] | null) ?? [];
 
       for (const notification of dueNotifications) {
+        if (
+          notification.target_user_id &&
+          notification.target_user_id !== currentUser.id
+        ) {
+          continue;
+        }
+
         const occurrenceAt = getNotificationOccurrence(notification, now);
 
         if (!occurrenceAt) {
@@ -1876,6 +1888,7 @@ export function ClubApp() {
       schedule_type: payload.schedule_type,
       starts_at: payload.starts_at,
       status: "active",
+      target_user_id: payload.target_user_id,
     };
 
     const result = payload.id
@@ -3943,6 +3956,18 @@ function AdminPanel({
   const [notificationDraft, setNotificationDraft] = useState(
     defaultNotificationDraft,
   );
+  const notificationTargetOptions = uniqueProfiles([currentProfile, ...members]);
+  const notificationTargetLabel = (targetUserId: string | null | undefined) => {
+    if (!targetUserId) {
+      return "Herkes";
+    }
+
+    const targetProfile = notificationTargetOptions.find(
+      (member) => member.id === targetUserId,
+    );
+
+    return targetProfile?.full_name ?? targetProfile?.email ?? "Seçili kullanıcı";
+  };
   const scheduledNotifications = adminNotifications.filter((notification) => {
     if (notification.status !== "active") {
       return false;
@@ -4097,6 +4122,26 @@ function AdminPanel({
               required
               value={notificationDraft.message}
             />
+          </Field>
+
+          <Field label="Alıcı">
+            <select
+              className="input"
+              onChange={(event) =>
+                setNotificationDraft({
+                  ...notificationDraft,
+                  target_user_id: event.target.value,
+                })
+              }
+              value={notificationDraft.target_user_id}
+            >
+              <option value="">Herkes</option>
+              {notificationTargetOptions.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.full_name ?? member.email ?? "İsim yok"}
+                </option>
+              ))}
+            </select>
           </Field>
 
           <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
@@ -4279,6 +4324,7 @@ function AdminPanel({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#68756b]">
                       <span>{notificationScheduleTypeLabels[notification.schedule_type]}</span>
+                      <span>{notificationTargetLabel(notification.target_user_id)}</span>
                       <span>{formatNotificationDate(notification.starts_at)}</span>
                       {notification.schedule_type === "recurring" ? (
                         <span>
