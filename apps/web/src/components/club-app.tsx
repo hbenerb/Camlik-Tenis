@@ -3169,12 +3169,6 @@ function CalendarPanel({
   settings: ClubSettings;
   timeSlots: string[];
 }) {
-  const todayActionLabel =
-    calendarView === "week"
-      ? "Bu Hafta"
-      : calendarView === "month"
-        ? "Bu Ay"
-        : "Bugün";
   const isCurrentPeriodSelected =
     calendarView === "day"
       ? isSameDay(selectedDate, currentTime)
@@ -3188,7 +3182,18 @@ function CalendarPanel({
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
         <div className="grid gap-2">
-          <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
+          <div className="grid grid-cols-4 rounded-md border border-[#cfc8b8] bg-white p-1">
+            <button
+              className={`h-9 rounded px-2 text-sm font-medium ${
+                isCurrentPeriodSelected
+                  ? "bg-[#237000] text-white"
+                  : "text-[#546257] hover:bg-[#eee9dd]"
+              }`}
+              onClick={() => setSelectedDate(new Date())}
+              type="button"
+            >
+              Bugün
+            </button>
             {(Object.keys(viewLabels) as CalendarView[]).map((view) => (
               <button
                 className={`h-9 rounded px-2 text-sm font-medium ${
@@ -3254,17 +3259,9 @@ function CalendarPanel({
           <ChevronLeft size={18} />
           <span className="sr-only sm:not-sr-only">Önceki</span>
         </button>
-        <button
-          className={`h-10 rounded-md border px-2 text-sm font-medium ${
-            isCurrentPeriodSelected
-              ? "border-[#237000] bg-[#237000] text-white"
-              : "border-[#cfc8b8] bg-white hover:bg-[#eee9dd]"
-          }`}
-          onClick={() => setSelectedDate(new Date())}
-          type="button"
-        >
-          {todayActionLabel}
-        </button>
+        <div className="grid h-10 place-items-center rounded-md border border-[#cfc8b8] bg-white px-2 text-center text-sm font-semibold text-[#34443a]">
+          <span className="truncate">{formatDateTitle(selectedDate)}</span>
+        </div>
         <button
           className="inline-flex h-10 items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
           onClick={() => moveCalendar(1)}
@@ -4916,7 +4913,7 @@ function LessonSetupFields<T extends ReservationFormState>({
         ))}
       </datalist>
       <div className="grid grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-2">
-        <span className="text-xs font-semibold text-[#34443a]">Hoca</span>
+        <span className="text-xs font-semibold text-[#34443a]">Eğitmen</span>
         <input
           className="input input-compact"
           disabled={!canEditTrainer}
@@ -4929,7 +4926,7 @@ function LessonSetupFields<T extends ReservationFormState>({
         />
         {canEditTrainer ? (
           <select
-            aria-label="Hoca seç"
+            aria-label="Eğitmen seç"
             className="h-9 rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a]"
             onChange={(event) =>
               setForm({ ...form, team1_player1_name: event.target.value })
