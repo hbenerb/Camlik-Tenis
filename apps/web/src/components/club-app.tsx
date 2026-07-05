@@ -616,6 +616,14 @@ function formatWeekdayLong(date: Date) {
   return new Intl.DateTimeFormat("tr-TR", { weekday: "long" }).format(date);
 }
 
+function formatCalendarNavDate(date: Date) {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 function visibleDayAvailability(
   day: Date,
   bookingWindowDays: number,
@@ -3224,18 +3232,25 @@ function CalendarPanel({
 
       <div className="grid grid-cols-[0.6fr_minmax(0,1fr)_0.6fr] gap-2 sm:grid-cols-3">
         <button
-          className="inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd] sm:h-10"
+          className="inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd] sm:h-12"
           onClick={() => moveCalendar(-1)}
           type="button"
         >
           <ChevronLeft size={18} />
           <span className="sr-only sm:not-sr-only">Önceki</span>
         </button>
-        <div className="grid h-[60px] place-items-center rounded-md border border-[#cfc8b8] bg-white px-2 text-center text-sm font-semibold text-[#34443a] sm:h-10">
-          <span className="truncate">{formatDateTitle(selectedDate)}</span>
+        <div className="grid h-[60px] place-items-center rounded-md border border-[#cfc8b8] bg-white px-2 text-center text-[#34443a] sm:h-12">
+          <span className="grid min-w-0 gap-0.5">
+            <span className="truncate text-sm font-semibold leading-tight">
+              {formatCalendarNavDate(selectedDate)}
+            </span>
+            <span className="truncate text-xs font-medium leading-tight text-[#68756b]">
+              {formatWeekdayLong(selectedDate)}
+            </span>
+          </span>
         </div>
         <button
-          className="inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd] sm:h-10"
+          className="inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd] sm:h-12"
           onClick={() => moveCalendar(1)}
           type="button"
         >
