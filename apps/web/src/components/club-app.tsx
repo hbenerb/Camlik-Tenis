@@ -461,6 +461,10 @@ function isLessonReservation(reservation: Reservation) {
   return Boolean(parseReservationLessonNote(reservation.note));
 }
 
+function isConfirmedReservation(reservation: Reservation) {
+  return reservation.status === "confirmed";
+}
+
 function attachReservationProfiles(
   reservations: Reservation[],
   profiles: Profile[],
@@ -1003,8 +1007,10 @@ export function ClubApp() {
 
   const visibleReservations = useMemo(() => {
     const range = getRangeForView(selectedDate, calendarView);
-    return reservations.filter((reservation) =>
-      isReservationInRange(reservation, range.start, range.end),
+    return reservations.filter(
+      (reservation) =>
+        isConfirmedReservation(reservation) &&
+        isReservationInRange(reservation, range.start, range.end),
     );
   }, [calendarView, reservations, selectedDate]);
 
@@ -2326,7 +2332,7 @@ export function ClubApp() {
     setStatusMessage(null);
     const { error } = await supabase
       .from("reservations")
-      .delete()
+      .update({ status: "canceled" })
       .eq("id", reservation.id);
 
     if (error) {
@@ -3493,8 +3499,10 @@ function WeekCalendar({
           </div>
         ))}
       {days.map((day) => {
-        const dayReservations = reservations.filter((reservation) =>
-          isSameDay(new Date(reservation.starts_at), day),
+        const dayReservations = reservations.filter(
+          (reservation) =>
+            isConfirmedReservation(reservation) &&
+            isSameDay(new Date(reservation.starts_at), day),
         );
         const status = visibleDayAvailability(
           day,
@@ -3568,8 +3576,10 @@ function MonthCalendar({
           </div>
         ))}
       {days.map((day) => {
-        const count = reservations.filter((reservation) =>
-          isSameDay(new Date(reservation.starts_at), day),
+        const count = reservations.filter(
+          (reservation) =>
+            isConfirmedReservation(reservation) &&
+            isSameDay(new Date(reservation.starts_at), day),
         ).length;
         const status = visibleDayAvailability(
           day,
@@ -3633,7 +3643,11 @@ function ReservationsPanel({
       ? reservations
       : reservations.filter((reservation) => reservation.user_id === userId);
   const sorted = visibleReservations
-    .filter((reservation) => isFutureReservation(reservation, currentTime))
+    .filter(
+      (reservation) =>
+        isConfirmedReservation(reservation) &&
+        isFutureReservation(reservation, currentTime),
+    )
     .sort(
       (a, b) =>
         new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
