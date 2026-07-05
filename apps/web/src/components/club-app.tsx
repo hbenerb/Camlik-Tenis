@@ -45,7 +45,6 @@ import {
   dateInputValue,
   findReservationAtSlot,
   formatDateTitle,
-  formatMonthTitle,
   formatTime,
   getRangeForView,
   isCurrentMonth,
@@ -3169,31 +3168,11 @@ function CalendarPanel({
   settings: ClubSettings;
   timeSlots: string[];
 }) {
-  const isCurrentPeriodSelected =
-    calendarView === "day"
-      ? isSameDay(selectedDate, currentTime)
-      : calendarView === "week"
-        ? startOfWeek(selectedDate, { weekStartsOn: 1 }).getTime() ===
-          startOfWeek(currentTime, { weekStartsOn: 1 }).getTime()
-        : startOfMonth(selectedDate).getTime() ===
-          startOfMonth(currentTime).getTime();
-
   return (
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
         <div className="grid gap-2">
-          <div className="grid grid-cols-4 rounded-md border border-[#cfc8b8] bg-white p-1">
-            <button
-              className={`h-9 rounded px-2 text-sm font-medium ${
-                isCurrentPeriodSelected
-                  ? "bg-[#237000] text-white"
-                  : "text-[#546257] hover:bg-[#eee9dd]"
-              }`}
-              onClick={() => setSelectedDate(new Date())}
-              type="button"
-            >
-              Bugün
-            </button>
+          <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
             {(Object.keys(viewLabels) as CalendarView[]).map((view) => (
               <button
                 className={`h-9 rounded px-2 text-sm font-medium ${
@@ -3209,61 +3188,54 @@ function CalendarPanel({
               </button>
             ))}
           </div>
-          {canCreateReservation ? (
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            {canCreateReservation ? (
+              <button
+                className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
+                onClick={() => onCreateReservation()}
+                type="button"
+              >
+                <Plus size={18} />
+                Rezervasyon yap
+              </button>
+            ) : (
+              <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] px-3 py-2 text-center text-sm font-medium text-[#68756b]">
+                Rezervasyon yetkisi için admin onayı bekleniyor.
+              </div>
+            )}
             <button
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
-              onClick={() => onCreateReservation()}
+              aria-label="Yenile"
+              className="grid size-11 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+              onClick={onRefresh}
+              title="Yenile"
               type="button"
             >
-              <Plus size={18} />
-              Rezervasyon yap
+              <RefreshCw size={16} />
             </button>
-          ) : (
-            <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] px-3 py-2 text-center text-sm font-medium text-[#68756b]">
-              Rezervasyon yetkisi için admin onayı bekleniyor.
-            </div>
-          )}
+          </div>
         </div>
 
-        <div className="mt-3 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm text-[#68756b]">
-              {normalizeTime(settings.opening_time)} -{" "}
-              {normalizeTime(settings.closing_time)} ·{" "}
-              {settings.reservation_slot_minutes} dk
-            </p>
-            <h2 className="mt-1 truncate text-xl font-semibold sm:text-2xl">
-              {calendarView === "month"
-                ? formatMonthTitle(selectedDate)
-                : formatDateTitle(selectedDate)}
-            </h2>
-          </div>
-          <button
-            aria-label="Yenile"
-            className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
-            onClick={onRefresh}
-            title="Yenile"
-            type="button"
-          >
-            <RefreshCw size={16} />
-          </button>
-        </div>
+        <p className="mt-3 text-sm text-[#68756b]">
+          {normalizeTime(settings.opening_time)} -{" "}
+          {normalizeTime(settings.closing_time)} ·{" "}
+          {settings.reservation_slot_minutes} dk
+        </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-[0.6fr_minmax(0,1fr)_0.6fr] gap-2 sm:grid-cols-3">
         <button
-          className="inline-flex h-10 items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
+          className="inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd] sm:h-10"
           onClick={() => moveCalendar(-1)}
           type="button"
         >
           <ChevronLeft size={18} />
           <span className="sr-only sm:not-sr-only">Önceki</span>
         </button>
-        <div className="grid h-10 place-items-center rounded-md border border-[#cfc8b8] bg-white px-2 text-center text-sm font-semibold text-[#34443a]">
+        <div className="grid h-[60px] place-items-center rounded-md border border-[#cfc8b8] bg-white px-2 text-center text-sm font-semibold text-[#34443a] sm:h-10">
           <span className="truncate">{formatDateTitle(selectedDate)}</span>
         </div>
         <button
-          className="inline-flex h-10 items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd]"
+          className="inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd] sm:h-10"
           onClick={() => moveCalendar(1)}
           type="button"
         >
