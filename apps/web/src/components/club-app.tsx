@@ -519,6 +519,10 @@ function canUseLessonForSelectedOwner(
     return false;
   }
 
+  if (form.is_custom) {
+    return true;
+  }
+
   if (!canChooseOwner) {
     return true;
   }
@@ -2081,7 +2085,19 @@ export function ClubApp() {
 
   function openEditReservation(reservation: Reservation) {
     const startsAt = new Date(reservation.starts_at);
-    const customInfo = getReservationCustomInfo(reservation);
+    const lesson = parseReservationLessonNote(reservation.note);
+    const selectedOwner = reservationOwnerOptions.find(
+      (owner) => owner.id === reservation.user_id,
+    );
+    const selectedOwnerName = selectedOwner ? profileOptionLabel(selectedOwner) : "";
+    const lessonTrainerName = normalizePlayerName(lesson?.trainer_name);
+    const customLessonTrainerName =
+      lessonTrainerName &&
+      lessonTrainerName !== normalizePlayerName(selectedOwnerName)
+        ? lessonTrainerName
+        : "";
+    const customInfo =
+      getReservationCustomInfo(reservation) || customLessonTrainerName;
 
     if (startsAt < currentTime) {
       setStatusMessage("Geçmiş rezervasyonlar düzenlenemez.");
@@ -2150,7 +2166,9 @@ export function ClubApp() {
         ? profileOptionLabel(selectedOwner)
         : getDisplayName(profile, user);
     const reservationNote =
-      canManageReservations && reservationForm.is_custom
+      canManageReservations && reservationForm.is_custom && reservationForm.is_lesson
+        ? buildReservationLessonNote(reservationForm, customInfo)
+        : canManageReservations && reservationForm.is_custom
         ? customInfo
         : canMarkLesson && reservationForm.is_lesson
           ? buildReservationLessonNote(reservationForm, trainerName)
@@ -2242,7 +2260,9 @@ export function ClubApp() {
       selectedOwner && profileOptionLabel(selectedOwner) !== "İsim yok"
         ? profileOptionLabel(selectedOwner)
         : getDisplayName(profile, user);
-    const reservationNote = reservationEditForm.is_custom
+    const reservationNote = reservationEditForm.is_custom && reservationEditForm.is_lesson
+      ? buildReservationLessonNote(reservationEditForm, customInfo)
+      : reservationEditForm.is_custom
       ? customInfo
       : reservationEditForm.is_lesson
         ? buildReservationLessonNote(reservationEditForm, trainerName)
@@ -5038,15 +5058,42 @@ function ReservationDialog({
                 </label>
               </div>
               {form.is_custom ? (
-                <input
-                  className="input input-compact"
-                  onChange={(event) =>
-                    setForm({ ...form, custom_info: event.target.value })
-                  }
-                  placeholder="Örn. Turnuva, antrenman, misafir"
-                  required
-                  value={form.custom_info}
-                />
+                <>
+                  {canUseLesson ? (
+                    <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                      Ders
+                      <input
+                        checked={form.is_lesson}
+                        className="size-4"
+                        onChange={(event) =>
+                          setForm({ ...form, is_lesson: event.target.checked })
+                        }
+                        type="checkbox"
+                      />
+                    </label>
+                  ) : null}
+                  <input
+                    className="input input-compact"
+                    onChange={(event) =>
+                      setForm({ ...form, custom_info: event.target.value })
+                    }
+                    placeholder={
+                      form.is_lesson
+                        ? "Eğitmen adı"
+                        : "Örn. Turnuva, antrenman, misafir"
+                    }
+                    required
+                    value={form.custom_info}
+                  />
+                  {canUseLesson && form.is_lesson ? (
+                    <LessonSetupFields
+                      form={form}
+                      listId="reservation-student-options"
+                      ownerOptions={ownerOptions}
+                      setForm={setForm}
+                    />
+                  ) : null}
+                </>
               ) : (
                 <>
                   <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
@@ -5329,15 +5376,42 @@ function ReservationEditDialog({
               </label>
             </div>
             {form.is_custom ? (
-              <input
-                className="input input-compact"
-                onChange={(event) =>
-                  setForm({ ...form, custom_info: event.target.value })
-                }
-                placeholder="Örn. Turnuva, antrenman, misafir"
-                required
-                value={form.custom_info}
-              />
+              <>
+                {canUseLesson ? (
+                  <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                    Ders
+                    <input
+                      checked={form.is_lesson}
+                      className="size-4"
+                      onChange={(event) =>
+                        setForm({ ...form, is_lesson: event.target.checked })
+                      }
+                      type="checkbox"
+                    />
+                  </label>
+                ) : null}
+                <input
+                  className="input input-compact"
+                  onChange={(event) =>
+                    setForm({ ...form, custom_info: event.target.value })
+                  }
+                  placeholder={
+                    form.is_lesson
+                      ? "Eğitmen adı"
+                      : "Örn. Turnuva, antrenman, misafir"
+                  }
+                  required
+                  value={form.custom_info}
+                />
+                {canUseLesson && form.is_lesson ? (
+                  <LessonSetupFields
+                    form={form}
+                    listId="reservation-edit-student-options"
+                    ownerOptions={ownerOptions}
+                    setForm={setForm}
+                  />
+                ) : null}
+              </>
             ) : (
               <>
                 <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
