@@ -544,6 +544,14 @@ function isFutureReservation(reservation: Reservation, currentTime: Date) {
   return new Date(reservation.starts_at).getTime() >= currentTime.getTime();
 }
 
+function isPastCalendarDay(day: Date, currentTime: Date) {
+  return startOfDay(day).getTime() < startOfDay(currentTime).getTime();
+}
+
+function isPastCalendarSlot(day: Date, slot: string, currentTime: Date) {
+  return buildLocalDateTime(dateInputValue(day), slot).getTime() < currentTime.getTime();
+}
+
 function dayAvailability(
   day: Date,
   bookingWindowDays: number,
@@ -2750,15 +2758,26 @@ export function ClubApp() {
 
   function moveCalendar(direction: -1 | 1) {
     setSelectedDate((current) => {
+      const nextDate =
+        calendarView === "day"
+          ? addDays(current, direction)
+          : calendarView === "week"
+            ? addWeeks(current, direction)
+            : addMonths(current, direction);
+
+      if (!canManageReservations && isPastCalendarDay(nextDate, currentTime)) {
+        return currentTime;
+      }
+
       if (calendarView === "day") {
-        return addDays(current, direction);
+        return nextDate;
       }
 
       if (calendarView === "week") {
-        return addWeeks(current, direction);
+        return nextDate;
       }
 
-      return addMonths(current, direction);
+      return nextDate;
     });
   }
 
@@ -2924,6 +2943,7 @@ export function ClubApp() {
               bookingWindowDays={effectiveBookingWindowDays}
               calendarView={calendarView}
               canCreateReservation={canCreateReservation}
+              canViewPastDays={canManageReservations}
               courts={courts}
               currentTime={currentTime}
               moveCalendar={moveCalendar}
@@ -3152,6 +3172,7 @@ function CalendarPanel({
   bookingWindowDays,
   calendarView,
   canCreateReservation,
+  canViewPastDays,
   courts,
   currentTime,
   moveCalendar,
@@ -3169,6 +3190,7 @@ function CalendarPanel({
   bookingWindowDays: number;
   calendarView: CalendarView;
   canCreateReservation: boolean;
+  canViewPastDays: boolean;
   courts: Court[];
   currentTime: Date;
   moveCalendar: (direction: -1 | 1) => void;
@@ -3182,6 +3204,9 @@ function CalendarPanel({
   settings: ClubSettings;
   timeSlots: string[];
 }) {
+  const isBackwardDisabled =
+    !canViewPastDays && startOfDay(selectedDate) <= startOfDay(currentTime);
+
   return (
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
@@ -3238,7 +3263,12 @@ function CalendarPanel({
 
       <div className="grid grid-cols-[0.6fr_minmax(0,1fr)_0.6fr] gap-2 sm:grid-cols-3">
         <button
-          className="inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium hover:bg-[#eee9dd] sm:h-12"
+          className={`inline-flex h-[60px] items-center justify-center gap-1 rounded-md border border-[#cfc8b8] bg-white px-2 text-sm font-medium sm:h-12 ${
+            isBackwardDisabled
+              ? "cursor-not-allowed opacity-50"
+              : "hover:bg-[#eee9dd]"
+          }`}
+          disabled={isBackwardDisabled}
           onClick={() => moveCalendar(-1)}
           type="button"
         >
@@ -3276,6 +3306,7 @@ function CalendarPanel({
         <DayCalendar
           bookingWindowDays={bookingWindowDays}
           canCreateReservation={canCreateReservation}
+          canViewPastDays={canViewPastDays}
           courts={activeCourts}
           currentTime={currentTime}
           onEditReservation={onEditReservation}
@@ -3289,6 +3320,7 @@ function CalendarPanel({
       {activeCourts.length > 0 && calendarView === "week" ? (
         <WeekCalendar
           bookingWindowDays={bookingWindowDays}
+          canViewPastDays={canViewPastDays}
           currentTime={currentTime}
           reservations={reservations}
           selectedDate={selectedDate}
@@ -3301,6 +3333,7 @@ function CalendarPanel({
       {activeCourts.length > 0 && calendarView === "month" ? (
         <MonthCalendar
           bookingWindowDays={bookingWindowDays}
+          canViewPastDays={canViewPastDays}
           currentTime={currentTime}
           reservations={reservations}
           selectedDate={selectedDate}
@@ -3326,6 +3359,7 @@ function DayCalendar({
 }: {
   bookingWindowDays: number;
   canCreateReservation: boolean;
+  canViewPastDays: boolean;
   courts: Court[];
   currentTime: Date;
   onEditReservation?: (reservation: Reservation) => void;
@@ -3360,20 +3394,17 @@ function DayCalendar({
           </div>
         ))}
 
-        {timeSlots
-          .filter((slot) =>
-            isBookableStart(
-              dateInputValue(selectedDate),
-              slot,
-              ADMIN_EDIT_BOOKING_WINDOW_DAYS,
-              currentTime,
-            ),
-          )
-          .map((slot) => (
+        {timeSlots.map((slot) => {
+          const slotIsPast = isPastCalendarSlot(selectedDate, slot, currentTime);
+          const timeCellClassName = `grid place-items-center border-r border-t border-[#eee7db] px-1 py-2 text-center text-[15px] font-bold leading-none sm:p-3 sm:text-xl ${
+            slotIsPast
+              ? "bg-[#f1eee5] text-[#8b8f86]"
+              : "text-[#17211c]"
+          }`;
+
+          return (
             <div className="contents" key={slot}>
-              <div className="grid place-items-center border-r border-t border-[#eee7db] px-1 py-2 text-center text-[15px] font-bold leading-none text-[#17211c] sm:p-3 sm:text-xl">
-                {slot}
-              </div>
+              <div className={timeCellClassName}>{slot}</div>
               {courts.map((court) => {
                 const slotBookable = isBookableStart(
                   dateInputValue(selectedDate),
@@ -3394,7 +3425,9 @@ function DayCalendar({
                   const reservationLines = getReservationDisplayLines(reservation);
                   const isLesson = isLessonReservation(reservation);
                   const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center ${
-                    isLesson
+                    slotIsPast
+                      ? "bg-[#e3e0d7] text-[#6f756f] opacity-80"
+                      : isLesson
                       ? "bg-[#f3b340] !text-black hover:bg-[#e7a530]"
                       : "bg-[#237000] text-white hover:bg-[#1f6500]"
                   }`;
@@ -3414,7 +3447,7 @@ function DayCalendar({
                     </div>
                   );
 
-                  if (onEditReservation) {
+                  if (onEditReservation && !slotIsPast) {
                     return (
                       <button
                         className={`${reservedCellClassName} cursor-pointer`}
@@ -3440,7 +3473,9 @@ function DayCalendar({
                 return (
                   <button
                     className={`${cellClassName} flex items-center justify-center ${
-                      slotBookable && canCreateReservation
+                      slotIsPast
+                        ? "cursor-not-allowed bg-[#f1eee5] text-[#8b8f86]"
+                        : slotBookable && canCreateReservation
                         ? "cursor-pointer bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
                         : slotBookable
                           ? "cursor-not-allowed bg-[#f0f8ef] text-[#237000]"
@@ -3460,7 +3495,8 @@ function DayCalendar({
                 );
               })}
             </div>
-          ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -3468,6 +3504,7 @@ function DayCalendar({
 
 function WeekCalendar({
   bookingWindowDays,
+  canViewPastDays,
   currentTime,
   reservations,
   selectedDate,
@@ -3476,6 +3513,7 @@ function WeekCalendar({
   timeSlots,
 }: {
   bookingWindowDays: number;
+  canViewPastDays: boolean;
   currentTime: Date;
   reservations: Reservation[];
   selectedDate: Date;
@@ -3499,11 +3537,14 @@ function WeekCalendar({
           </div>
         ))}
       {days.map((day) => {
+        const isPastDay = isPastCalendarDay(day, currentTime);
+        const canOpenDay = canViewPastDays || !isPastDay;
         const dayReservations = reservations.filter(
           (reservation) =>
             isConfirmedReservation(reservation) &&
             isSameDay(new Date(reservation.starts_at), day),
         );
+        const visibleReservationCount = canOpenDay ? dayReservations.length : 0;
         const status = visibleDayAvailability(
           day,
           bookingWindowDays,
@@ -3519,7 +3560,8 @@ function WeekCalendar({
                 : status === "bookable"
                 ? "border-[#9ec596] bg-[#f0f8ef] hover:bg-[#e3f1df]"
                 : "border-[#ddd7c8] bg-[#fffdf8] hover:bg-[#f7f1e5]"
-            }`}
+            } ${canOpenDay ? "" : "cursor-not-allowed opacity-70"}`}
+            disabled={!canOpenDay}
             key={day.toISOString()}
             onClick={() => {
               setSelectedDate(day);
@@ -3531,7 +3573,9 @@ function WeekCalendar({
               {format(day, "d")}
             </p>
             <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
-              {dayReservations.length > 0 ? `${dayReservations.length} rez.` : ""}
+              {visibleReservationCount > 0
+                ? `${visibleReservationCount} rez.`
+                : ""}
             </p>
           </button>
         );
@@ -3543,6 +3587,7 @@ function WeekCalendar({
 
 function MonthCalendar({
   bookingWindowDays,
+  canViewPastDays,
   currentTime,
   reservations,
   selectedDate,
@@ -3551,6 +3596,7 @@ function MonthCalendar({
   timeSlots,
 }: {
   bookingWindowDays: number;
+  canViewPastDays: boolean;
   currentTime: Date;
   reservations: Reservation[];
   selectedDate: Date;
@@ -3576,11 +3622,14 @@ function MonthCalendar({
           </div>
         ))}
       {days.map((day) => {
+        const isPastDay = isPastCalendarDay(day, currentTime);
+        const canOpenDay = canViewPastDays || !isPastDay;
         const count = reservations.filter(
           (reservation) =>
             isConfirmedReservation(reservation) &&
             isSameDay(new Date(reservation.starts_at), day),
         ).length;
+        const visibleCount = canOpenDay ? count : 0;
         const status = visibleDayAvailability(
           day,
           bookingWindowDays,
@@ -3597,7 +3646,8 @@ function MonthCalendar({
                 : status === "bookable"
                 ? "border-[#9ec596] bg-[#f0f8ef] hover:bg-[#e3f1df]"
                 : "border-[#ddd7c8] bg-[#fffdf8] hover:bg-[#f7f1e5]"
-            }`}
+            } ${canOpenDay ? "" : "cursor-not-allowed opacity-70"}`}
+            disabled={!canOpenDay}
             key={day.toISOString()}
             onClick={() => {
               setSelectedDate(day);
@@ -3609,7 +3659,7 @@ function MonthCalendar({
               {format(day, "d")}
             </p>
             <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
-              {count > 0 ? `${count} rez.` : ""}
+              {visibleCount > 0 ? `${visibleCount} rez.` : ""}
             </p>
           </button>
         );
