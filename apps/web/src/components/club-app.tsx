@@ -20,10 +20,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Info,
   LogOut,
   Moon,
   Pencil,
-  Plus,
   RefreshCw,
   Send,
   ShieldCheck,
@@ -667,6 +667,29 @@ function dateTimeInputParts(date: Date) {
 
 function addMinutesToDate(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000);
+}
+
+function formatDurationText(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours > 0 && remainingMinutes > 0) {
+    return `${hours} saat ${remainingMinutes} dakika`;
+  }
+
+  if (hours > 0) {
+    return `${hours} saat`;
+  }
+
+  return `${minutes} dakika`;
+}
+
+function formatBookingWindowText(days: number) {
+  if (days <= 0) {
+    return "sadece bugün";
+  }
+
+  return `${days} gün sonrasına kadar`;
 }
 
 function defaultNotificationDraft(): AdminNotificationDraft {
@@ -3204,37 +3227,25 @@ function CalendarPanel({
   settings: ClubSettings;
   timeSlots: string[];
 }) {
+  const [isBookingInfoOpen, setIsBookingInfoOpen] = useState(false);
   const isBackwardDisabled =
     !canViewPastDays && startOfDay(selectedDate) <= startOfDay(currentTime);
+  const slotDurationText = formatDurationText(settings.reservation_slot_minutes);
+  const cancellationDeadlineText = formatDurationText(
+    settings.cancellation_deadline_hours * 60,
+  );
 
   return (
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
         <div className="grid gap-2">
-          <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
-            {(Object.keys(viewLabels) as CalendarView[]).map((view) => (
-              <button
-                className={`h-9 rounded px-2 text-sm font-medium ${
-                  calendarView === view
-                    ? "bg-[#237000] text-white"
-                    : "text-[#546257] hover:bg-[#eee9dd]"
-                }`}
-                key={view}
-                onClick={() => setCalendarView(view)}
-                type="button"
-              >
-                {viewLabels[view]}
-              </button>
-            ))}
-          </div>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             {canCreateReservation ? (
               <button
-                className="inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
+                className="inline-flex h-11 min-w-0 items-center justify-center rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
                 onClick={() => onCreateReservation()}
                 type="button"
               >
-                <Plus size={18} />
                 Rezervasyon yap
               </button>
             ) : (
@@ -3242,9 +3253,73 @@ function CalendarPanel({
                 Rezervasyon yetkisi için admin onayı bekleniyor.
               </div>
             )}
+            <div className="relative">
+              <button
+                aria-expanded={isBookingInfoOpen}
+                aria-label="Rezervasyon bilgileri"
+                className="grid size-11 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+                onClick={() => setIsBookingInfoOpen((current) => !current)}
+                title="Rezervasyon bilgileri"
+                type="button"
+              >
+                <Info size={17} />
+              </button>
+              {isBookingInfoOpen ? (
+                <div className="absolute right-0 top-12 z-30 w-[min(18rem,calc(100vw-2rem))] rounded-md border border-[#cfc8b8] bg-white p-3 text-left text-xs leading-5 text-[#34443a] shadow-lg sm:text-sm">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="font-semibold text-[#17211c]">
+                      Rezervasyon bilgileri
+                    </p>
+                    <button
+                      aria-label="Kapat"
+                      className="grid size-7 place-items-center rounded border border-[#cfc8b8] hover:bg-[#eee9dd]"
+                      onClick={() => setIsBookingInfoOpen(false)}
+                      type="button"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <p>
+                    {canCreateReservation
+                      ? `Hesabınızla ${formatBookingWindowText(
+                          bookingWindowDays,
+                        )} rezervasyon yapabilirsiniz.`
+                      : "Rezervasyon yapmak için admin onayı bekleniyor; onay verilene kadar takvimi görüntüleyebilirsiniz."}
+                  </p>
+                  <p className="mt-1">
+                    Rezervasyonlar {slotDurationText} sürer ve saatler{" "}
+                    {normalizeTime(settings.opening_time)} -{" "}
+                    {normalizeTime(settings.closing_time)} arasındadır.
+                  </p>
+                  <p className="mt-1">
+                    Aynı anda en fazla {settings.max_active_reservations} aktif
+                    rezervasyonunuz olabilir. İptal sınırı başlangıçtan{" "}
+                    {cancellationDeadlineText} öncesidir.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
+              {(Object.keys(viewLabels) as CalendarView[]).map((view) => (
+                <button
+                  className={`h-9 rounded px-2 text-sm font-medium ${
+                    calendarView === view
+                      ? "bg-[#237000] text-white"
+                      : "text-[#546257] hover:bg-[#eee9dd]"
+                  }`}
+                  key={view}
+                  onClick={() => setCalendarView(view)}
+                  type="button"
+                >
+                  {viewLabels[view]}
+                </button>
+              ))}
+            </div>
             <button
               aria-label="Yenile"
-              className="grid size-11 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+              className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
               onClick={onRefresh}
               title="Yenile"
               type="button"
@@ -3253,12 +3328,6 @@ function CalendarPanel({
             </button>
           </div>
         </div>
-
-        <p className="mt-3 text-sm text-[#68756b]">
-          {normalizeTime(settings.opening_time)} -{" "}
-          {normalizeTime(settings.closing_time)} ·{" "}
-          {settings.reservation_slot_minutes} dk
-        </p>
       </div>
 
       <div className="grid grid-cols-[0.6fr_minmax(0,1fr)_0.6fr] gap-2 sm:grid-cols-3">
@@ -3426,7 +3495,7 @@ function DayCalendar({
                   const isLesson = isLessonReservation(reservation);
                   const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center ${
                     slotIsPast
-                      ? "bg-[#e3e0d7] text-[#6f756f] opacity-80"
+                      ? "past-reservation-cell"
                       : isLesson
                       ? "bg-[#f3b340] !text-black hover:bg-[#e7a530]"
                       : "bg-[#237000] text-white hover:bg-[#1f6500]"

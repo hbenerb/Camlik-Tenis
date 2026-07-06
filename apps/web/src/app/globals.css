@@ -171,6 +171,16 @@ html.theme-light-root body {
   color: var(--theme-warning-text) !important;
 }
 
+.past-reservation-cell {
+  background: #e7e4da;
+  color: #5e665e;
+}
+
+.theme-dark .past-reservation-cell {
+  background: #27322c !important;
+  color: #c7d1c9 !important;
+}
+
 button,
 input,
 select,
