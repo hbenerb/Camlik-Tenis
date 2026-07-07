@@ -3253,7 +3253,7 @@ function CalendarPanel({
                 Rezervasyon yetkisi için admin onayı bekleniyor.
               </div>
             )}
-            <div className="relative">
+            <div>
               <button
                 aria-expanded={isBookingInfoOpen}
                 aria-label="Rezervasyon bilgileri"
@@ -3265,37 +3265,49 @@ function CalendarPanel({
                 <Info size={17} />
               </button>
               {isBookingInfoOpen ? (
-                <div className="absolute right-0 top-12 z-30 w-[min(18rem,calc(100vw-2rem))] rounded-md border border-[#cfc8b8] bg-white p-3 text-left text-xs leading-5 text-[#34443a] shadow-lg sm:text-sm">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <p className="font-semibold text-[#17211c]">
-                      Rezervasyon bilgileri
+                <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 py-6 sm:p-6">
+                  <button
+                    aria-label="Rezervasyon bilgilerini kapat"
+                    className="absolute inset-0 cursor-default"
+                    onClick={() => setIsBookingInfoOpen(false)}
+                    type="button"
+                  />
+                  <section
+                    aria-modal="true"
+                    className="relative max-h-[88vh] w-full overflow-y-auto rounded-none border border-[#cfc8b8] bg-white p-4 text-left text-sm leading-6 text-[#34443a] shadow-xl sm:max-w-md sm:rounded-md sm:p-5"
+                    role="dialog"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-base font-semibold text-[#17211c]">
+                        Rezervasyon bilgileri
+                      </p>
+                      <button
+                        aria-label="Kapat"
+                        className="grid size-9 place-items-center rounded border border-[#cfc8b8] hover:bg-[#eee9dd]"
+                        onClick={() => setIsBookingInfoOpen(false)}
+                        type="button"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <p>
+                      {canCreateReservation
+                        ? `Hesabınızla ${formatBookingWindowText(
+                            bookingWindowDays,
+                          )} rezervasyon yapabilirsiniz.`
+                        : "Rezervasyon yapmak için admin onayı bekleniyor; onay verilene kadar takvimi görüntüleyebilirsiniz."}
                     </p>
-                    <button
-                      aria-label="Kapat"
-                      className="grid size-7 place-items-center rounded border border-[#cfc8b8] hover:bg-[#eee9dd]"
-                      onClick={() => setIsBookingInfoOpen(false)}
-                      type="button"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                  <p>
-                    {canCreateReservation
-                      ? `Hesabınızla ${formatBookingWindowText(
-                          bookingWindowDays,
-                        )} rezervasyon yapabilirsiniz.`
-                      : "Rezervasyon yapmak için admin onayı bekleniyor; onay verilene kadar takvimi görüntüleyebilirsiniz."}
-                  </p>
-                  <p className="mt-1">
-                    Rezervasyonlar {slotDurationText} sürer ve saatler{" "}
-                    {normalizeTime(settings.opening_time)} -{" "}
-                    {normalizeTime(settings.closing_time)} arasındadır.
-                  </p>
-                  <p className="mt-1">
-                    Aynı anda en fazla {settings.max_active_reservations} aktif
-                    rezervasyonunuz olabilir. İptal sınırı başlangıçtan{" "}
-                    {cancellationDeadlineText} öncesidir.
-                  </p>
+                    <p className="mt-2">
+                      Rezervasyonlar {slotDurationText} sürer ve saatler{" "}
+                      {normalizeTime(settings.opening_time)} -{" "}
+                      {normalizeTime(settings.closing_time)} arasındadır.
+                    </p>
+                    <p className="mt-2">
+                      Aynı anda en fazla {settings.max_active_reservations} aktif
+                      rezervasyonunuz olabilir. İptal sınırı başlangıçtan{" "}
+                      {cancellationDeadlineText} öncesidir.
+                    </p>
+                  </section>
                 </div>
               ) : null}
             </div>
