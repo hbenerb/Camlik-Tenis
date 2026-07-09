@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Clock3,
   Info,
+  FileSpreadsheet,
   LogOut,
   Moon,
   Pencil,
@@ -72,6 +73,13 @@ type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
 type MatchType = "singles" | "doubles" | "lesson";
 type MatchReservationType = Exclude<MatchType, "lesson">;
+type AdminTab = "settings" | "members" | "reports";
+type AdminReportRange =
+  | "this_month"
+  | "last_month"
+  | "last_3_months"
+  | "this_year"
+  | "custom";
 type MatchPlayerKey =
   | "team1_player1_name"
   | "team1_player2_name"
@@ -168,6 +176,20 @@ const matchTypeLabels: Record<MatchType, string> = {
   singles: "Tekler",
   doubles: "Çiftler",
   lesson: "Ders",
+};
+
+const adminTabLabels: Record<AdminTab, string> = {
+  settings: "Ayarlar",
+  members: "Üyeler",
+  reports: "Raporlar",
+};
+
+const reportRangeLabels: Record<AdminReportRange, string> = {
+  this_month: "Bu ay",
+  last_month: "Geçen ay",
+  last_3_months: "Son 3 ay",
+  this_year: "Bu yıl",
+  custom: "Özel tarih aralığı",
 };
 
 const notificationScheduleTypeLabels: Record<NotificationScheduleType, string> = {
@@ -690,6 +712,116 @@ function formatBookingWindowText(days: number) {
   }
 
   return `${days} gün sonrasına kadar`;
+}
+
+function endOfLocalDay(date: Date) {
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+function startOfLocalMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function endOfLocalMonth(date: Date) {
+  return endOfLocalDay(new Date(date.getFullYear(), date.getMonth() + 1, 0));
+}
+
+function getReportDateRange(
+  range: AdminReportRange,
+  customStartDate: string,
+  customEndDate: string,
+  currentTime: Date,
+) {
+  if (range === "custom") {
+    return {
+      end: endOfLocalDay(parseDateInput(customEndDate)),
+      start: startOfDay(parseDateInput(customStartDate)),
+    };
+  }
+
+  if (range === "last_month") {
+    const lastMonth = addMonths(currentTime, -1);
+    return {
+      end: endOfLocalMonth(lastMonth),
+      start: startOfLocalMonth(lastMonth),
+    };
+  }
+
+  if (range === "last_3_months") {
+    return {
+      end: endOfLocalDay(currentTime),
+      start: startOfDay(addMonths(currentTime, -3)),
+    };
+  }
+
+  if (range === "this_year") {
+    return {
+      end: endOfLocalDay(currentTime),
+      start: startOfDay(new Date(currentTime.getFullYear(), 0, 1)),
+    };
+  }
+
+  return {
+    end: endOfLocalDay(currentTime),
+    start: startOfLocalMonth(currentTime),
+  };
+}
+
+function getReservationReportType(reservation: Reservation) {
+  const lesson = parseReservationLessonNote(reservation.note);
+  if (lesson) {
+    return "lesson" as const;
+  }
+
+  const match = parseReservationMatchNote(reservation.note);
+  if (match?.match_type === "singles") {
+    return "singles" as const;
+  }
+
+  if (match?.match_type === "doubles") {
+    return "doubles" as const;
+  }
+
+  return "other" as const;
+}
+
+function getReservationReportTypeLabel(reservation: Reservation) {
+  const type = getReservationReportType(reservation);
+
+  if (type === "lesson") {
+    return "Ders";
+  }
+
+  if (type === "singles") {
+    return "Tekler";
+  }
+
+  if (type === "doubles") {
+    return "Çiftler";
+  }
+
+  return "Özel/Diğer";
+}
+
+function getReservationDurationHours(
+  reservation: Reservation,
+  fallbackMinutes: number,
+) {
+  const startsAt = new Date(reservation.starts_at).getTime();
+  const endsAt = new Date(reservation.ends_at).getTime();
+  const durationMs = endsAt - startsAt;
+
+  if (Number.isFinite(durationMs) && durationMs > 0) {
+    return durationMs / (60 * 60 * 1000);
+  }
+
+  return fallbackMinutes / 60;
+}
+
+function formatReportHours(hours: number) {
+  return Number(hours.toFixed(2));
 }
 
 function defaultNotificationDraft(): AdminNotificationDraft {
@@ -1441,7 +1573,9 @@ export function ClubApp() {
     const loadedCourts = (courtsResult.data as Court[] | null) ?? [];
 
     if (settingsResult.error) {
-      setStatusMessage(`Kulüp ayarları okunamadı: ${settingsResult.error.message}`);
+      setStatusMessage(
+        `Rezervasyon ayarları okunamadı: ${settingsResult.error.message}`,
+      );
     }
 
     if (courtsResult.error) {
@@ -2458,7 +2592,7 @@ export function ClubApp() {
     if (refreshedSettingsResult.error || !refreshedSettingsResult.data) {
       setStatusMessage(
         refreshedSettingsResult.error?.message ??
-          "Kulüp ayarları kaydedildi ama doğrulama için tekrar okunamadı.",
+          "Rezervasyon ayarları kaydedildi ama doğrulama için tekrar okunamadı.",
       );
       return;
     }
@@ -2484,14 +2618,14 @@ export function ClubApp() {
       setSettings(savedSettings);
       setSettingsDraft(savedSettings);
       setStatusMessage(
-        "Kulüp ayarları kaydedilemedi. Supabase admin ayar SQL'ini çalıştırmak gerekiyor.",
+        "Rezervasyon ayarları kaydedilemedi. Supabase admin ayar SQL'ini çalıştırmak gerekiyor.",
       );
       return;
     }
 
     setSettings(savedSettings);
     setSettingsDraft(savedSettings);
-    setStatusMessage("Kulüp ayarları güncellendi.");
+    setStatusMessage("Rezervasyon ayarları güncellendi.");
   }
 
   async function addCourt(event: FormEvent<HTMLFormElement>) {
@@ -2887,7 +3021,7 @@ export function ClubApp() {
             </div>
             {isAdmin(profile) ? (
               <button
-                className={`h-8 rounded-md px-3 text-xs font-semibold ${
+                className={`h-8 rounded-md px-3 text-xs font-semibold lg:hidden ${
                   visibleActiveTab === "admin"
                     ? "bg-[#237000] text-white"
                     : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
@@ -2924,6 +3058,16 @@ export function ClubApp() {
               label="Profil"
               onClick={() => setActiveTab("profile")}
             />
+            {isAdmin(profile) ? (
+              <div className="hidden lg:block">
+                <NavButton
+                  icon={<ShieldCheck size={18} />}
+                  isActive={visibleActiveTab === "admin"}
+                  label="Admin"
+                  onClick={() => setActiveTab("admin")}
+                />
+              </div>
+            ) : null}
           </nav>
         </aside>
 
@@ -3016,6 +3160,7 @@ export function ClubApp() {
               adminNotifications={adminNotifications}
               courts={courts}
               currentProfile={profile}
+              currentTime={currentTime}
               isSaving={isSaving}
               members={members}
               newCourtName={newCourtName}
@@ -3035,6 +3180,7 @@ export function ClubApp() {
               onSaveCourt={saveCourt}
               onSaveSettings={saveSettings}
               onSettingsDraftChange={setSettingsDraft}
+              reservations={reservations}
               settingsDraft={settingsDraft}
             />
           ) : null}
@@ -4037,6 +4183,7 @@ function AdminPanel({
   adminNotifications,
   courts,
   currentProfile,
+  currentTime,
   isSaving,
   members,
   newCourtName,
@@ -4050,11 +4197,13 @@ function AdminPanel({
   onSaveCourt,
   onSaveSettings,
   onSettingsDraftChange,
+  reservations,
   settingsDraft,
 }: {
   adminNotifications: AppNotification[];
   courts: Court[];
   currentProfile: Profile;
+  currentTime: Date;
   isSaving: boolean;
   members: Profile[];
   newCourtName: string;
@@ -4068,9 +4217,11 @@ function AdminPanel({
   onSaveCourt: (courtId: string) => void;
   onSaveSettings: (event: FormEvent<HTMLFormElement>) => void;
   onSettingsDraftChange: (settings: ClubSettings) => void;
+  reservations: Reservation[];
   settingsDraft: ClubSettings;
 }) {
   const canManageRoles = currentProfile.app_role === "super_admin";
+  const [adminTab, setAdminTab] = useState<AdminTab>("settings");
   const [memberFiltersOpen, setMemberFiltersOpen] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
@@ -4159,7 +4310,26 @@ function AdminPanel({
 
   return (
     <div className="space-y-6">
-      <AdminFoldout icon={<ShieldCheck size={20} />} title="Kulüp ayarları">
+      <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
+        {(Object.keys(adminTabLabels) as AdminTab[]).map((tab) => (
+          <button
+            className={`h-10 rounded px-2 text-sm font-semibold ${
+              adminTab === tab
+                ? "bg-[#237000] text-white"
+                : "text-[#546257] hover:bg-[#eee9dd]"
+            }`}
+            key={tab}
+            onClick={() => setAdminTab(tab)}
+            type="button"
+          >
+            {adminTabLabels[tab]}
+          </button>
+        ))}
+      </div>
+
+      {adminTab === "settings" ? (
+        <>
+      <AdminFoldout icon={<ShieldCheck size={20} />} title="Rezervasyon Ayarları">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={onSaveSettings}>
           <Field label="Açılış saati">
             <input
@@ -4603,7 +4773,10 @@ function AdminPanel({
           ))}
         </div>
       </AdminFoldout>
+        </>
+      ) : null}
 
+      {adminTab === "members" ? (
       <AdminFoldout icon={<Users size={20} />} title="Üyeler">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="text-sm font-medium text-[#68756b]">
@@ -4830,6 +5003,419 @@ function AdminPanel({
           </table>
         </div>
       </AdminFoldout>
+      ) : null}
+
+      {adminTab === "reports" ? (
+        <AdminReportsPanel
+          currentProfile={currentProfile}
+          currentTime={currentTime}
+          members={members}
+          reservations={reservations}
+          settings={settingsDraft}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function AdminReportsPanel({
+  currentProfile,
+  currentTime,
+  members,
+  reservations,
+  settings,
+}: {
+  currentProfile: Profile;
+  currentTime: Date;
+  members: Profile[];
+  reservations: Reservation[];
+  settings: ClubSettings;
+}) {
+  const memberOptions = useMemo(
+    () => uniqueProfiles([currentProfile, ...members]),
+    [currentProfile, members],
+  );
+  const [selectedMemberId, setSelectedMemberId] = useState("all");
+  const [reportRange, setReportRange] =
+    useState<AdminReportRange>("this_month");
+  const [customStartDate, setCustomStartDate] = useState(() =>
+    dateInputValue(startOfLocalMonth(new Date())),
+  );
+  const [customEndDate, setCustomEndDate] = useState(() =>
+    dateInputValue(new Date()),
+  );
+  const reportDateRange = getReportDateRange(
+    reportRange,
+    customStartDate,
+    customEndDate,
+    currentTime,
+  );
+  const isDateRangeValid = reportDateRange.start <= reportDateRange.end;
+  const memberMap = useMemo(
+    () => new Map(memberOptions.map((member) => [member.id, member])),
+    [memberOptions],
+  );
+  const selectedMember =
+    selectedMemberId === "all" ? null : memberMap.get(selectedMemberId) ?? null;
+  const reportReservations = useMemo(() => {
+    if (!isDateRangeValid) {
+      return [];
+    }
+
+    return reservations
+      .filter((reservation) => {
+        const startsAt = new Date(reservation.starts_at);
+        return (
+          isConfirmedReservation(reservation) &&
+          startsAt >= reportDateRange.start &&
+          startsAt <= reportDateRange.end &&
+          (selectedMemberId === "all" ||
+            reservation.user_id === selectedMemberId)
+        );
+      })
+      .sort(
+        (first, second) =>
+          new Date(first.starts_at).getTime() -
+          new Date(second.starts_at).getTime(),
+      );
+  }, [
+    isDateRangeValid,
+    reportDateRange.end,
+    reportDateRange.start,
+    reservations,
+    selectedMemberId,
+  ]);
+  const reportTotals = reportReservations.reduce(
+    (totals, reservation) => {
+      const reservationType = getReservationReportType(reservation);
+      totals.total += 1;
+      totals.hours += getReservationDurationHours(
+        reservation,
+        settings.reservation_slot_minutes,
+      );
+
+      if (reservationType === "lesson") {
+        totals.lessons += 1;
+      } else if (reservationType === "singles") {
+        totals.singles += 1;
+      } else if (reservationType === "doubles") {
+        totals.doubles += 1;
+      } else {
+        totals.other += 1;
+      }
+
+      return totals;
+    },
+    { doubles: 0, hours: 0, lessons: 0, other: 0, singles: 0, total: 0 },
+  );
+  const summaryRows = useMemo(
+    () =>
+      memberOptions
+        .map((member) => {
+          const memberReservations = reportReservations.filter(
+            (reservation) => reservation.user_id === member.id,
+          );
+          const totals = memberReservations.reduce(
+            (memberTotals, reservation) => {
+              const reservationType = getReservationReportType(reservation);
+              memberTotals.total += 1;
+              memberTotals.hours += getReservationDurationHours(
+                reservation,
+                settings.reservation_slot_minutes,
+              );
+
+              if (reservationType === "lesson") {
+                memberTotals.lessons += 1;
+              } else if (reservationType === "singles") {
+                memberTotals.singles += 1;
+              } else if (reservationType === "doubles") {
+                memberTotals.doubles += 1;
+              } else {
+                memberTotals.other += 1;
+              }
+
+              return memberTotals;
+            },
+            {
+              doubles: 0,
+              hours: 0,
+              lessons: 0,
+              other: 0,
+              singles: 0,
+              total: 0,
+            },
+          );
+
+          return {
+            doubles: totals.doubles,
+            email: member.email,
+            hours: formatReportHours(totals.hours),
+            lessons: totals.lessons,
+            memberName: member.full_name || "İsim yok",
+            other: totals.other,
+            singles: totals.singles,
+            total: totals.total,
+          };
+        })
+        .sort((first, second) => {
+          if (second.total !== first.total) {
+            return second.total - first.total;
+          }
+
+          return first.memberName.localeCompare(second.memberName, "tr");
+        }),
+    [memberOptions, reportReservations, settings.reservation_slot_minutes],
+  );
+  const detailRows = reportReservations.map((reservation) => {
+    const startsAt = new Date(reservation.starts_at);
+    const endsAt = new Date(reservation.ends_at);
+    const owner = memberMap.get(reservation.user_id);
+
+    return {
+      court: reservation.courts?.name ?? "Kort",
+      date: format(startsAt, "dd.MM.yyyy"),
+      email: owner?.email ?? reservation.profiles?.email ?? "",
+      info: getReservationDisplayLines(reservation).join(" / "),
+      memberName:
+        owner?.full_name ??
+        reservation.profiles?.full_name ??
+        reservation.profiles?.email ??
+        "İsim yok",
+      time: `${formatTime(startsAt)} - ${formatTime(endsAt)}`,
+      type: getReservationReportTypeLabel(reservation),
+      weekday: formatWeekdayLong(startsAt),
+    };
+  });
+  const isSingleMemberReport = selectedMemberId !== "all";
+  const hasReportRows = isSingleMemberReport
+    ? detailRows.length > 0
+    : summaryRows.some((row) => row.total > 0);
+
+  async function downloadReport() {
+    if (!isDateRangeValid || !hasReportRows) {
+      return;
+    }
+
+    const XLSX = await import("xlsx");
+    const rows = isSingleMemberReport
+      ? detailRows.map((row) => ({
+          "Ad Soyad": row.memberName,
+          "E-posta": row.email,
+          Tarih: row.date,
+          Gün: row.weekday,
+          Saat: row.time,
+          Kort: row.court,
+          Tür: row.type,
+          "Rezervasyon Bilgisi": row.info,
+        }))
+      : summaryRows.map((row) => ({
+          "Ad Soyad": row.memberName,
+          "E-posta": row.email,
+          "Toplam Rezervasyon": row.total,
+          Ders: row.lessons,
+          Tekler: row.singles,
+          Çiftler: row.doubles,
+          "Özel/Diğer": row.other,
+          "Toplam Saat": row.hours,
+        }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      isSingleMemberReport ? "Detay" : "Özet",
+    );
+    XLSX.writeFile(
+      workbook,
+      `camlik-tenis-rapor-${dateInputValue(currentTime)}.xlsx`,
+    );
+  }
+
+  return (
+    <section className="space-y-4 rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Raporlar</h2>
+          <p className="mt-1 text-sm text-[#68756b]">
+            Onaylı rezervasyonları üye ve dönem bazında inceleyin.
+          </p>
+        </div>
+        <button
+          className="primary-button inline-flex items-center gap-2"
+          disabled={!isDateRangeValid || !hasReportRows}
+          onClick={() => {
+            void downloadReport();
+          }}
+          type="button"
+        >
+          <FileSpreadsheet size={16} />
+          Excel çıkar
+        </button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <Field label="Üye">
+          <select
+            className="input"
+            onChange={(event) => setSelectedMemberId(event.target.value)}
+            value={selectedMemberId}
+          >
+            <option value="all">Tüm üyeler</option>
+            {memberOptions.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.full_name ?? member.email ?? "İsim yok"}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Dönem">
+          <select
+            className="input"
+            onChange={(event) =>
+              setReportRange(event.target.value as AdminReportRange)
+            }
+            value={reportRange}
+          >
+            {(Object.keys(reportRangeLabels) as AdminReportRange[]).map(
+              (range) => (
+                <option key={range} value={range}>
+                  {reportRangeLabels[range]}
+                </option>
+              ),
+            )}
+          </select>
+        </Field>
+        <Field label="Başlangıç">
+          <input
+            className="input"
+            disabled={reportRange !== "custom"}
+            onChange={(event) => setCustomStartDate(event.target.value)}
+            type="date"
+            value={
+              reportRange === "custom"
+                ? customStartDate
+                : dateInputValue(reportDateRange.start)
+            }
+          />
+        </Field>
+        <Field label="Bitiş">
+          <input
+            className="input"
+            disabled={reportRange !== "custom"}
+            onChange={(event) => setCustomEndDate(event.target.value)}
+            type="date"
+            value={
+              reportRange === "custom"
+                ? customEndDate
+                : dateInputValue(reportDateRange.end)
+            }
+          />
+        </Field>
+      </div>
+
+      {!isDateRangeValid ? (
+        <div className="rounded-md border border-[#d9c799] bg-[#fff8df] px-4 py-3 text-sm text-[#5f4b19]">
+          Başlangıç tarihi bitiş tarihinden sonra olamaz.
+        </div>
+      ) : null}
+
+      <div className="grid gap-2 sm:grid-cols-4">
+        <ReportMetric label="Toplam" value={reportTotals.total} />
+        <ReportMetric label="Ders" value={reportTotals.lessons} />
+        <ReportMetric
+          label="Tekler / Çiftler"
+          value={`${reportTotals.singles} / ${reportTotals.doubles}`}
+        />
+        <ReportMetric
+          label="Toplam saat"
+          value={formatReportHours(reportTotals.hours)}
+        />
+      </div>
+
+      {isSingleMemberReport ? (
+        <div className="overflow-x-auto">
+          <div className="mb-2 text-sm font-semibold text-[#34443a]">
+            {selectedMember?.full_name ?? selectedMember?.email ?? "Seçili üye"}
+          </div>
+          <table className="min-w-[820px] w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
+                <th className="py-3 pr-3 font-medium">Tarih</th>
+                <th className="py-3 pr-3 font-medium">Gün</th>
+                <th className="py-3 pr-3 font-medium">Saat</th>
+                <th className="py-3 pr-3 font-medium">Kort</th>
+                <th className="py-3 pr-3 font-medium">Tür</th>
+                <th className="py-3 pr-3 font-medium">Rezervasyon bilgisi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detailRows.map((row, index) => (
+                <tr
+                  className="border-b border-[#eee7db]"
+                  key={`${row.date}-${row.time}-${index}`}
+                >
+                  <td className="py-3 pr-3">{row.date}</td>
+                  <td className="py-3 pr-3">{row.weekday}</td>
+                  <td className="py-3 pr-3">{row.time}</td>
+                  <td className="py-3 pr-3">{row.court}</td>
+                  <td className="py-3 pr-3">{row.type}</td>
+                  <td className="py-3 pr-3">{row.info}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {detailRows.length === 0 ? (
+            <EmptyState
+              title="Kayıt yok"
+              text="Bu filtrelerle onaylı rezervasyon bulunmuyor."
+            />
+          ) : null}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-[820px] w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
+                <th className="py-3 pr-3 font-medium">Ad soyad</th>
+                <th className="py-3 pr-3 font-medium">E-posta</th>
+                <th className="py-3 pr-3 font-medium">Toplam</th>
+                <th className="py-3 pr-3 font-medium">Ders</th>
+                <th className="py-3 pr-3 font-medium">Tekler</th>
+                <th className="py-3 pr-3 font-medium">Çiftler</th>
+                <th className="py-3 pr-3 font-medium">Saat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summaryRows.map((row) => (
+                <tr className="border-b border-[#eee7db]" key={row.email}>
+                  <td className="py-3 pr-3 font-semibold">{row.memberName}</td>
+                  <td className="py-3 pr-3">{row.email}</td>
+                  <td className="py-3 pr-3">{row.total}</td>
+                  <td className="py-3 pr-3">{row.lessons}</td>
+                  <td className="py-3 pr-3">{row.singles}</td>
+                  <td className="py-3 pr-3">{row.doubles}</td>
+                  <td className="py-3 pr-3">{row.hours}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ReportMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="rounded-md border border-[#eee7db] bg-white p-3">
+      <p className="text-xs font-semibold uppercase text-[#68756b]">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-[#17211c]">{value}</p>
     </div>
   );
 }
