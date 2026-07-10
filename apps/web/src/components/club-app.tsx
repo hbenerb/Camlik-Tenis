@@ -5184,33 +5184,40 @@ function AdminReportsPanel({
     }
 
     const XLSX = await import("xlsx");
-    const rows = isSingleMemberReport
-      ? detailRows.map((row) => ({
-          "Ad Soyad": row.memberName,
-          "E-posta": row.email,
-          Tarih: row.date,
-          Gün: row.weekday,
-          Saat: row.time,
-          Kort: row.court,
-          Tür: row.type,
-          "Rezervasyon Bilgisi": row.info,
-        }))
-      : summaryRows.map((row) => ({
-          "Ad Soyad": row.memberName,
-          "E-posta": row.email,
-          "Toplam Rezervasyon": row.total,
-          Ders: row.lessons,
-          Tekler: row.singles,
-          Çiftler: row.doubles,
-          "Özel/Diğer": row.other,
-          "Toplam Saat": row.hours,
-        }));
-    const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
+    const detailExcelRows = detailRows.map((row) => ({
+      "Ad Soyad": row.memberName,
+      "E-posta": row.email,
+      Tarih: row.date,
+      Gün: row.weekday,
+      Saat: row.time,
+      Kort: row.court,
+      Tür: row.type,
+      "Rezervasyon Bilgisi": row.info,
+    }));
+
+    if (!isSingleMemberReport) {
+      const summaryExcelRows = summaryRows.map((row) => ({
+        "Ad Soyad": row.memberName,
+        "E-posta": row.email,
+        "Toplam Rezervasyon": row.total,
+        Ders: row.lessons,
+        Tekler: row.singles,
+        Çiftler: row.doubles,
+        "Özel/Diğer": row.other,
+        "Toplam Saat": row.hours,
+      }));
+      XLSX.utils.book_append_sheet(
+        workbook,
+        XLSX.utils.json_to_sheet(summaryExcelRows),
+        "Özet",
+      );
+    }
+
     XLSX.utils.book_append_sheet(
       workbook,
-      worksheet,
-      isSingleMemberReport ? "Detay" : "Özet",
+      XLSX.utils.json_to_sheet(detailExcelRows),
+      "Detay",
     );
     XLSX.writeFile(
       workbook,
@@ -5359,33 +5366,82 @@ function AdminReportsPanel({
           ) : null}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-[820px] w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
-                <th className="py-3 pr-3 font-medium">Ad soyad</th>
-                <th className="py-3 pr-3 font-medium">E-posta</th>
-                <th className="py-3 pr-3 font-medium">Toplam</th>
-                <th className="py-3 pr-3 font-medium">Ders</th>
-                <th className="py-3 pr-3 font-medium">Tekler</th>
-                <th className="py-3 pr-3 font-medium">Çiftler</th>
-                <th className="py-3 pr-3 font-medium">Saat</th>
-              </tr>
-            </thead>
-            <tbody>
-              {summaryRows.map((row) => (
-                <tr className="border-b border-[#eee7db]" key={row.email}>
-                  <td className="py-3 pr-3 font-semibold">{row.memberName}</td>
-                  <td className="py-3 pr-3">{row.email}</td>
-                  <td className="py-3 pr-3">{row.total}</td>
-                  <td className="py-3 pr-3">{row.lessons}</td>
-                  <td className="py-3 pr-3">{row.singles}</td>
-                  <td className="py-3 pr-3">{row.doubles}</td>
-                  <td className="py-3 pr-3">{row.hours}</td>
+        <div className="space-y-5">
+          <div className="overflow-x-auto">
+            <div className="mb-2 text-sm font-semibold text-[#34443a]">
+              Üye özeti
+            </div>
+            <table className="min-w-[820px] w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
+                  <th className="py-3 pr-3 font-medium">Ad soyad</th>
+                  <th className="py-3 pr-3 font-medium">E-posta</th>
+                  <th className="py-3 pr-3 font-medium">Toplam</th>
+                  <th className="py-3 pr-3 font-medium">Ders</th>
+                  <th className="py-3 pr-3 font-medium">Tekler</th>
+                  <th className="py-3 pr-3 font-medium">Çiftler</th>
+                  <th className="py-3 pr-3 font-medium">Saat</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {summaryRows.map((row) => (
+                  <tr className="border-b border-[#eee7db]" key={row.email}>
+                    <td className="py-3 pr-3 font-semibold">{row.memberName}</td>
+                    <td className="py-3 pr-3">{row.email}</td>
+                    <td className="py-3 pr-3">{row.total}</td>
+                    <td className="py-3 pr-3">{row.lessons}</td>
+                    <td className="py-3 pr-3">{row.singles}</td>
+                    <td className="py-3 pr-3">{row.doubles}</td>
+                    <td className="py-3 pr-3">{row.hours}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="overflow-x-auto">
+            <div className="mb-2 text-sm font-semibold text-[#34443a]">
+              Rezervasyon detayları
+            </div>
+            <table className="min-w-[980px] w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
+                  <th className="py-3 pr-3 font-medium">Üye</th>
+                  <th className="py-3 pr-3 font-medium">Tarih</th>
+                  <th className="py-3 pr-3 font-medium">Gün</th>
+                  <th className="py-3 pr-3 font-medium">Saat</th>
+                  <th className="py-3 pr-3 font-medium">Kort</th>
+                  <th className="py-3 pr-3 font-medium">Tür</th>
+                  <th className="py-3 pr-3 font-medium">Rezervasyon bilgisi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detailRows.map((row, index) => (
+                  <tr
+                    className="border-b border-[#eee7db]"
+                    key={`${row.email}-${row.date}-${row.time}-${index}`}
+                  >
+                    <td className="py-3 pr-3">
+                      <div className="font-semibold">{row.memberName}</div>
+                      <div className="text-xs text-[#68756b]">{row.email}</div>
+                    </td>
+                    <td className="py-3 pr-3">{row.date}</td>
+                    <td className="py-3 pr-3">{row.weekday}</td>
+                    <td className="py-3 pr-3">{row.time}</td>
+                    <td className="py-3 pr-3">{row.court}</td>
+                    <td className="py-3 pr-3">{row.type}</td>
+                    <td className="py-3 pr-3">{row.info}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {detailRows.length === 0 ? (
+              <EmptyState
+                title="Kayıt yok"
+                text="Bu filtrelerle onaylı rezervasyon bulunmuyor."
+              />
+            ) : null}
+          </div>
         </div>
       )}
     </section>
