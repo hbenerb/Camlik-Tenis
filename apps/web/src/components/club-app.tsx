@@ -13,7 +13,6 @@ import {
   startOfWeek,
 } from "date-fns";
 import {
-  Apple,
   Bell,
   CalendarDays,
   CalendarClock,
@@ -68,7 +67,7 @@ import type {
 } from "@/lib/types";
 
 type AppTab = "calendar" | "reservations" | "profile" | "admin";
-type OAuthProvider = "google" | "apple";
+type OAuthProvider = "google";
 type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
 type MatchType = "singles" | "doubles" | "lesson";
@@ -3256,10 +3255,7 @@ function LandingShell({
   theme: ThemeMode;
 }) {
   const isSigningIn = Boolean(signingInProvider);
-  const loadingLabel =
-    signingInProvider === "apple"
-      ? "Apple ile bağlanılıyor"
-      : "Google ile bağlanılıyor";
+  const loadingLabel = "Google ile bağlanılıyor";
   const isAuthActionDisabled = isAuthDisabled || isSigningIn;
 
   return (
@@ -3299,15 +3295,6 @@ function LandingShell({
               G
             </span>
             Google ile bağlan
-          </button>
-          <button
-            className="inline-flex h-12 items-center justify-center gap-3 rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500] disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isAuthActionDisabled}
-            onClick={() => onSignIn("apple")}
-            type="button"
-          >
-            <Apple size={20} />
-            Apple ile bağlan
           </button>
         </div>
 
