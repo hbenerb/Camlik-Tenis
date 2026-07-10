@@ -22,6 +22,7 @@ import {
   Info,
   FileSpreadsheet,
   LogOut,
+  MessageSquare,
   Moon,
   Pencil,
   RefreshCw,
@@ -66,7 +67,7 @@ import type {
   SkillLevel,
 } from "@/lib/types";
 
-type AppTab = "calendar" | "reservations" | "profile" | "admin";
+type AppTab = "calendar" | "reservations" | "messages" | "profile" | "admin";
 type OAuthProvider = "google";
 type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
@@ -998,6 +999,73 @@ function getNotificationOccurrence(
   return occurrenceAt;
 }
 
+function getNotificationLastSentAt(
+  notification: AppNotification,
+  currentTime: Date,
+) {
+  const startsAt = new Date(notification.starts_at);
+  const expiresAt = notification.expires_at
+    ? new Date(notification.expires_at)
+    : null;
+
+  if (startsAt > currentTime) {
+    return null;
+  }
+
+  if (notification.schedule_type !== "recurring") {
+    return startsAt;
+  }
+
+  if (!notification.interval_minutes || notification.interval_minutes < 1) {
+    return null;
+  }
+
+  const effectiveEnd =
+    expiresAt && expiresAt < currentTime ? expiresAt : currentTime;
+
+  if (effectiveEnd < startsAt) {
+    return null;
+  }
+
+  const elapsedMinutes = Math.floor(
+    (effectiveEnd.getTime() - startsAt.getTime()) / 60000,
+  );
+  const occurrenceOffset =
+    Math.floor(elapsedMinutes / notification.interval_minutes) *
+    notification.interval_minutes;
+
+  return addMinutesToDate(startsAt, occurrenceOffset);
+}
+
+function isNotificationVisibleToUser(
+  notification: AppNotification,
+  userId: string,
+) {
+  return !notification.target_user_id || notification.target_user_id === userId;
+}
+
+function sortUserNotifications(
+  notifications: AppNotification[],
+  userId: string,
+  currentTime: Date,
+) {
+  return [...notifications]
+    .filter(
+      (notification) =>
+        notification.status === "active" &&
+        isNotificationVisibleToUser(notification, userId) &&
+        Boolean(getNotificationLastSentAt(notification, currentTime)),
+    )
+    .sort((first, second) => {
+      const firstSentAt = getNotificationLastSentAt(first, currentTime);
+      const secondSentAt = getNotificationLastSentAt(second, currentTime);
+
+      return (
+        (secondSentAt?.getTime() ?? 0) - (firstSentAt?.getTime() ?? 0)
+      );
+    });
+}
+
 function notificationDeliveryKey(notificationId: string, occurrenceAt: Date) {
   return `${notificationId}:${occurrenceAt.toISOString()}`;
 }
@@ -1012,6 +1080,17 @@ function sortNotifications(notifications: AppNotification[]) {
 function formatNotificationDate(value: string) {
   const date = new Date(value);
   return `${format(date, "dd.MM.yyyy")} ${formatTime(date)}`;
+}
+
+function formatMessageSentAt(date: Date) {
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "long",
+    weekday: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 function formatNotificationInterval(minutes: number | null) {
@@ -1093,6 +1172,9 @@ export function ClubApp() {
   const [courts, setCourts] = useState<Court[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [adminNotifications, setAdminNotifications] = useState<AppNotification[]>(
+    [],
+  );
+  const [userNotifications, setUserNotifications] = useState<AppNotification[]>(
     [],
   );
   const [notificationToast, setNotificationToast] =
@@ -1209,6 +1291,39 @@ export function ClubApp() {
         isReservationInRange(reservation, range.start, range.end),
     );
   }, [calendarView, reservations, selectedDate]);
+
+  const loadUserNotifications = useCallback(
+    async (currentUser: User, referenceTime = new Date()) => {
+      if (!supabase) {
+        return;
+      }
+
+      setCurrentTime(referenceTime);
+
+      const notificationResult = await supabase
+        .from("app_notifications")
+        .select("*")
+        .eq("status", "active")
+        .lte("starts_at", referenceTime.toISOString())
+        .or(`target_user_id.is.null,target_user_id.eq.${currentUser.id}`)
+        .order("starts_at", { ascending: false })
+        .limit(100);
+
+      if (notificationResult.error) {
+        setUserNotifications([]);
+        return;
+      }
+
+      setUserNotifications(
+        sortUserNotifications(
+          (notificationResult.data as AppNotification[] | null) ?? [],
+          currentUser.id,
+          referenceTime,
+        ),
+      );
+    },
+    [supabase],
+  );
 
   const syncPushSubscription = useCallback(
     async (currentUser: User, showErrors = false) => {
@@ -1559,7 +1674,8 @@ export function ClubApp() {
 
     setIsLoading(true);
     setStatusMessage(null);
-    setCurrentTime(new Date());
+    const loadedAt = new Date();
+    setCurrentTime(loadedAt);
 
     const [initialProfileResult, settingsResult, courtsResult] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", currentUser.id).maybeSingle(),
@@ -1717,9 +1833,10 @@ export function ClubApp() {
       );
     }
 
+    await loadUserNotifications(currentUser, loadedAt);
     setIsLoading(false);
     void processDueNotifications(currentUser, loadedProfile);
-  }, [processDueNotifications, supabase]);
+  }, [loadUserNotifications, processDueNotifications, supabase]);
 
   useEffect(() => {
     if (!supabase) {
@@ -1765,6 +1882,18 @@ export function ClubApp() {
 
     return () => window.clearTimeout(timer);
   }, [loadData, user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      void loadUserNotifications(user);
+    }, 60000);
+
+    return () => window.clearInterval(timer);
+  }, [loadUserNotifications, user]);
 
   useEffect(() => {
     if (!user || !profile?.notification_enabled) {
@@ -1830,6 +1959,32 @@ export function ClubApp() {
       void supabase.removeChannel(channel);
     };
   }, [processDueNotifications, profile, supabase, user]);
+
+  useEffect(() => {
+    if (!supabase || !user) {
+      return;
+    }
+
+    const currentUser = user;
+    const channel = supabase
+      .channel(`app-message-notifications-${currentUser.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "app_notifications",
+        },
+        () => {
+          void loadUserNotifications(currentUser);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [loadUserNotifications, supabase, user]);
 
   useEffect(() => {
     if (
@@ -1924,6 +2079,7 @@ export function ClubApp() {
     setReservations([]);
     setMembers([]);
     setAdminNotifications([]);
+    setUserNotifications([]);
     setNotificationToast(null);
     setIsNotificationPromptOpen(false);
     setIsPushSubscriptionSynced(false);
@@ -2201,6 +2357,7 @@ export function ClubApp() {
         : "Notification ayarlandı.",
     );
     void processDueNotifications(user, profile);
+    void loadUserNotifications(user);
 
     return true;
   }
@@ -2238,6 +2395,9 @@ export function ClubApp() {
           : currentNotification,
       ),
     );
+    if (user) {
+      void loadUserNotifications(user);
+    }
     setStatusMessage("Notification iptal edildi.");
   }
 
@@ -2979,6 +3139,14 @@ export function ClubApp() {
     void loadData(user);
   }
 
+  function refreshMessages() {
+    if (!user) {
+      return;
+    }
+
+    void loadUserNotifications(user);
+  }
+
   if (!supabase) {
     return (
       <main
@@ -3085,6 +3253,12 @@ export function ClubApp() {
               onClick={() => setActiveTab("reservations")}
             />
             <NavButton
+              icon={<MessageSquare size={18} />}
+              isActive={visibleActiveTab === "messages"}
+              label="Mesajlar"
+              onClick={() => setActiveTab("messages")}
+            />
+            <NavButton
               compactOnMobile
               icon={<UserIcon size={18} />}
               isActive={visibleActiveTab === "profile"}
@@ -3170,6 +3344,15 @@ export function ClubApp() {
               onShowAllChange={setShowAllReservations}
               reservations={reservations}
               showAll={showAllReservations}
+              userId={user.id}
+            />
+          ) : null}
+
+          {!isLoading && visibleActiveTab === "messages" ? (
+            <MessagesPanel
+              currentTime={currentTime}
+              notifications={userNotifications}
+              onRefresh={refreshMessages}
               userId={user.id}
             />
           ) : null}
@@ -4041,6 +4224,100 @@ function ReservationsPanel({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function MessagesPanel({
+  currentTime,
+  notifications,
+  onRefresh,
+  userId,
+}: {
+  currentTime: Date;
+  notifications: AppNotification[];
+  onRefresh: () => void;
+  userId: string;
+}) {
+  const rows = sortUserNotifications(notifications, userId, currentTime)
+    .map((notification) => ({
+      notification,
+      sentAt: getNotificationLastSentAt(notification, currentTime),
+    }))
+    .filter(
+      (
+        row,
+      ): row is {
+        notification: AppNotification;
+        sentAt: Date;
+      } => Boolean(row.sentAt),
+    );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3 rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="grid size-10 shrink-0 place-items-center rounded-md bg-[#e6f0e7] text-[#237000]">
+            <MessageSquare size={18} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold">Mesajlar</h2>
+            <p className="mt-1 text-xs leading-5 text-[#68756b] sm:text-sm">
+              Son gönderilen genel ve kişisel bildirimler.
+            </p>
+          </div>
+        </div>
+        <button
+          aria-label="Mesajları yenile"
+          className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] text-[#17211c] hover:bg-[#eee9dd]"
+          onClick={onRefresh}
+          title="Mesajları yenile"
+          type="button"
+        >
+          <RefreshCw size={16} />
+        </button>
+      </div>
+
+      {rows.length === 0 ? (
+        <EmptyState
+          title="Mesaj yok"
+          text="Henüz size gönderilmiş bir bildirim bulunmuyor."
+        />
+      ) : (
+        <div className="space-y-3">
+          {rows.map(({ notification, sentAt }) => {
+            const isPersonal = Boolean(notification.target_user_id);
+
+            return (
+              <article
+                className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4"
+                key={`${notification.id}-${sentAt.toISOString()}`}
+              >
+                <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold">
+                  <span
+                    className={`rounded-full px-2 py-1 ${
+                      isPersonal
+                        ? "bg-[#fff8df] text-[#5f4b19]"
+                        : "bg-[#e6f0e7] text-[#237000]"
+                    }`}
+                  >
+                    {isPersonal ? "Kişisel" : "Genel"}
+                  </span>
+                  <span className="rounded-full bg-[#f1eee5] px-2 py-1 text-[#546257]">
+                    {notificationScheduleTypeLabels[notification.schedule_type]}
+                  </span>
+                  <span className="text-[#68756b]">
+                    {formatMessageSentAt(sentAt)}
+                  </span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm font-medium leading-6 text-[#17211c] sm:text-base">
+                  {notification.message}
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
