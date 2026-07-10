@@ -3058,7 +3058,7 @@ export function ClubApp() {
               onClick={() => setActiveTab("profile")}
             />
             {isAdmin(profile) ? (
-              <div className="hidden lg:block">
+              <div className="hidden lg:block lg:w-full">
                 <NavButton
                   icon={<ShieldCheck size={18} />}
                   isActive={visibleActiveTab === "admin"}
@@ -6303,7 +6303,7 @@ function NavButton({
     <button
       aria-label={label}
       className={`inline-flex h-11 items-center justify-center whitespace-nowrap rounded-md text-sm font-semibold ${
-        compactOnMobile ? "w-11 px-0 lg:w-auto lg:gap-2 lg:px-3" : "gap-2 px-3"
+        compactOnMobile ? "w-11 px-0 lg:w-full lg:gap-2 lg:px-3" : "gap-2 px-3 lg:w-full"
       } ${
         isActive
           ? "bg-[#237000] text-white"
