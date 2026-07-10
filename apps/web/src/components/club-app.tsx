@@ -79,6 +79,14 @@ type AdminReportRange =
   | "last_3_months"
   | "this_year"
   | "custom";
+type AdminReportSortField =
+  | "date"
+  | "weekday"
+  | "time"
+  | "member"
+  | "court"
+  | "type";
+type SortDirection = "asc" | "desc";
 type MatchPlayerKey =
   | "team1_player1_name"
   | "team1_player2_name"
@@ -189,6 +197,20 @@ const reportRangeLabels: Record<AdminReportRange, string> = {
   last_3_months: "Son 3 ay",
   this_year: "Bu yıl",
   custom: "Özel tarih aralığı",
+};
+
+const reportSortFieldLabels: Record<AdminReportSortField, string> = {
+  date: "Tarih",
+  weekday: "Gün",
+  time: "Saat",
+  member: "Üye",
+  court: "Kort",
+  type: "Tür",
+};
+
+const sortDirectionLabels: Record<SortDirection, string> = {
+  asc: "Artan",
+  desc: "Azalan",
 };
 
 const notificationScheduleTypeLabels: Record<NotificationScheduleType, string> = {
@@ -821,6 +843,18 @@ function getReservationDurationHours(
 
 function formatReportHours(hours: number) {
   return Number(hours.toFixed(2));
+}
+
+function weekdaySortOrder(date: Date) {
+  return (date.getDay() + 6) % 7;
+}
+
+function timeSortValue(date: Date) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function compareText(first: string, second: string) {
+  return first.localeCompare(second, "tr", { sensitivity: "base" });
 }
 
 function defaultNotificationDraft(): AdminNotificationDraft {
@@ -5025,6 +5059,10 @@ function AdminReportsPanel({
   const [selectedMemberId, setSelectedMemberId] = useState("all");
   const [reportRange, setReportRange] =
     useState<AdminReportRange>("this_month");
+  const [detailSortField, setDetailSortField] =
+    useState<AdminReportSortField>("date");
+  const [detailSortDirection, setDetailSortDirection] =
+    useState<SortDirection>("asc");
   const [customStartDate, setCustomStartDate] = useState(() =>
     dateInputValue(startOfLocalMonth(new Date())),
   );
@@ -5168,10 +5206,41 @@ function AdminReportsPanel({
         reservation.profiles?.full_name ??
         reservation.profiles?.email ??
         "İsim yok",
+      sortDate: startsAt.getTime(),
+      sortTime: timeSortValue(startsAt),
+      sortWeekday: weekdaySortOrder(startsAt),
       time: `${formatTime(startsAt)} - ${formatTime(endsAt)}`,
       type: getReservationReportTypeLabel(reservation),
       weekday: formatWeekdayLong(startsAt),
     };
+  }).sort((first, second) => {
+    let comparison = 0;
+
+    if (detailSortField === "date") {
+      comparison = first.sortDate - second.sortDate;
+    } else if (detailSortField === "weekday") {
+      comparison =
+        first.sortWeekday - second.sortWeekday ||
+        first.sortDate - second.sortDate;
+    } else if (detailSortField === "time") {
+      comparison =
+        first.sortTime - second.sortTime ||
+        first.sortDate - second.sortDate;
+    } else if (detailSortField === "member") {
+      comparison =
+        compareText(first.memberName, second.memberName) ||
+        first.sortDate - second.sortDate;
+    } else if (detailSortField === "court") {
+      comparison =
+        compareText(first.court, second.court) ||
+        first.sortDate - second.sortDate;
+    } else if (detailSortField === "type") {
+      comparison =
+        compareText(first.type, second.type) ||
+        first.sortDate - second.sortDate;
+    }
+
+    return detailSortDirection === "asc" ? comparison : -comparison;
   });
   const isSingleMemberReport = selectedMemberId !== "all";
   const hasReportRows = isSingleMemberReport
@@ -5304,6 +5373,43 @@ function AdminReportsPanel({
                 : dateInputValue(reportDateRange.end)
             }
           />
+        </Field>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field label="Detay sıralama">
+          <select
+            className="input"
+            onChange={(event) =>
+              setDetailSortField(event.target.value as AdminReportSortField)
+            }
+            value={detailSortField}
+          >
+            {(Object.keys(reportSortFieldLabels) as AdminReportSortField[]).map(
+              (field) => (
+                <option key={field} value={field}>
+                  {reportSortFieldLabels[field]}
+                </option>
+              ),
+            )}
+          </select>
+        </Field>
+        <Field label="Sıralama yönü">
+          <select
+            className="input"
+            onChange={(event) =>
+              setDetailSortDirection(event.target.value as SortDirection)
+            }
+            value={detailSortDirection}
+          >
+            {(Object.keys(sortDirectionLabels) as SortDirection[]).map(
+              (direction) => (
+                <option key={direction} value={direction}>
+                  {sortDirectionLabels[direction]}
+                </option>
+              ),
+            )}
+          </select>
         </Field>
       </div>
 
