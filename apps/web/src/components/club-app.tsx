@@ -88,6 +88,29 @@ type AdminReportSortField =
   | "court"
   | "type";
 type SortDirection = "asc" | "desc";
+type AdminReportDetailRow = {
+  court: string;
+  date: string;
+  email: string;
+  info: string;
+  memberName: string;
+  sortDate: number;
+  sortTime: number;
+  sortWeekday: number;
+  time: string;
+  type: string;
+  weekday: string;
+};
+type AdminReportSummaryRow = {
+  doubles: number;
+  email: string;
+  hours: number;
+  lessons: number;
+  memberName: string;
+  other: number;
+  singles: number;
+  total: number;
+};
 type MatchPlayerKey =
   | "team1_player1_name"
   | "team1_player2_name"
@@ -3189,30 +3212,32 @@ export function ClubApp() {
       className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] text-[#17211c]`}
     >
       <header className="border-b border-[#ddd7c8] bg-[#fffdf8]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <ClubMark size="banner" />
             <div className="min-w-0">
-              <h1 className="text-base font-semibold leading-tight tracking-normal sm:text-xl">
+              <h1 className="text-sm font-semibold leading-tight tracking-normal min-[380px]:text-base sm:text-xl">
                 <span className="block">Ayvalık Çamlık</span>
                 <span className="block">Tenis Kulübü</span>
               </h1>
-              <div className="mt-1 text-xs text-[#546257] sm:text-sm">
+              <div className="mt-0.5 max-w-28 truncate text-[11px] text-[#546257] min-[420px]:max-w-40 sm:mt-1 sm:max-w-none sm:text-sm">
                 <span className="font-medium text-[#17211c]">
                   {getDisplayName(profile, user)}
                 </span>
-                {profile?.is_club_member ? " · Kulüp üyesi" : " · App üyesi"}
+                <span className="hidden sm:inline">
+                  {profile?.is_club_member ? " · Kulüp üyesi" : " · App üyesi"}
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col items-end gap-2">
-            <div className="flex items-center gap-2">
+          <div className="flex shrink-0 flex-col items-end gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <ThemeToggle onToggle={toggleTheme} theme={theme} />
               <PageRefreshButton />
               <button
                 aria-label="Çıkış yap"
-                className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+                className="grid size-9 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd] sm:size-10"
                 onClick={signOut}
                 title="Çıkış yap"
                 type="button"
@@ -3237,9 +3262,9 @@ export function ClubApp() {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-4 px-3 py-4 sm:px-6 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
-        <aside className="w-full lg:sticky lg:top-6 lg:self-start">
-          <nav className="flex justify-center gap-2 overflow-x-auto lg:flex-col lg:justify-start lg:overflow-visible">
+      <div className="mx-auto grid w-full max-w-7xl gap-4 px-2.5 py-3 pb-24 sm:px-6 sm:py-4 sm:pb-24 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
+        <aside className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ddd7c8] bg-[#fffdf8]/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:sticky lg:top-6 lg:z-auto lg:w-full lg:self-start lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+          <nav className="grid grid-cols-4 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
             <NavButton
               icon={<CalendarDays size={18} />}
               isActive={visibleActiveTab === "calendar"}
@@ -3259,7 +3284,6 @@ export function ClubApp() {
               onClick={() => setActiveTab("messages")}
             />
             <NavButton
-              compactOnMobile
               icon={<UserIcon size={18} />}
               isActive={visibleActiveTab === "profile"}
               label="Profil"
@@ -3801,7 +3825,7 @@ function DayCalendar({
 }) {
   const compactCourtGrid = courts.length <= 3;
   const gridTemplateColumns = compactCourtGrid
-    ? `clamp(64px, 15vw, 96px) repeat(${courts.length}, minmax(0, 1fr))`
+    ? `clamp(48px, 14vw, 96px) repeat(${courts.length}, minmax(0, 1fr))`
     : `112px repeat(${courts.length}, minmax(116px, 1fr))`;
 
   return (
@@ -3813,12 +3837,12 @@ function DayCalendar({
           gridTemplateColumns,
         }}
       >
-        <div className="grid place-items-center border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-center text-[9px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
+        <div className="grid place-items-center border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[8px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
           Saat
         </div>
         {courts.map((court) => (
           <div
-            className="grid place-items-center break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-1 py-2 text-center text-[10px] font-semibold leading-tight sm:p-3 sm:text-sm"
+            className="grid min-w-0 place-items-center break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[9px] font-semibold leading-tight sm:p-3 sm:text-sm"
             key={court.id}
           >
             {court.name}
@@ -3827,7 +3851,7 @@ function DayCalendar({
 
         {timeSlots.map((slot) => {
           const slotIsPast = isPastCalendarSlot(selectedDate, slot, currentTime);
-          const timeCellClassName = `grid place-items-center border-r border-t border-[#eee7db] px-1 py-2 text-center text-[15px] font-bold leading-none sm:p-3 sm:text-xl ${
+          const timeCellClassName = `grid place-items-center border-r border-t border-[#eee7db] px-0.5 py-2 text-center text-[13px] font-bold leading-none min-[380px]:text-[14px] sm:p-3 sm:text-xl ${
             slotIsPast
               ? "bg-[#f1eee5] text-[#8b8f86]"
               : "text-[#17211c]"
@@ -3850,7 +3874,7 @@ function DayCalendar({
                   slot,
                 );
                 const cellClassName =
-                  "min-h-12 border-r border-t border-[#eee7db] p-1 text-center transition sm:min-h-20 sm:p-2";
+                  "min-h-12 min-w-0 overflow-hidden border-r border-t border-[#eee7db] p-0.5 text-center transition min-[380px]:p-1 sm:min-h-20 sm:p-2";
 
                 if (reservation) {
                   const reservationLines = getReservationDisplayLines(reservation);
@@ -3869,7 +3893,7 @@ function DayCalendar({
                     >
                       {reservationLines.map((line, index) => (
                         <p
-                          className="truncate text-[11px] font-semibold leading-tight sm:text-sm"
+                          className="truncate text-[9px] font-semibold leading-tight min-[380px]:text-[10px] sm:text-sm"
                           key={`${line}-${index}`}
                         >
                           {line}
@@ -3919,7 +3943,7 @@ function DayCalendar({
                     }
                     type="button"
                   >
-                    <span className="text-[12px] font-semibold sm:text-sm">
+                    <span className="text-[10px] font-semibold min-[380px]:text-[11px] sm:text-sm">
                       {slotBookable ? "Açık" : "Kapalı"}
                     </span>
                   </button>
@@ -3957,11 +3981,11 @@ function WeekCalendar({
   const weekdayLabels = days.map((day) => formatWeekdayTiny(day));
 
   return (
-    <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-1">
-      <div className="grid grid-cols-7 gap-1">
+    <div className="w-full overflow-hidden rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-1">
+      <div className="grid w-full grid-cols-7 gap-0.5 min-[380px]:gap-1">
         {weekdayLabels.map((label, index) => (
           <div
-            className="px-1 py-1 text-center text-[10px] font-semibold uppercase text-[#68756b] sm:text-xs"
+            className="min-w-0 px-0.5 py-1 text-center text-[9px] font-semibold uppercase text-[#68756b] min-[380px]:text-[10px] sm:text-xs"
             key={`${label}-${index}`}
           >
             {label}
@@ -3985,7 +4009,7 @@ function WeekCalendar({
 
         return (
           <button
-            className={`min-h-20 rounded border p-1 text-left transition sm:min-h-32 sm:p-2 ${
+            className={`min-h-20 min-w-0 overflow-hidden rounded border p-0.5 text-left transition min-[380px]:p-1 sm:min-h-32 sm:p-2 ${
               status === "past"
                 ? "border-[#eee7db] bg-[#f1eee5] text-[#8b8f86]"
                 : status === "bookable"
@@ -4003,7 +4027,7 @@ function WeekCalendar({
             <p className="text-center text-xs font-semibold sm:text-sm">
               {format(day, "d")}
             </p>
-            <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
+            <p className="mt-1 truncate text-center text-[9px] text-[#68756b] min-[380px]:text-[10px] sm:text-xs">
               {visibleReservationCount > 0
                 ? `${visibleReservationCount} rez.`
                 : ""}
@@ -4042,11 +4066,11 @@ function MonthCalendar({
   );
 
   return (
-    <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-1">
-      <div className="grid grid-cols-7 gap-1">
+    <div className="w-full overflow-hidden rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-1">
+      <div className="grid w-full grid-cols-7 gap-0.5 min-[380px]:gap-1">
         {weekdayLabels.map((label, index) => (
           <div
-            className="px-1 py-1 text-center text-[10px] font-semibold uppercase text-[#68756b] sm:text-xs"
+            className="min-w-0 px-0.5 py-1 text-center text-[9px] font-semibold uppercase text-[#68756b] min-[380px]:text-[10px] sm:text-xs"
             key={`${label}-${index}`}
           >
             {label}
@@ -4071,7 +4095,7 @@ function MonthCalendar({
 
         return (
           <button
-            className={`min-h-16 rounded border p-1 text-left transition sm:min-h-24 sm:p-2 ${
+            className={`min-h-16 min-w-0 overflow-hidden rounded border p-0.5 text-left transition min-[380px]:p-1 sm:min-h-24 sm:p-2 ${
               status === "past" || !isMonthDay
                 ? "border-[#eee7db] bg-[#f1eee5] text-[#8b8f86]"
                 : status === "bookable"
@@ -4089,7 +4113,7 @@ function MonthCalendar({
             <p className="text-center text-xs font-semibold sm:text-sm">
               {format(day, "d")}
             </p>
-            <p className="mt-1 text-center text-[10px] text-[#68756b] sm:text-xs">
+            <p className="mt-1 truncate text-center text-[9px] text-[#68756b] min-[380px]:text-[10px] sm:text-xs">
               {visibleCount > 0 ? `${visibleCount} rez.` : ""}
             </p>
           </button>
@@ -4607,11 +4631,11 @@ function AdminPanel({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
         {(Object.keys(adminTabLabels) as AdminTab[]).map((tab) => (
           <button
-            className={`h-10 rounded px-2 text-sm font-semibold ${
+            className={`h-10 min-w-0 rounded px-1 text-xs font-semibold min-[380px]:px-2 min-[380px]:text-sm ${
               adminTab === tab
                 ? "bg-[#237000] text-white"
                 : "text-[#546257] hover:bg-[#eee9dd]"
@@ -4847,7 +4871,7 @@ function AdminPanel({
           {notificationDraft.schedule_type === "recurring" ? (
             <div className="grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 md:grid-cols-2">
               <Field label="Aralık">
-                <div className="grid grid-cols-[1fr_120px] gap-2">
+                <div className="grid grid-cols-[minmax(0,1fr)_100px] gap-2 sm:grid-cols-[1fr_120px]">
                   <input
                     className="input"
                     min={1}
@@ -4949,7 +4973,7 @@ function AdminPanel({
             <div className="grid gap-2">
               {scheduledNotifications.map((notification) => (
                 <div
-                  className="flex items-start justify-between gap-3 rounded-md border border-[#eee7db] bg-white p-3"
+                  className="flex flex-col gap-3 rounded-md border border-[#eee7db] bg-white p-3 sm:flex-row sm:items-start sm:justify-between"
                   key={notification.id}
                 >
                   <div className="min-w-0">
@@ -4973,7 +4997,7 @@ function AdminPanel({
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 justify-end gap-2">
                     <button
                       aria-label="Düzenle"
                       className="grid size-9 place-items-center rounded-md border border-[#cfc8b8] hover:bg-[#eee9dd]"
@@ -5161,7 +5185,21 @@ function AdminPanel({
           </div>
         ) : null}
 
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 md:hidden">
+          {visibleMembers.map((member) => (
+            <MemberMobileCard
+              canEdit={
+                canManageRoles || member.app_role !== "super_admin"
+              }
+              canManageRoles={canManageRoles}
+              key={member.id}
+              member={member}
+              onMemberUpdate={onMemberUpdate}
+            />
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="min-w-[1160px] w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
@@ -5316,6 +5354,158 @@ function AdminPanel({
   );
 }
 
+function MemberMobileCard({
+  canEdit,
+  canManageRoles,
+  member,
+  onMemberUpdate,
+}: {
+  canEdit: boolean;
+  canManageRoles: boolean;
+  member: Profile;
+  onMemberUpdate: (memberId: string, fields: Partial<Profile>) => void;
+}) {
+  return (
+    <article className="min-w-0 rounded-md border border-[#eee7db] bg-white p-3">
+      <div className="mb-3 min-w-0 border-b border-[#eee7db] pb-3">
+        <p className="truncate text-sm font-semibold">
+          {member.full_name || "İsim yok"}
+        </p>
+        <p className="mt-0.5 break-all text-xs text-[#68756b]">{member.email}</p>
+      </div>
+
+      <div className="grid gap-3">
+        <Field label="Ad soyad">
+          <input
+            className="input input-compact"
+            defaultValue={member.full_name ?? ""}
+            disabled={!canEdit}
+            onBlur={(event) =>
+              onMemberUpdate(member.id, {
+                full_name: normalizeFullName(event.target.value) || null,
+              })
+            }
+            placeholder="İsim yok"
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Seviye">
+            <select
+              className="input input-compact"
+              defaultValue={member.skill_level ?? "beginner"}
+              disabled={!canEdit}
+              onChange={(event) =>
+                onMemberUpdate(member.id, {
+                  skill_level: event.target.value as SkillLevel,
+                })
+              }
+            >
+              {skillLevels.map((level) => (
+                <option key={level} value={level}>
+                  {skillLevelLabels[level]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Gün limiti">
+            <input
+              className="input input-compact"
+              defaultValue={member.reservation_days_ahead ?? ""}
+              disabled={!canEdit}
+              min={0}
+              onBlur={(event) =>
+                onMemberUpdate(member.id, {
+                  reservation_days_ahead: event.target.value
+                    ? Number(event.target.value)
+                    : null,
+                })
+              }
+              placeholder="Varsayılan"
+              type="number"
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <MemberCheckbox
+            checked={member.is_club_member}
+            disabled={!canEdit}
+            label="Kulüp üyesi"
+            onChange={(checked) =>
+              onMemberUpdate(member.id, { is_club_member: checked })
+            }
+          />
+          <MemberCheckbox
+            checked={Boolean(member.can_book)}
+            disabled={!canEdit}
+            label="Rez. yetkisi"
+            onChange={(checked) =>
+              onMemberUpdate(member.id, { can_book: checked })
+            }
+          />
+          <MemberCheckbox
+            checked={Boolean(member.is_trainer)}
+            disabled={!canEdit}
+            label="Eğitmen"
+            onChange={(checked) =>
+              onMemberUpdate(member.id, { is_trainer: checked })
+            }
+          />
+          <div className="flex min-h-10 items-center rounded-md border border-[#eee7db] px-3 text-xs font-medium text-[#68756b]">
+            {roleLabels[member.app_role]}
+          </div>
+        </div>
+
+        {canManageRoles ? (
+          <Field label="Rol">
+            <select
+              className="input input-compact"
+              onChange={(event) =>
+                onMemberUpdate(member.id, {
+                  app_role: event.target.value as AppRole,
+                })
+              }
+              value={member.app_role}
+            >
+              {(Object.keys(roleLabels) as AppRole[]).map((role) => (
+                <option key={role} value={role}>
+                  {roleLabels[role]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function MemberCheckbox({
+  checked,
+  disabled,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="flex min-h-10 items-center gap-2 rounded-md border border-[#eee7db] px-3 text-xs font-semibold">
+      <input
+        checked={checked}
+        className="size-4 shrink-0"
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.checked)}
+        type="checkbox"
+      />
+      <span className="min-w-0 leading-tight">{label}</span>
+    </label>
+  );
+}
+
 function AdminReportsPanel({
   currentProfile,
   currentTime,
@@ -5410,7 +5600,7 @@ function AdminReportsPanel({
     },
     { doubles: 0, hours: 0, lessons: 0, other: 0, singles: 0, total: 0 },
   );
-  const summaryRows = useMemo(
+  const summaryRows = useMemo<AdminReportSummaryRow[]>(
     () =>
       memberOptions
         .map((member) => {
@@ -5468,7 +5658,7 @@ function AdminReportsPanel({
         }),
     [memberOptions, reportReservations, settings.reservation_slot_minutes],
   );
-  const detailRows = reportReservations.map((reservation) => {
+  const detailRows: AdminReportDetailRow[] = reportReservations.map((reservation) => {
     const startsAt = new Date(reservation.starts_at);
     const endsAt = new Date(reservation.ends_at);
     const owner = memberMap.get(reservation.user_id);
@@ -5572,7 +5762,7 @@ function AdminReportsPanel({
   }
 
   return (
-    <section className="space-y-4 rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-4">
+    <section className="min-w-0 space-y-4 rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Raporlar</h2>
@@ -5581,7 +5771,7 @@ function AdminReportsPanel({
           </p>
         </div>
         <button
-          className="primary-button inline-flex items-center gap-2"
+          className="primary-button inline-flex w-full items-center gap-2 sm:w-auto"
           disabled={!isDateRangeValid || !hasReportRows}
           onClick={() => {
             void downloadReport();
@@ -5696,7 +5886,7 @@ function AdminReportsPanel({
         </div>
       ) : null}
 
-      <div className="grid gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <ReportMetric label="Toplam" value={reportTotals.total} />
         <ReportMetric label="Ders" value={reportTotals.lessons} />
         <ReportMetric
@@ -5710,37 +5900,40 @@ function AdminReportsPanel({
       </div>
 
       {isSingleMemberReport ? (
-        <div className="overflow-x-auto">
+        <div className="min-w-0">
           <div className="mb-2 text-sm font-semibold text-[#34443a]">
             {selectedMember?.full_name ?? selectedMember?.email ?? "Seçili üye"}
           </div>
-          <table className="min-w-[820px] w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
-                <th className="py-3 pr-3 font-medium">Tarih</th>
-                <th className="py-3 pr-3 font-medium">Gün</th>
-                <th className="py-3 pr-3 font-medium">Saat</th>
-                <th className="py-3 pr-3 font-medium">Kort</th>
-                <th className="py-3 pr-3 font-medium">Tür</th>
-                <th className="py-3 pr-3 font-medium">Rezervasyon bilgisi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detailRows.map((row, index) => (
-                <tr
-                  className="border-b border-[#eee7db]"
-                  key={`${row.date}-${row.time}-${index}`}
-                >
-                  <td className="py-3 pr-3">{row.date}</td>
-                  <td className="py-3 pr-3">{row.weekday}</td>
-                  <td className="py-3 pr-3">{row.time}</td>
-                  <td className="py-3 pr-3">{row.court}</td>
-                  <td className="py-3 pr-3">{row.type}</td>
-                  <td className="py-3 pr-3">{row.info}</td>
+          <ReportDetailCards rows={detailRows} showMember={false} />
+          <div className="hidden overflow-x-auto md:block">
+            <table className="min-w-[820px] w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
+                  <th className="py-3 pr-3 font-medium">Tarih</th>
+                  <th className="py-3 pr-3 font-medium">Gün</th>
+                  <th className="py-3 pr-3 font-medium">Saat</th>
+                  <th className="py-3 pr-3 font-medium">Kort</th>
+                  <th className="py-3 pr-3 font-medium">Tür</th>
+                  <th className="py-3 pr-3 font-medium">Rezervasyon bilgisi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {detailRows.map((row, index) => (
+                  <tr
+                    className="border-b border-[#eee7db]"
+                    key={`${row.date}-${row.time}-${index}`}
+                  >
+                    <td className="py-3 pr-3">{row.date}</td>
+                    <td className="py-3 pr-3">{row.weekday}</td>
+                    <td className="py-3 pr-3">{row.time}</td>
+                    <td className="py-3 pr-3">{row.court}</td>
+                    <td className="py-3 pr-3">{row.type}</td>
+                    <td className="py-3 pr-3">{row.info}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {detailRows.length === 0 ? (
             <EmptyState
               title="Kayıt yok"
@@ -5750,10 +5943,12 @@ function AdminReportsPanel({
         </div>
       ) : (
         <div className="space-y-5">
-          <div className="overflow-x-auto">
+          <div className="min-w-0">
             <div className="mb-2 text-sm font-semibold text-[#34443a]">
               Üye özeti
             </div>
+            <ReportSummaryCards rows={summaryRows} />
+            <div className="hidden overflow-x-auto md:block">
             <table className="min-w-[820px] w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
@@ -5780,12 +5975,15 @@ function AdminReportsPanel({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="min-w-0">
             <div className="mb-2 text-sm font-semibold text-[#34443a]">
               Rezervasyon detayları
             </div>
+            <ReportDetailCards rows={detailRows} showMember />
+            <div className="hidden overflow-x-auto md:block">
             <table className="min-w-[980px] w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
@@ -5818,6 +6016,7 @@ function AdminReportsPanel({
                 ))}
               </tbody>
             </table>
+            </div>
             {detailRows.length === 0 ? (
               <EmptyState
                 title="Kayıt yok"
@@ -5831,6 +6030,89 @@ function AdminReportsPanel({
   );
 }
 
+function ReportSummaryCards({ rows }: { rows: AdminReportSummaryRow[] }) {
+  return (
+    <div className="grid gap-2 md:hidden">
+      {rows.map((row) => (
+        <article
+          className="min-w-0 rounded-md border border-[#eee7db] bg-white p-3"
+          key={row.email}
+        >
+          <p className="truncate text-sm font-semibold">{row.memberName}</p>
+          <p className="mt-0.5 break-all text-xs text-[#68756b]">{row.email}</p>
+          <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <ReportCardValue label="Toplam" value={row.total} />
+            <ReportCardValue label="Ders" value={row.lessons} />
+            <ReportCardValue label="Saat" value={row.hours} />
+            <ReportCardValue label="Tekler" value={row.singles} />
+            <ReportCardValue label="Çiftler" value={row.doubles} />
+            <ReportCardValue label="Diğer" value={row.other} />
+          </dl>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function ReportDetailCards({
+  rows,
+  showMember,
+}: {
+  rows: AdminReportDetailRow[];
+  showMember: boolean;
+}) {
+  return (
+    <div className="grid gap-2 md:hidden">
+      {rows.map((row, index) => (
+        <article
+          className="min-w-0 rounded-md border border-[#eee7db] bg-white p-3"
+          key={`${row.email}-${row.date}-${row.time}-${index}`}
+        >
+          {showMember ? (
+            <div className="mb-2 min-w-0 border-b border-[#eee7db] pb-2">
+              <p className="truncate text-sm font-semibold">{row.memberName}</p>
+              <p className="mt-0.5 break-all text-xs text-[#68756b]">
+                {row.email}
+              </p>
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#68756b]">
+            <span className="font-semibold text-[#17211c]">{row.date}</span>
+            <span>{row.weekday}</span>
+            <span>{row.time}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-semibold">
+            <span className="rounded bg-[#e6f0e7] px-2 py-1 text-[#237000]">
+              {row.court}
+            </span>
+            <span className="rounded bg-[#f1eee5] px-2 py-1 text-[#546257]">
+              {row.type}
+            </span>
+          </div>
+          <p className="mt-2 break-words text-sm leading-5">{row.info}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function ReportCardValue({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="rounded bg-[#f6f1e7] px-1.5 py-2">
+      <dt className="text-[10px] font-semibold uppercase text-[#68756b]">
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-sm font-semibold text-[#17211c]">{value}</dd>
+    </div>
+  );
+}
+
 function ReportMetric({
   label,
   value,
@@ -5839,9 +6121,13 @@ function ReportMetric({
   value: ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-[#eee7db] bg-white p-3">
-      <p className="text-xs font-semibold uppercase text-[#68756b]">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-[#17211c]">{value}</p>
+    <div className="min-w-0 rounded-md border border-[#eee7db] bg-white p-2.5 sm:p-3">
+      <p className="truncate text-[10px] font-semibold uppercase text-[#68756b] sm:text-xs">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-semibold text-[#17211c] sm:text-xl">
+        {value}
+      </p>
     </div>
   );
 }
@@ -5857,14 +6143,14 @@ function AdminFoldout({
 }) {
   return (
     <details className="group rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
-        <div className="flex items-center gap-2">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 sm:p-4 [&::-webkit-details-marker]:hidden">
+        <div className="flex min-w-0 items-center gap-2">
           {icon}
-          <h2 className="text-xl font-semibold">{title}</h2>
+          <h2 className="truncate text-base font-semibold sm:text-xl">{title}</h2>
         </div>
         <ChevronRight className="transition group-open:rotate-90" size={18} />
       </summary>
-      <div className="border-t border-[#eee7db] p-4">{children}</div>
+      <div className="min-w-0 border-t border-[#eee7db] p-3 sm:p-4">{children}</div>
     </details>
   );
 }
@@ -6726,13 +7012,11 @@ function ReservationEditDialog({
 }
 
 function NavButton({
-  compactOnMobile = false,
   icon,
   isActive,
   label,
   onClick,
 }: {
-  compactOnMobile?: boolean;
   icon: ReactNode;
   isActive: boolean;
   label: string;
@@ -6741,9 +7025,7 @@ function NavButton({
   return (
     <button
       aria-label={label}
-      className={`inline-flex h-11 items-center justify-center whitespace-nowrap rounded-md text-sm font-semibold ${
-        compactOnMobile ? "w-11 px-0 lg:w-full lg:gap-2 lg:px-3" : "gap-2 px-3 lg:w-full"
-      } ${
+      className={`inline-flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 text-[9px] font-semibold leading-none min-[380px]:px-1 min-[380px]:text-[10px] lg:h-11 lg:w-full lg:flex-row lg:gap-2 lg:px-3 lg:text-sm ${
         isActive
           ? "bg-[#237000] text-white"
           : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
@@ -6752,9 +7034,7 @@ function NavButton({
       type="button"
     >
       {icon}
-      <span className={compactOnMobile ? "sr-only lg:not-sr-only" : undefined}>
-        {label}
-      </span>
+      <span className="max-w-full truncate lg:overflow-visible">{label}</span>
     </button>
   );
 }
@@ -6772,7 +7052,7 @@ function ThemeToggle({
   return (
     <button
       aria-label={label}
-      className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+      className="grid size-9 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd] sm:size-10"
       onClick={onToggle}
       title={label}
       type="button"
@@ -6786,7 +7066,7 @@ function PageRefreshButton() {
   return (
     <button
       aria-label="Sayfayı yenile"
-      className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
+      className="grid size-9 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd] sm:size-10"
       onClick={() => window.location.reload()}
       title="Sayfayı yenile"
       type="button"
@@ -6824,7 +7104,7 @@ function EmptyState({ text, title }: { text: string; title: string }) {
 
 function ClubMark({ size }: { size: "sm" | "banner" | "lg" }) {
   const dimensionsBySize = {
-    banner: "size-16 sm:size-20",
+    banner: "size-14 sm:size-20",
     lg: "size-64 sm:size-44 lg:size-48",
     sm: "size-12",
   };
