@@ -186,6 +186,29 @@ html.theme-light-root body {
   color: #111111 !important;
 }
 
+.reservation-modal-backdrop {
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.theme-dark .reservation-modal-backdrop {
+  background: rgba(0, 0, 0, 0.76);
+}
+
+.reservation-date-input {
+  display: block;
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+@media (max-width: 639px) {
+  .reservation-date-input {
+    appearance: none;
+    -webkit-appearance: none;
+  }
+}
+
 button,
 input,
 select,

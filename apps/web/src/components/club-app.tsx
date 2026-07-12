@@ -6583,9 +6583,9 @@ function ReservationDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
-      <section className="h-[100dvh] max-h-none w-full min-w-0 overflow-x-hidden overflow-y-auto rounded-none bg-[#fffdf8] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-xl min-[380px]:px-4 sm:h-auto sm:max-h-[92vh] sm:max-w-xl sm:rounded-lg sm:p-4">
-        <div className="mb-3 flex items-center justify-between">
+    <div className="reservation-modal-backdrop fixed inset-0 z-50 flex items-stretch p-0 sm:items-center sm:justify-center sm:p-6">
+      <section className="flex h-[100dvh] max-h-none w-full min-w-0 flex-col overflow-x-hidden overflow-y-auto rounded-none bg-[#fffdf8] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] shadow-xl min-[380px]:px-4 sm:h-auto sm:max-h-[92vh] sm:max-w-xl sm:rounded-lg sm:p-4">
+        <div className="mb-3 flex shrink-0 items-center justify-between">
           <div>
             <p className="text-sm text-[#68756b]">Yeni rezervasyon</p>
             <h2 className="text-xl font-semibold">Kort ve saat seç</h2>
@@ -6601,7 +6601,10 @@ function ReservationDialog({
           </button>
         </div>
 
-        <form className="grid min-w-0 gap-3" onSubmit={onSubmit}>
+        <form
+          className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 sm:flex-none"
+          onSubmit={onSubmit}
+        >
           {canChooseOwner ? (
             <div className="grid min-w-0 gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2 min-[380px]:p-2.5">
               <div className="flex items-center justify-between gap-3">
@@ -6693,7 +6696,7 @@ function ReservationDialog({
 
             <Field label="Tarih">
               <input
-                className="input"
+                className="input reservation-date-input"
                 max={maxBookingDate}
                 min={minBookingDate}
                 onChange={(event) => handleDateChange(event.target.value)}
@@ -6742,7 +6745,7 @@ function ReservationDialog({
           </div>
 
           <button
-            className="primary-button"
+            className="primary-button mt-auto sm:mt-0"
             disabled={isSaving || !selectedSlotBookable}
             type="submit"
           >
