@@ -3262,8 +3262,8 @@ export function ClubApp() {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-4 px-2.5 py-3 pb-24 sm:px-6 sm:py-4 sm:pb-24 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
-        <aside className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ddd7c8] bg-[#fffdf8]/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:sticky lg:top-6 lg:z-auto lg:w-full lg:self-start lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+      <div className="mx-auto grid w-full max-w-7xl gap-4 px-2.5 py-3 sm:px-6 sm:py-4 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
+        <aside className="hidden w-full lg:sticky lg:top-6 lg:block lg:self-start">
           <nav className="grid grid-cols-3 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
             <NavButton
               icon={<CalendarDays size={22} />}
@@ -3305,6 +3305,56 @@ export function ClubApp() {
         </aside>
 
         <section className="mx-auto w-full min-w-0 max-w-5xl">
+          <nav className="mb-3 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.25fr)_44px_44px] gap-1.5 lg:hidden">
+            <button
+              className={`h-11 min-w-0 rounded-md px-2 text-xs font-semibold min-[380px]:text-sm ${
+                visibleActiveTab === "calendar"
+                  ? "bg-[#237000] text-white"
+                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+              }`}
+              onClick={() => setActiveTab("calendar")}
+              type="button"
+            >
+              Takvim
+            </button>
+            <button
+              className={`h-11 min-w-0 truncate rounded-md px-1.5 text-[11px] font-semibold min-[360px]:text-xs ${
+                visibleActiveTab === "reservations"
+                  ? "bg-[#237000] text-white"
+                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+              }`}
+              onClick={() => setActiveTab("reservations")}
+              type="button"
+            >
+              Rezervasyonlar
+            </button>
+            <button
+              aria-label="Mesajlar"
+              className={`grid size-11 place-items-center rounded-md ${
+                visibleActiveTab === "messages"
+                  ? "bg-[#237000] text-white"
+                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+              }`}
+              onClick={() => setActiveTab("messages")}
+              title="Mesajlar"
+              type="button"
+            >
+              <MessageSquare size={20} />
+            </button>
+            <button
+              aria-label="Profil"
+              className={`grid size-11 place-items-center rounded-md ${
+                visibleActiveTab === "profile"
+                  ? "bg-[#237000] text-white"
+                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+              }`}
+              onClick={() => setActiveTab("profile")}
+              title="Profil"
+              type="button"
+            >
+              <UserIcon size={20} />
+            </button>
+          </nav>
           {notificationToast ? (
             <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-[#9ec596] bg-[#f0f8ef] px-4 py-3 text-sm text-[#1f6500]">
               <div className="min-w-0">
@@ -3351,7 +3401,6 @@ export function ClubApp() {
                 isAdmin(profile) ? openEditReservation : undefined
               }
               onCreateReservation={openReservationForm}
-              onOpenReservations={() => setActiveTab("reservations")}
               onRefresh={refreshCalendar}
               reservations={visibleReservations}
               selectedDate={selectedDate}
@@ -3578,7 +3627,6 @@ function CalendarPanel({
   moveCalendar,
   onCreateReservation,
   onEditReservation,
-  onOpenReservations,
   onRefresh,
   reservations,
   selectedDate,
@@ -3597,7 +3645,6 @@ function CalendarPanel({
   moveCalendar: (direction: -1 | 1) => void;
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
   onEditReservation?: (reservation: Reservation) => void;
-  onOpenReservations: () => void;
   onRefresh: () => void;
   reservations: Reservation[];
   selectedDate: Date;
@@ -3618,7 +3665,7 @@ function CalendarPanel({
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
         <div className="grid gap-2">
-          <div className="grid grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)_auto] gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <button
               className="inline-flex h-11 min-w-0 items-center justify-center rounded-md bg-[#237000] px-3 text-sm font-semibold text-white hover:bg-[#1f6500] disabled:cursor-not-allowed disabled:opacity-50"
               disabled={!canCreateReservation}
@@ -3630,14 +3677,7 @@ function CalendarPanel({
               }
               type="button"
             >
-              Yeni
-            </button>
-            <button
-              className="inline-flex h-11 min-w-0 items-center justify-center truncate rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a] hover:bg-[#eee9dd] min-[380px]:text-sm"
-              onClick={onOpenReservations}
-              type="button"
-            >
-              Rezervasyonlar
+              Rezervasyon Yap
             </button>
             <div>
               <button
@@ -6246,12 +6286,14 @@ function MatchSetupFields<T extends ReservationFormState>({
   function renderPlayerRow(label: string, key: MatchPlayerKey) {
     return (
       <div
-        className="grid grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-2"
+        className="grid min-w-0 grid-cols-[54px_minmax(0,1fr)_58px] items-center gap-1.5 min-[380px]:grid-cols-[64px_minmax(0,1fr)_64px] min-[380px]:gap-2 sm:grid-cols-[72px_minmax(0,1fr)_72px]"
         key={key}
       >
-        <span className="text-xs font-semibold text-[#34443a]">{label}</span>
+        <span className="min-w-0 text-[11px] font-semibold leading-tight text-[#34443a] min-[380px]:text-xs">
+          {label}
+        </span>
         <input
-          className="input input-compact"
+          className="input input-compact min-w-0"
           list={listId}
           onChange={(event) => setPlayerName(key, event.target.value)}
           placeholder="İsim yaz"
@@ -6259,7 +6301,7 @@ function MatchSetupFields<T extends ReservationFormState>({
         />
         <select
           aria-label={`${label} seç`}
-          className="h-9 rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a]"
+          className="h-9 min-w-0 rounded-md border border-[#cfc8b8] bg-white px-1 text-[11px] font-semibold text-[#34443a] min-[380px]:px-2 min-[380px]:text-xs"
           onChange={(event) => setPlayerName(key, event.target.value)}
           value=""
         >
@@ -6275,7 +6317,7 @@ function MatchSetupFields<T extends ReservationFormState>({
   }
 
   return (
-    <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5">
+    <div className="grid min-w-0 gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2 min-[380px]:p-2.5">
       <ReservationModeToggle
         canUseLesson={canUseLesson}
         form={form}
@@ -6343,7 +6385,7 @@ function LessonSetupFields<T extends ReservationFormState>({
   );
 
   return (
-    <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#fff8df] p-2.5">
+    <div className="grid min-w-0 gap-2 rounded-md border border-[#e6dfd2] bg-[#fff8df] p-2 min-[380px]:p-2.5">
       <datalist id={listId}>
         {playerOptions.map((name) => (
           <option key={name} value={name} />
@@ -6354,10 +6396,10 @@ function LessonSetupFields<T extends ReservationFormState>({
           <option key={name} value={name} />
         ))}
       </datalist>
-      <div className="grid grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-2">
-        <span className="text-xs font-semibold text-[#34443a]">Eğitmen</span>
+      <div className="grid min-w-0 grid-cols-[54px_minmax(0,1fr)_58px] items-center gap-1.5 min-[380px]:grid-cols-[64px_minmax(0,1fr)_64px] min-[380px]:gap-2 sm:grid-cols-[72px_minmax(0,1fr)_72px]">
+        <span className="min-w-0 text-[11px] font-semibold leading-tight text-[#34443a] min-[380px]:text-xs">Eğitmen</span>
         <input
-          className="input input-compact"
+          className="input input-compact min-w-0"
           disabled={!canEditTrainer}
           list={canEditTrainer ? `${listId}-trainers` : undefined}
           onChange={(event) =>
@@ -6369,7 +6411,7 @@ function LessonSetupFields<T extends ReservationFormState>({
         {canEditTrainer ? (
           <select
             aria-label="Eğitmen seç"
-            className="h-9 rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a]"
+            className="h-9 min-w-0 rounded-md border border-[#cfc8b8] bg-white px-1 text-[11px] font-semibold text-[#34443a] min-[380px]:px-2 min-[380px]:text-xs"
             onChange={(event) =>
               setForm({ ...form, team1_player1_name: event.target.value })
             }
@@ -6386,10 +6428,10 @@ function LessonSetupFields<T extends ReservationFormState>({
           <span className="text-xs font-semibold text-[#68756b]">Sabit</span>
         )}
       </div>
-      <div className="grid grid-cols-[72px_minmax(0,1fr)_72px] items-center gap-2">
-        <span className="text-xs font-semibold text-[#34443a]">Öğrenci</span>
+      <div className="grid min-w-0 grid-cols-[54px_minmax(0,1fr)_58px] items-center gap-1.5 min-[380px]:grid-cols-[64px_minmax(0,1fr)_64px] min-[380px]:gap-2 sm:grid-cols-[72px_minmax(0,1fr)_72px]">
+        <span className="min-w-0 text-[11px] font-semibold leading-tight text-[#34443a] min-[380px]:text-xs">Öğrenci</span>
         <input
-          className="input input-compact"
+          className="input input-compact min-w-0"
           list={listId}
           onChange={(event) =>
             setForm({ ...form, student_name: event.target.value })
@@ -6399,7 +6441,7 @@ function LessonSetupFields<T extends ReservationFormState>({
         />
         <select
           aria-label="Öğrenci seç"
-          className="h-9 rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a]"
+          className="h-9 min-w-0 rounded-md border border-[#cfc8b8] bg-white px-1 text-[11px] font-semibold text-[#34443a] min-[380px]:px-2 min-[380px]:text-xs"
           onChange={(event) =>
             setForm({ ...form, student_name: event.target.value })
           }
@@ -6542,7 +6584,7 @@ function ReservationDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
-      <section className="h-[100dvh] max-h-none w-full overflow-y-auto rounded-none bg-[#fffdf8] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-xl sm:h-auto sm:max-h-[92vh] sm:max-w-xl sm:rounded-lg sm:p-4">
+      <section className="h-[100dvh] max-h-none w-full min-w-0 overflow-x-hidden overflow-y-auto rounded-none bg-[#fffdf8] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-xl min-[380px]:px-4 sm:h-auto sm:max-h-[92vh] sm:max-w-xl sm:rounded-lg sm:p-4">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-sm text-[#68756b]">Yeni rezervasyon</p>
@@ -6559,9 +6601,9 @@ function ReservationDialog({
           </button>
         </div>
 
-        <form className="grid gap-3" onSubmit={onSubmit}>
+        <form className="grid min-w-0 gap-3" onSubmit={onSubmit}>
           {canChooseOwner ? (
-            <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5">
+            <div className="grid min-w-0 gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2 min-[380px]:p-2.5">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold text-[#34443a]">
                   Rezervasyon Bilgisi
@@ -6631,7 +6673,7 @@ function ReservationDialog({
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-3">
             <Field label="Kort">
               <select
                 className="input"
@@ -7059,7 +7101,7 @@ function Field({
   label: string;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-medium text-[#34443a]">
+    <label className="grid min-w-0 gap-2 text-sm font-medium text-[#34443a]">
       {label}
       {children}
     </label>
