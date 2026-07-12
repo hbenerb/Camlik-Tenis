@@ -3264,27 +3264,29 @@ export function ClubApp() {
 
       <div className="mx-auto grid w-full max-w-7xl gap-4 px-2.5 py-3 pb-24 sm:px-6 sm:py-4 sm:pb-24 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
         <aside className="fixed inset-x-0 bottom-0 z-40 border-t border-[#ddd7c8] bg-[#fffdf8]/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:sticky lg:top-6 lg:z-auto lg:w-full lg:self-start lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
-          <nav className="grid grid-cols-4 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
+          <nav className="grid grid-cols-3 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
             <NavButton
-              icon={<CalendarDays size={18} />}
+              icon={<CalendarDays size={22} />}
               isActive={visibleActiveTab === "calendar"}
               label="Takvim"
               onClick={() => setActiveTab("calendar")}
             />
+            <div className="hidden lg:block lg:w-full">
+              <NavButton
+                icon={<Clock3 size={22} />}
+                isActive={visibleActiveTab === "reservations"}
+                label="Rezervasyonlar"
+                onClick={() => setActiveTab("reservations")}
+              />
+            </div>
             <NavButton
-              icon={<Clock3 size={18} />}
-              isActive={visibleActiveTab === "reservations"}
-              label="Rezervasyonlar"
-              onClick={() => setActiveTab("reservations")}
-            />
-            <NavButton
-              icon={<MessageSquare size={18} />}
+              icon={<MessageSquare size={22} />}
               isActive={visibleActiveTab === "messages"}
               label="Mesajlar"
               onClick={() => setActiveTab("messages")}
             />
             <NavButton
-              icon={<UserIcon size={18} />}
+              icon={<UserIcon size={22} />}
               isActive={visibleActiveTab === "profile"}
               label="Profil"
               onClick={() => setActiveTab("profile")}
@@ -3349,6 +3351,7 @@ export function ClubApp() {
                 isAdmin(profile) ? openEditReservation : undefined
               }
               onCreateReservation={openReservationForm}
+              onOpenReservations={() => setActiveTab("reservations")}
               onRefresh={refreshCalendar}
               reservations={visibleReservations}
               selectedDate={selectedDate}
@@ -3575,6 +3578,7 @@ function CalendarPanel({
   moveCalendar,
   onCreateReservation,
   onEditReservation,
+  onOpenReservations,
   onRefresh,
   reservations,
   selectedDate,
@@ -3593,6 +3597,7 @@ function CalendarPanel({
   moveCalendar: (direction: -1 | 1) => void;
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
   onEditReservation?: (reservation: Reservation) => void;
+  onOpenReservations: () => void;
   onRefresh: () => void;
   reservations: Reservation[];
   selectedDate: Date;
@@ -3613,20 +3618,27 @@ function CalendarPanel({
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
       <div className="rounded-md border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-4">
         <div className="grid gap-2">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-            {canCreateReservation ? (
-              <button
-                className="inline-flex h-11 min-w-0 items-center justify-center rounded-md bg-[#237000] px-4 text-sm font-semibold text-white hover:bg-[#1f6500]"
-                onClick={() => onCreateReservation()}
-                type="button"
-              >
-                Rezervasyon yap
-              </button>
-            ) : (
-              <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] px-3 py-2 text-center text-sm font-medium text-[#68756b]">
-                Rezervasyon yetkisi için admin onayı bekleniyor.
-              </div>
-            )}
+          <div className="grid grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)_auto] gap-2">
+            <button
+              className="inline-flex h-11 min-w-0 items-center justify-center rounded-md bg-[#237000] px-3 text-sm font-semibold text-white hover:bg-[#1f6500] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={!canCreateReservation}
+              onClick={() => onCreateReservation()}
+              title={
+                canCreateReservation
+                  ? "Yeni rezervasyon"
+                  : "Rezervasyon yetkisi için admin onayı bekleniyor"
+              }
+              type="button"
+            >
+              Yeni
+            </button>
+            <button
+              className="inline-flex h-11 min-w-0 items-center justify-center truncate rounded-md border border-[#cfc8b8] bg-white px-2 text-xs font-semibold text-[#34443a] hover:bg-[#eee9dd] min-[380px]:text-sm"
+              onClick={onOpenReservations}
+              type="button"
+            >
+              Rezervasyonlar
+            </button>
             <div>
               <button
                 aria-expanded={isBookingInfoOpen}
@@ -6528,35 +6540,17 @@ function ReservationDialog({
     });
   }
 
-  function handleOwnerChange(ownerId: string) {
-    const currentOwnerName =
-      ownerOptions.find((owner) => owner.id === form.user_id)?.full_name ?? "";
-    const nextOwnerName =
-      ownerOptions.find((owner) => owner.id === ownerId)?.full_name ?? "";
-    const firstPlayer = normalizePlayerName(form.team1_player1_name);
-    const shouldReplaceFirstPlayer =
-      !firstPlayer ||
-      (currentOwnerName && firstPlayer === normalizePlayerName(currentOwnerName));
-
-    setForm({
-      ...form,
-      user_id: ownerId,
-      team1_player1_name: shouldReplaceFirstPlayer
-        ? nextOwnerName
-        : form.team1_player1_name,
-    });
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
-      <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-4 shadow-xl sm:max-w-xl sm:rounded-lg">
+    <div className="fixed inset-0 z-50 flex items-stretch bg-black/30 p-0 sm:items-center sm:justify-center sm:p-6">
+      <section className="h-[100dvh] max-h-none w-full overflow-y-auto rounded-none bg-[#fffdf8] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-xl sm:h-auto sm:max-h-[92vh] sm:max-w-xl sm:rounded-lg sm:p-4">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-sm text-[#68756b]">Yeni rezervasyon</p>
             <h2 className="text-xl font-semibold">Kort ve saat seç</h2>
           </div>
           <button
-            className="grid size-10 place-items-center rounded-md border border-[#cfc8b8] hover:bg-[#eee9dd]"
+            aria-label="Kapat"
+            className="orange-close-button grid size-10 place-items-center rounded-md border border-[#d89a2f] hover:bg-[#e7a530]"
             onClick={onClose}
             title="Kapat"
             type="button"
@@ -6613,25 +6607,6 @@ function ReservationDialog({
                 </>
               ) : (
                 <>
-                  {!isLessonForm(form) ? (
-                    <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
-                    <span className="text-xs font-semibold text-[#34443a]">
-                      Bağlı üye
-                    </span>
-                    <select
-                      className="input input-compact"
-                      onChange={(event) => handleOwnerChange(event.target.value)}
-                      required
-                      value={form.user_id}
-                    >
-                      {ownerOptions.map((owner) => (
-                        <option key={owner.id} value={owner.id}>
-                          {profileOptionLabel(owner)}
-                        </option>
-                      ))}
-                    </select>
-                    </div>
-                  ) : null}
                   <MatchSetupFields
                     canEditTrainer
                     canUseLesson={canUseLesson}
@@ -6729,7 +6704,7 @@ function ReservationDialog({
             disabled={isSaving || !selectedSlotBookable}
             type="submit"
           >
-            Rezervasyonu kaydet
+            Kaydet
           </button>
         </form>
       </section>
@@ -7025,7 +7000,7 @@ function NavButton({
   return (
     <button
       aria-label={label}
-      className={`inline-flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 text-[9px] font-semibold leading-none min-[380px]:px-1 min-[380px]:text-[10px] lg:h-11 lg:w-full lg:flex-row lg:gap-2 lg:px-3 lg:text-sm ${
+      className={`inline-flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-0.5 text-[9px] font-semibold leading-none lg:h-11 lg:w-full lg:flex-row lg:gap-2 lg:px-3 lg:text-sm ${
         isActive
           ? "bg-[#237000] text-white"
           : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"

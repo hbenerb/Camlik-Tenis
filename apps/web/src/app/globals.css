@@ -181,6 +181,11 @@ html.theme-light-root body {
   color: #c7d1c9 !important;
 }
 
+.orange-close-button {
+  background: #f3b340 !important;
+  color: #111111 !important;
+}
+
 button,
 input,
 select,
