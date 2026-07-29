@@ -57,7 +57,16 @@ export function parseDateInput(value: string) {
 }
 
 export function buildLocalDateTime(dateValue: string, timeValue: string) {
-  return new Date(`${dateValue}T${timeValue}:00`);
+  const normalizedTime = normalizeTime(timeValue);
+  const localMidnight = new Date(`${dateValue}T00:00:00`);
+
+  if (normalizedTime === "24:00") {
+    return addDays(localMidnight, 1);
+  }
+
+  const [hours, minutes] = normalizedTime.split(":").map(Number);
+  localMidnight.setHours(hours, minutes, 0, 0);
+  return localMidnight;
 }
 
 export function buildTimeSlots(settings: ClubSettings | null) {

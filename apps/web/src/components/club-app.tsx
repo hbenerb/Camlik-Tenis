@@ -191,6 +191,21 @@ const defaultSettings: ClubSettings = {
   updated_at: new Date().toISOString(),
 };
 
+const clubTimeOptions = Array.from({ length: 97 }, (_, index) => {
+  const totalMinutes = index * 15;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+});
+const openingTimeOptions = clubTimeOptions.slice(0, -1);
+const closingTimeOptions = clubTimeOptions.slice(1);
+
+function clockTimeToMinutes(value: string) {
+  const [hours, minutes] = normalizeTime(value).split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
 const roleLabels: Record<AppRole, string> = {
   user: "Kullanıcı",
   admin: "Admin",
@@ -4706,7 +4721,7 @@ function AdminPanel({
       <AdminFoldout icon={<ShieldCheck size={20} />} title="Rezervasyon Ayarları">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={onSaveSettings}>
           <Field label="Açılış saati">
-            <input
+            <select
               className="input"
               onChange={(event) =>
                 onSettingsDraftChange({
@@ -4714,12 +4729,23 @@ function AdminPanel({
                   opening_time: event.target.value,
                 })
               }
-              type="time"
               value={normalizeTime(settingsDraft.opening_time)}
-            />
+            >
+              {openingTimeOptions
+                .filter(
+                  (time) =>
+                    clockTimeToMinutes(time) <
+                    clockTimeToMinutes(settingsDraft.closing_time),
+                )
+                .map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+            </select>
           </Field>
           <Field label="Kapanış saati">
-            <input
+            <select
               className="input"
               onChange={(event) =>
                 onSettingsDraftChange({
@@ -4727,9 +4753,20 @@ function AdminPanel({
                   closing_time: event.target.value,
                 })
               }
-              type="time"
               value={normalizeTime(settingsDraft.closing_time)}
-            />
+            >
+              {closingTimeOptions
+                .filter(
+                  (time) =>
+                    clockTimeToMinutes(time) >
+                    clockTimeToMinutes(settingsDraft.opening_time),
+                )
+                .map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+            </select>
           </Field>
           <Field label="Rezervasyon süresi">
             <select
