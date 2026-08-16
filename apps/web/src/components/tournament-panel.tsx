@@ -249,10 +249,12 @@ function defaultTournamentDate(
 
 export function TournamentDetailPanel({
   currentTime,
+  onClose,
   selectedTournamentId,
   tournaments,
 }: {
   currentTime: Date;
+  onClose: () => void;
   selectedTournamentId: string | null;
   tournaments: TournamentWithDetails[];
 }) {
@@ -452,7 +454,16 @@ export function TournamentDetailPanel({
   return (
     <div className="space-y-4 sm:space-y-6">
       <section className="overflow-hidden rounded-lg border border-[#ddd7c8] bg-[#fffdf8]">
-        <div className="bg-[#17211c] px-4 py-5 text-white sm:px-6">
+        <div className="relative bg-[#17211c] px-4 py-5 pr-16 text-white sm:px-6 sm:pr-20">
+          <button
+            aria-label="Turnuva ekranından çık"
+            className="absolute right-3 top-3 grid size-10 place-items-center rounded-md border border-white/35 bg-white/10 text-white transition hover:bg-white/20 sm:right-4 sm:top-4"
+            onClick={onClose}
+            title="Turnuva ekranından çık"
+            type="button"
+          >
+            <X size={21} />
+          </button>
           <h2 className="text-2xl font-semibold">{selectedTournament.name}</h2>
           <div className="mt-2 grid gap-1 text-sm text-[#d5ded7]">
             <p>

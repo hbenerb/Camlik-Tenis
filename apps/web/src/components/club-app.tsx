@@ -4877,6 +4877,7 @@ export function ClubApp() {
     : isGuest && activeTab !== "calendar" && activeTab !== "tournaments"
       ? "calendar"
       : activeTab;
+  const isTournamentView = visibleActiveTab === "tournaments";
 
   return (
     <main
@@ -4937,17 +4938,22 @@ export function ClubApp() {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-4 px-2.5 py-3 sm:px-6 sm:py-4 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
-        <aside className="hidden w-full lg:sticky lg:top-6 lg:block lg:self-start">
+      <div
+        className={`mx-auto grid w-full max-w-7xl gap-4 px-2.5 py-3 sm:px-6 sm:py-4 lg:gap-6 lg:py-6 ${
+          isTournamentView
+            ? ""
+            : "lg:grid-cols-[200px_minmax(0,1fr)]"
+        }`}
+      >
+        {!isTournamentView ? (
+          <aside className="hidden w-full lg:sticky lg:top-6 lg:block lg:self-start">
           <TournamentShortcutButtons
             isManager={isAdmin(profile)}
             onOpen={(tournamentId) => {
               setSelectedTournamentId(tournamentId);
               setActiveTab("tournaments");
             }}
-            selectedTournamentId={
-              visibleActiveTab === "tournaments" ? selectedTournamentId : null
-            }
+            selectedTournamentId={null}
             tournaments={tournamentShortcuts}
           />
           <nav className="grid grid-cols-3 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
@@ -4992,88 +4998,91 @@ export function ClubApp() {
               </div>
             ) : null}
           </nav>
-        </aside>
+          </aside>
+        ) : null}
 
         <section className="mx-auto w-full min-w-0 max-w-5xl">
-          <div className="mb-3 lg:hidden">
-            <TournamentShortcutButtons
-              isManager={isAdmin(profile)}
-              onOpen={(tournamentId) => {
-                setSelectedTournamentId(tournamentId);
-                setActiveTab("tournaments");
-              }}
-              selectedTournamentId={
-                visibleActiveTab === "tournaments" ? selectedTournamentId : null
-              }
-              tournaments={tournamentShortcuts}
-            />
-          </div>
-          {isGuest ? (
-            <nav className="mb-3 grid grid-cols-1 gap-1.5 lg:hidden">
-              <button
-                className={`h-11 min-w-0 rounded-md px-3 text-sm font-semibold ${
-                  visibleActiveTab === "calendar"
-                    ? "bg-[#237000] text-white"
-                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-                }`}
-                onClick={() => setActiveTab("calendar")}
-                type="button"
-              >
-                Takvim
-              </button>
-            </nav>
-          ) : (
-            <nav className="mb-3 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.25fr)_44px_44px] gap-1.5 lg:hidden">
-              <button
-                className={`h-11 min-w-0 rounded-md px-2 text-xs font-semibold min-[380px]:text-sm ${
-                  visibleActiveTab === "calendar"
-                    ? "bg-[#237000] text-white"
-                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-                }`}
-                onClick={() => setActiveTab("calendar")}
-                type="button"
-              >
-                Takvim
-              </button>
-              <button
-                className={`h-11 min-w-0 truncate rounded-md px-1.5 text-[11px] font-semibold min-[360px]:text-xs ${
-                  visibleActiveTab === "reservations"
-                    ? "bg-[#237000] text-white"
-                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-                }`}
-                onClick={() => setActiveTab("reservations")}
-                type="button"
-              >
-                Rezervasyonlar
-              </button>
-              <button
-                aria-label="Mesajlar"
-                className={`grid size-11 place-items-center rounded-md ${
-                  visibleActiveTab === "messages"
-                    ? "bg-[#237000] text-white"
-                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-                }`}
-                onClick={() => setActiveTab("messages")}
-                title="Mesajlar"
-                type="button"
-              >
-                <MessageSquare size={20} />
-              </button>
-              <button
-                aria-label="Profil"
-                className={`grid size-11 place-items-center rounded-md ${
-                  visibleActiveTab === "profile"
-                    ? "bg-[#237000] text-white"
-                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-                }`}
-                onClick={() => setActiveTab("profile")}
-                title="Profil"
-                type="button"
-              >
-                <UserIcon size={20} />
-              </button>
-            </nav>
-          )}
+          {!isTournamentView ? (
+            <>
+              <div className="mb-3 lg:hidden">
+                <TournamentShortcutButtons
+                  isManager={isAdmin(profile)}
+                  onOpen={(tournamentId) => {
+                    setSelectedTournamentId(tournamentId);
+                    setActiveTab("tournaments");
+                  }}
+                  selectedTournamentId={null}
+                  tournaments={tournamentShortcuts}
+                />
+              </div>
+              {isGuest ? (
+                <nav className="mb-3 grid grid-cols-1 gap-1.5 lg:hidden">
+                  <button
+                    className={`h-11 min-w-0 rounded-md px-3 text-sm font-semibold ${
+                      visibleActiveTab === "calendar"
+                        ? "bg-[#237000] text-white"
+                        : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                    }`}
+                    onClick={() => setActiveTab("calendar")}
+                    type="button"
+                  >
+                    Takvim
+                  </button>
+                </nav>
+              ) : (
+                <nav className="mb-3 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.25fr)_44px_44px] gap-1.5 lg:hidden">
+                  <button
+                    className={`h-11 min-w-0 rounded-md px-2 text-xs font-semibold min-[380px]:text-sm ${
+                      visibleActiveTab === "calendar"
+                        ? "bg-[#237000] text-white"
+                        : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                    }`}
+                    onClick={() => setActiveTab("calendar")}
+                    type="button"
+                  >
+                    Takvim
+                  </button>
+                  <button
+                    className={`h-11 min-w-0 truncate rounded-md px-1.5 text-[11px] font-semibold min-[360px]:text-xs ${
+                      visibleActiveTab === "reservations"
+                        ? "bg-[#237000] text-white"
+                        : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                    }`}
+                    onClick={() => setActiveTab("reservations")}
+                    type="button"
+                  >
+                    Rezervasyonlar
+                  </button>
+                  <button
+                    aria-label="Mesajlar"
+                    className={`grid size-11 place-items-center rounded-md ${
+                      visibleActiveTab === "messages"
+                        ? "bg-[#237000] text-white"
+                        : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                    }`}
+                    onClick={() => setActiveTab("messages")}
+                    title="Mesajlar"
+                    type="button"
+                  >
+                    <MessageSquare size={20} />
+                  </button>
+                  <button
+                    aria-label="Profil"
+                    className={`grid size-11 place-items-center rounded-md ${
+                      visibleActiveTab === "profile"
+                        ? "bg-[#237000] text-white"
+                        : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                    }`}
+                    onClick={() => setActiveTab("profile")}
+                    title="Profil"
+                    type="button"
+                  >
+                    <UserIcon size={20} />
+                  </button>
+                </nav>
+              )}
+            </>
+          ) : null}
           {notificationToast ? (
             <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-[#9ec596] bg-[#f0f8ef] px-4 py-3 text-sm text-[#1f6500]">
               <div className="min-w-0">
@@ -5110,6 +5119,10 @@ export function ClubApp() {
             <TournamentDetailPanel
               currentTime={currentTime}
               key={selectedTournamentId ?? "active-tournament"}
+              onClose={() => {
+                setSelectedTournamentId(null);
+                setActiveTab("calendar");
+              }}
               selectedTournamentId={selectedTournamentId}
               tournaments={tournaments}
             />
@@ -5876,8 +5889,7 @@ function DayCalendar({
                     currentTime,
                   );
                 const slotCanOpen =
-                  slotWithinBookingWindow &&
-                  (!tournamentConflict || Boolean(onEditTournamentMatch));
+                  slotWithinBookingWindow && !tournamentConflict;
                 const reservation = findReservationAtSlot(
                   reservations,
                   court.id,
