@@ -531,7 +531,7 @@ export function TournamentDetailPanel({
             style={detailTab === "players" ? tournamentAccentStyle : undefined}
             type="button"
           >
-            Oyuncular
+            Gruplar
           </button>
         </div>
       </section>
