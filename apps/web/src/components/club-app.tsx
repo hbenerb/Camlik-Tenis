@@ -5949,7 +5949,9 @@ function DayCalendar({
                   cellContent = (
                     <button
                       className={`${cellClassName} flex items-center justify-center ${
-                        slotIsPast
+                        tournamentConflict
+                          ? "cursor-not-allowed bg-white"
+                          : slotIsPast
                           ? "cursor-not-allowed bg-[#f1eee5] text-[#8b8f86]"
                           : slotCanOpen && canCreateReservation
                           ? "cursor-pointer bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
@@ -5963,9 +5965,11 @@ function DayCalendar({
                       }
                       type="button"
                     >
-                      <span className="text-[10px] font-semibold min-[380px]:text-[11px] sm:text-sm">
-                        {slotCanOpen ? "Açık" : "Kapalı"}
-                      </span>
+                      {tournamentConflict ? null : (
+                        <span className="text-[10px] font-semibold min-[380px]:text-[11px] sm:text-sm">
+                          {slotCanOpen ? "Açık" : "Kapalı"}
+                        </span>
+                      )}
                     </button>
                   );
                 }
