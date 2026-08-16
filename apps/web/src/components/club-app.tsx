@@ -189,7 +189,9 @@ type TournamentMatchEditFormState = {
   status: TournamentMatch["status"];
 };
 type CalendarTournamentMatch = TournamentMatch & {
+  tournament_category_name: string;
   tournament_color: string;
+  tournament_group_name: string | null;
   tournament_name: string;
 };
 type NotificationIntervalUnit = "minutes" | "hours" | "days";
@@ -1516,12 +1518,23 @@ export function ClubApp() {
       activeTournaments.flatMap((tournament) =>
         tournament.matches
           .filter((match) => match.status !== "canceled")
-          .map((match) => ({
-            ...match,
-            tournament_color:
-              tournament.color || DEFAULT_TOURNAMENT_COLOR,
-            tournament_name: tournament.name,
-          })),
+          .map((match) => {
+            const category = tournament.categories.find(
+              (item) => item.id === match.category_id,
+            );
+            const group = tournament.groups.find(
+              (item) => item.id === match.group_id,
+            );
+
+            return {
+              ...match,
+              tournament_category_name: category?.name ?? "Kategori",
+              tournament_color:
+                tournament.color || DEFAULT_TOURNAMENT_COLOR,
+              tournament_group_name: group?.name ?? null,
+              tournament_name: tournament.name,
+            };
+          }),
       ),
     [activeTournaments],
   );
@@ -6225,7 +6238,7 @@ function DayCalendar({
                         const content = (
                           <div
                             className="grid min-h-0 w-full gap-0.5 overflow-hidden px-1 py-0.5 sm:px-2 sm:py-1"
-                            title={`${match.tournament_name}: ${match.player1_name} / ${match.player2_name}`}
+                            title={`${match.tournament_name}: ${match.player1_name} / ${match.player2_name} · ${match.tournament_category_name} · ${match.tournament_group_name ? `Grup ${match.tournament_group_name}` : "Final"}`}
                           >
                             <p className="truncate text-[8px] font-bold uppercase leading-tight min-[380px]:text-[9px] sm:text-xs">
                               {match.tournament_name}
@@ -6239,6 +6252,11 @@ function DayCalendar({
                             </p>
                             <p className="truncate text-[9px] font-semibold leading-tight min-[380px]:text-[10px] sm:text-sm">
                               {match.player2_name}
+                            </p>
+                            <p className="truncate text-[8px] font-semibold leading-tight opacity-90 min-[380px]:text-[9px] sm:text-xs">
+                              {match.tournament_category_name} · {match.tournament_group_name
+                                ? `Grup ${match.tournament_group_name}`
+                                : "Final"}
                             </p>
                           </div>
                         );
