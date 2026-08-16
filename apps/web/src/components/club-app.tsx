@@ -42,7 +42,6 @@ import type { FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
-  buildTournamentGroupNames,
   TournamentAdminPanel,
   TournamentDetailPanel,
 } from "@/components/tournament-panel";
@@ -77,9 +76,12 @@ import type {
   Tournament,
   TournamentCategory,
   TournamentCourt,
+  TournamentEntry,
+  TournamentEntryPlayer,
   TournamentGroup,
   TournamentMatch,
   TournamentParticipant,
+  TournamentPlayer,
   TournamentWithDetails,
 } from "@/lib/types";
 
@@ -93,8 +95,8 @@ type AppTab =
 type OAuthProvider = "google";
 type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
-type MatchType = "singles" | "doubles" | "lesson";
-type MatchReservationType = Exclude<MatchType, "lesson">;
+type MatchType = "singles" | "doubles" | "lesson" | "tournament";
+type MatchReservationType = "singles" | "doubles";
 type AdminTab = "settings" | "members" | "reports" | "tournaments";
 type AdminReportRange =
   | "this_month"
@@ -166,6 +168,9 @@ type ReservationFormState = {
   team1_player2_name: string;
   team2_player1_name: string;
   team2_player2_name: string;
+  tournament_category_id: string;
+  tournament_group_id: string;
+  tournament_id: string;
   user_id: string;
 };
 type ReservationEditFormState = ReservationFormState & {
@@ -246,6 +251,20 @@ const clubTimeOptions = Array.from({ length: 97 }, (_, index) => {
 const openingTimeOptions = clubTimeOptions.slice(0, -1);
 const closingTimeOptions = clubTimeOptions.slice(1);
 
+function buildTournamentStartTimeSlots(settings: ClubSettings) {
+  const baseDate = "2026-01-01";
+  const closingTime = buildLocalDateTime(baseDate, settings.closing_time);
+  const slots: string[] = [];
+  let cursor = buildLocalDateTime(baseDate, settings.opening_time);
+
+  while (cursor < closingTime) {
+    slots.push(formatTime(cursor));
+    cursor = addMinutes(cursor, 30);
+  }
+
+  return slots;
+}
+
 function clockTimeToMinutes(value: string) {
   const [hours, minutes] = normalizeTime(value).split(":").map(Number);
   return hours * 60 + minutes;
@@ -267,6 +286,7 @@ const matchTypeLabels: Record<MatchType, string> = {
   singles: "Tekler",
   doubles: "Çiftler",
   lesson: "Ders",
+  tournament: "Turnuva",
 };
 
 const adminTabLabels: Record<AdminTab, string> = {
@@ -340,6 +360,82 @@ const DEFAULT_NOTIFICATION_TITLE = "Çamlık Tenis";
 
 function normalizeFullName(value: string) {
   return value.trim().replace(/\s+/g, " ");
+}
+
+function prepareTournamentDraft(draft: TournamentDraft) {
+  return {
+    ...draft,
+    name: normalizeFullName(draft.name),
+    players: draft.players.map((player) => ({
+      ...player,
+      display_name: normalizeFullName(player.display_name),
+    })),
+    categories: draft.categories.map((category) => ({
+      ...category,
+      name: normalizeFullName(category.name),
+      groups: category.groups.map((group) => ({
+        ...group,
+        name: normalizeFullName(group.name),
+      })),
+    })),
+  };
+}
+
+function getTournamentDraftStructureError(
+  draft: ReturnType<typeof prepareTournamentDraft>,
+) {
+  const playerNames = draft.players.map((player) =>
+    player.display_name.toLocaleLowerCase("tr-TR"),
+  );
+
+  if (
+    draft.players.length < 2 ||
+    draft.players.some((player) => !player.display_name) ||
+    new Set(playerNames).size !== playerNames.length
+  ) {
+    return "Oyuncu listesinde en az iki farklı ve isimli oyuncu olmalı.";
+  }
+
+  const playerIds = new Set(draft.players.map((player) => player.client_id));
+
+  for (const category of draft.categories) {
+    if (!category.name || category.group_size < 2 || !category.groups.length) {
+      return `${category.name || "Kategori"} bilgileri eksik.`;
+    }
+
+    const groupNames = category.groups.map((group) =>
+      group.name.toLocaleLowerCase("tr-TR"),
+    );
+
+    if (
+      category.groups.some((group) => !group.name) ||
+      new Set(groupNames).size !== groupNames.length
+    ) {
+      return `${category.name} içinde grup adları boş veya tekrarlı olamaz.`;
+    }
+
+    for (const group of category.groups) {
+      if (
+        !group.entries.length ||
+        group.entries.length > category.group_size
+      ) {
+        return `${category.name} · Grup ${group.name} katılımcı sayısı kapasiteye uygun değil.`;
+      }
+
+      for (const entry of group.entries) {
+        if (
+          !playerIds.has(entry.player1_client_id) ||
+          (entry.player2_client_id &&
+            (!playerIds.has(entry.player2_client_id) ||
+              entry.player2_client_id === entry.player1_client_id))
+        ) {
+          return `${category.name} · Grup ${group.name} oyuncu ataması geçersiz.`;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 function notificationPromptStorageKey(userId: string) {
@@ -533,6 +629,9 @@ function getReservationMatchFormFields(reservation: Reservation) {
       team1_player2_name: match.team1_player2_name ?? "",
       team2_player1_name: match.team2_player1_name ?? "",
       team2_player2_name: match.team2_player2_name ?? "",
+      tournament_category_id: "",
+      tournament_group_id: "",
+      tournament_id: "",
     };
   }
 
@@ -545,6 +644,9 @@ function getReservationMatchFormFields(reservation: Reservation) {
       team1_player2_name: "",
       team2_player1_name: "",
       team2_player2_name: "",
+      tournament_category_id: "",
+      tournament_group_id: "",
+      tournament_id: "",
     };
   }
 
@@ -558,6 +660,9 @@ function getReservationMatchFormFields(reservation: Reservation) {
     team1_player2_name: "",
     team2_player1_name: "",
     team2_player2_name: "",
+    tournament_category_id: "",
+    tournament_group_id: "",
+    tournament_id: "",
   };
 }
 
@@ -1330,6 +1435,9 @@ export function ClubApp() {
     team1_player2_name: "",
     team2_player1_name: "",
     team2_player2_name: "",
+    tournament_category_id: "",
+    tournament_group_id: "",
+    tournament_id: "",
     user_id: "",
   });
   const [reservationEditForm, setReservationEditForm] =
@@ -1346,6 +1454,9 @@ export function ClubApp() {
     team1_player2_name: "",
     team2_player1_name: "",
     team2_player2_name: "",
+    tournament_category_id: "",
+    tournament_group_id: "",
+    tournament_id: "",
     user_id: "",
       status: "confirmed" as ReservationStatus,
     });
@@ -1403,6 +1514,10 @@ export function ClubApp() {
   );
 
   const timeSlots = useMemo(() => buildTimeSlots(settings), [settings]);
+  const tournamentTimeSlots = useMemo(
+    () => buildTournamentStartTimeSlots(settings),
+    [settings],
+  );
 
   const mustCompleteProfile =
     Boolean(profile) && isProfileSchemaReady && !isProfileComplete(profile);
@@ -1834,7 +1949,10 @@ export function ClubApp() {
       tournamentCourtResult,
       categoryResult,
       groupResult,
-      participantResult,
+      playerResult,
+      entryResult,
+      entryPlayerResult,
+      legacyParticipantResult,
       matchResult,
     ] = await Promise.all([
       supabase
@@ -1851,6 +1969,18 @@ export function ClubApp() {
         .select("*")
         .order("display_order", { ascending: true }),
       supabase
+        .from("tournament_players")
+        .select("*")
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("tournament_entries")
+        .select("*")
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("tournament_entry_players")
+        .select("*")
+        .order("position", { ascending: true }),
+      supabase
         .from("tournament_participants")
         .select("*")
         .order("display_order", { ascending: true }),
@@ -1865,8 +1995,9 @@ export function ClubApp() {
       tournamentCourtResult.error,
       categoryResult.error,
       groupResult.error,
-      participantResult.error,
       matchResult.error,
+      (playerResult.error || entryResult.error || entryPlayerResult.error) &&
+        legacyParticipantResult.error,
     ].find(Boolean);
 
     if (firstError) {
@@ -1880,9 +2011,119 @@ export function ClubApp() {
     const loadedCategories =
       (categoryResult.data as TournamentCategory[] | null) ?? [];
     const loadedGroups = (groupResult.data as TournamentGroup[] | null) ?? [];
-    const loadedParticipants =
-      (participantResult.data as TournamentParticipant[] | null) ?? [];
-    const loadedMatches = (matchResult.data as TournamentMatch[] | null) ?? [];
+    const normalizedStructureReady =
+      !playerResult.error && !entryResult.error && !entryPlayerResult.error;
+    let loadedPlayers =
+      (playerResult.data as TournamentPlayer[] | null) ?? [];
+    let loadedEntries =
+      (entryResult.data as TournamentEntry[] | null) ?? [];
+    let loadedEntryPlayers =
+      (entryPlayerResult.data as TournamentEntryPlayer[] | null) ?? [];
+
+    if (!normalizedStructureReady) {
+      const legacyParticipants =
+        (legacyParticipantResult.data as Omit<
+          TournamentParticipant,
+          "player_ids"
+        >[] | null) ?? [];
+      const categoriesById = new Map(
+        loadedCategories.map((category) => [category.id, category]),
+      );
+      const fallbackPlayers = new Map<string, TournamentPlayer>();
+
+      loadedEntries = legacyParticipants.map((participant) => ({
+        category_id: participant.category_id,
+        created_at: participant.created_at,
+        display_order: participant.display_order,
+        group_id: participant.group_id,
+        id: participant.id,
+      }));
+      loadedEntryPlayers = legacyParticipants.flatMap((participant) => {
+        const categoryName =
+          categoriesById.get(participant.category_id)?.name.toLocaleLowerCase(
+            "tr-TR",
+          ) ?? "";
+        const names =
+          categoryName.includes("double") || categoryName.includes("mix")
+            ? participant.display_name.split("-").slice(0, 2)
+            : [participant.display_name];
+
+        return names.map((name, index) => {
+          const displayName = normalizeFullName(name);
+          const fallbackPlayerId = `${participant.id}-player-${index + 1}`;
+          const category = categoriesById.get(participant.category_id);
+
+          fallbackPlayers.set(fallbackPlayerId, {
+            created_at: participant.created_at,
+            display_name: displayName,
+            display_order: participant.display_order * 2 + index,
+            id: fallbackPlayerId,
+            tournament_id: category?.tournament_id ?? "",
+            updated_at: participant.created_at,
+          });
+
+          return {
+            created_at: participant.created_at,
+            entry_id: participant.id,
+            player_id: fallbackPlayerId,
+            position: (index + 1) as 1 | 2,
+          };
+        });
+      });
+      loadedPlayers = [...fallbackPlayers.values()];
+    }
+    const playersById = new Map(
+      loadedPlayers.map((player) => [player.id, player]),
+    );
+    const participants = loadedEntries.map((entry) => {
+      const entryPlayers = loadedEntryPlayers
+        .filter((entryPlayer) => entryPlayer.entry_id === entry.id)
+        .sort((first, second) => first.position - second.position);
+
+      return {
+        ...entry,
+        display_name: entryPlayers
+          .map((entryPlayer) => playersById.get(entryPlayer.player_id)?.display_name)
+          .filter((name): name is string => Boolean(name))
+          .join("-"),
+        player_ids: entryPlayers.map((entryPlayer) => entryPlayer.player_id),
+      } satisfies TournamentParticipant;
+    });
+    const participantsById = new Map(
+      participants.map((participant) => [participant.id, participant]),
+    );
+    const loadedMatches = ((matchResult.data as TournamentMatch[] | null) ?? []).map(
+      (match) => {
+        const fallbackFirstEntry = participants.find(
+          (participant) =>
+            participant.category_id === match.category_id &&
+            normalizeFullName(participant.display_name) ===
+              normalizeFullName(match.player1_name),
+        );
+        const fallbackSecondEntry = participants.find(
+          (participant) =>
+            participant.category_id === match.category_id &&
+            normalizeFullName(participant.display_name) ===
+              normalizeFullName(match.player2_name),
+        );
+
+        return {
+          ...match,
+          player1_entry_id:
+            match.player1_entry_id ?? fallbackFirstEntry?.id ?? "",
+        player1_name:
+          participantsById.get(match.player1_entry_id)?.display_name ??
+          fallbackFirstEntry?.display_name ??
+          match.player1_name,
+          player2_entry_id:
+            match.player2_entry_id ?? fallbackSecondEntry?.id ?? "",
+        player2_name:
+          participantsById.get(match.player2_entry_id)?.display_name ??
+          fallbackSecondEntry?.display_name ??
+          match.player2_name,
+        };
+      },
+    );
 
     const tournamentsWithDetails = loadedTournaments.map((tournament) => {
       const categories = loadedCategories.filter(
@@ -1897,7 +2138,10 @@ export function ClubApp() {
         ),
         categories,
         groups: loadedGroups.filter((group) => categoryIds.has(group.category_id)),
-        participants: loadedParticipants.filter((participant) =>
+        players: loadedPlayers.filter(
+          (player) => player.tournament_id === tournament.id,
+        ),
+        participants: participants.filter((participant) =>
           categoryIds.has(participant.category_id),
         ),
         matches: loadedMatches.filter(
@@ -2833,20 +3077,74 @@ export function ClubApp() {
       selectedOwner && profileOptionLabel(selectedOwner) !== "İsim yok"
         ? profileOptionLabel(selectedOwner)
         : getDisplayName(profile, user);
+    const nextMatchType =
+      reservationForm.match_type === "tournament" && !canManageReservations
+        ? "singles"
+        : canMarkLesson
+          ? reservationForm.match_type
+          : "singles";
+    const tournamentForForm =
+      tournaments.find(
+        (tournament) => tournament.id === reservationForm.tournament_id,
+      ) ??
+      tournaments.find((tournament) => tournament.is_active) ??
+      tournaments[0] ??
+      null;
+    const categoryForForm =
+      tournamentForForm?.categories.find(
+        (category) => category.id === reservationForm.tournament_category_id,
+      ) ?? tournamentForForm?.categories[0] ?? null;
+    const groupForForm =
+      tournamentForForm?.groups.find(
+        (group) =>
+          group.id === reservationForm.tournament_group_id &&
+          group.category_id === categoryForForm?.id,
+      ) ??
+      tournamentForForm?.groups
+        .filter((group) => group.category_id === categoryForForm?.id)
+        .sort((first, second) => first.display_order - second.display_order)[0] ??
+      null;
+    const tournamentPlayers =
+      tournamentForForm?.participants
+        .filter(
+          (participant) =>
+            participant.category_id === categoryForForm?.id &&
+            (!groupForForm || participant.group_id === groupForForm.id),
+        )
+        .sort((first, second) => first.display_order - second.display_order) ?? [];
+    const allowedTournamentCourtIds = new Set(
+      tournamentForForm?.courts.map((court) => court.court_id) ?? [],
+    );
+    const firstTournamentCourt = activeCourts.find((court) =>
+      allowedTournamentCourtIds.has(court.id),
+    );
+    const requestedCourtId = courtId ?? activeCourts[0]?.id ?? "";
 
     setReservationForm({
-      court_id: courtId ?? activeCourts[0]?.id ?? "",
+      court_id:
+        nextMatchType === "tournament"
+          ? firstTournamentCourt?.id ?? requestedCourtId
+          : requestedCourtId,
       custom_info: "",
       date: dateValue,
       is_custom: false,
-      is_lesson: canMarkLesson ? reservationForm.is_lesson : false,
-      match_type: canMarkLesson ? reservationForm.match_type : "singles",
+      is_lesson: nextMatchType === "lesson",
+      match_type: nextMatchType,
       start_time: slotForForm ?? timeSlots[0] ?? "09:00",
       student_name: "",
-      team1_player1_name: selectedOwnerName,
+      team1_player1_name:
+        nextMatchType === "tournament"
+          ? tournamentPlayers[0]?.display_name ?? ""
+          : selectedOwnerName,
       team1_player2_name: "",
-      team2_player1_name: "",
+      team2_player1_name:
+        nextMatchType === "tournament"
+          ? tournamentPlayers[1]?.display_name ?? ""
+          : "",
       team2_player2_name: "",
+      tournament_category_id: categoryForForm?.id ?? "",
+      tournament_group_id: groupForForm?.id ?? "",
+      tournament_id: tournamentForForm?.id ?? "",
       user_id: reservationForm.user_id || user.id,
     });
     setStatusMessage(null);
@@ -2914,11 +3212,19 @@ export function ClubApp() {
 
     const customInfo = normalizeFullName(reservationForm.custom_info);
     const isLessonReservationForm = canMarkLesson && isLessonForm(reservationForm);
+    const isTournamentReservationForm =
+      reservationForm.match_type === "tournament" && isAdmin(profile);
+
+    if (reservationForm.match_type === "tournament" && !isTournamentReservationForm) {
+      setStatusMessage("Turnuva maçı yalnızca admin tarafından eklenebilir.");
+      return;
+    }
 
     if (
       canManageReservations &&
       reservationForm.is_custom &&
       !isLessonReservationForm &&
+      !isTournamentReservationForm &&
       !customInfo
     ) {
       setStatusMessage("Özel rezervasyon bilgisi girilmeli.");
@@ -2929,6 +3235,157 @@ export function ClubApp() {
       reservationForm.date,
       reservationForm.start_time,
     );
+
+    if (isTournamentReservationForm) {
+      const tournament = tournaments.find(
+        (item) => item.id === reservationForm.tournament_id,
+      );
+      const category = tournament?.categories.find(
+        (item) => item.id === reservationForm.tournament_category_id,
+      );
+      const group = tournament?.groups.find(
+        (item) =>
+          item.id === reservationForm.tournament_group_id &&
+          item.category_id === category?.id,
+      );
+      const player1Name = normalizeFullName(
+        reservationForm.team1_player1_name,
+      );
+      const player2Name = normalizeFullName(
+        reservationForm.team2_player1_name,
+      );
+
+      if (!tournament || !category) {
+        setStatusMessage("Turnuva ve kategori seçilmeli.");
+        return;
+      }
+
+      if (
+        reservationForm.date <
+          (group
+            ? tournament.group_stage_start_date
+            : tournament.finals_start_date) ||
+        reservationForm.date >
+          (group ? tournament.group_stage_end_date : tournament.finals_end_date)
+      ) {
+        setStatusMessage(
+          group
+            ? "Tarih turnuvanın grup maçları aralığında olmalı."
+            : "Tarih turnuvanın final maçları aralığında olmalı.",
+        );
+        return;
+      }
+
+      const allowedCourtIds = new Set(
+        tournament.courts.map((court) => court.court_id),
+      );
+
+      if (!allowedCourtIds.has(reservationForm.court_id)) {
+        setStatusMessage("Turnuvada kullanılabilen bir kort seçilmeli.");
+        return;
+      }
+
+      const allowedParticipants = tournament.participants.filter(
+        (participant) =>
+          participant.category_id === category.id &&
+          (!group || participant.group_id === group.id),
+      );
+      const player1Entry = allowedParticipants.find(
+        (participant) =>
+          normalizeFullName(participant.display_name) === player1Name,
+      );
+      const player2Entry = allowedParticipants.find(
+        (participant) =>
+          normalizeFullName(participant.display_name) === player2Name,
+      );
+
+      if (
+        !player1Name ||
+        !player2Name ||
+        player1Name === player2Name ||
+        !player1Entry ||
+        !player2Entry ||
+        player1Entry.id === player2Entry.id
+      ) {
+        setStatusMessage("Seçilen gruptan iki farklı oyuncu seçilmeli.");
+        return;
+      }
+
+      const endsAt = addMinutes(startsAt, tournament.match_duration_minutes);
+
+      if (
+        endsAt >
+        buildLocalDateTime(reservationForm.date, settings.closing_time)
+      ) {
+        setStatusMessage("Maç kulübün kapanış saatinden önce bitmeli.");
+        return;
+      }
+
+      const scheduledTournamentMatches = tournaments.flatMap((item) =>
+        item.matches
+          .filter((match) => match.status !== "canceled")
+          .map((match) => ({ ...match, tournament_name: item.name })),
+      );
+      const tournamentConflict = findTournamentMatchConflict(
+        scheduledTournamentMatches,
+        reservationForm.court_id,
+        startsAt,
+        endsAt,
+      );
+      const reservationConflict = reservations.find(
+        (reservation) =>
+          reservation.status === "confirmed" &&
+          reservation.court_id === reservationForm.court_id &&
+          timeRangesOverlap(
+            startsAt,
+            endsAt,
+            new Date(reservation.starts_at),
+            new Date(reservation.ends_at),
+          ),
+      );
+
+      if (tournamentConflict) {
+        setStatusMessage(
+          `Bu saat ${tournamentConflict.tournament_name} turnuvasındaki başka bir maçla çakışıyor.`,
+        );
+        return;
+      }
+
+      if (reservationConflict) {
+        setStatusMessage("Bu saat mevcut bir rezervasyonla çakışıyor.");
+        return;
+      }
+
+      setIsSaving(true);
+      setStatusMessage(null);
+      const matchResult = await supabase.from("tournament_matches").insert({
+        category_id: category.id,
+        court_id: reservationForm.court_id,
+        ends_at: endsAt.toISOString(),
+        group_id: group?.id ?? null,
+        phase: group ? "group" : "final",
+        player1_name: player1Name,
+        player1_entry_id: player1Entry.id,
+        player2_name: player2Name,
+        player2_entry_id: player2Entry.id,
+        starts_at: startsAt.toISOString(),
+        status: "scheduled",
+        tournament_id: tournament.id,
+      });
+
+      setIsSaving(false);
+
+      if (matchResult.error) {
+        setStatusMessage(matchResult.error.message);
+        return;
+      }
+
+      setIsReservationOpen(false);
+      setStatusMessage("Turnuva maçı eklendi.");
+      await loadTournamentData();
+      return;
+    }
+
     const endsAt = addSlotDuration(startsAt, settings);
     const tournamentConflict = findTournamentMatchConflict(
       calendarTournamentMatches,
@@ -3532,15 +3989,8 @@ export function ClubApp() {
       return false;
     }
 
-    const name = normalizeFullName(draft.name);
-    const preparedCategories = draft.categories.map((category) => ({
-      ...category,
-      name: normalizeFullName(category.name),
-      players: category.players_text
-        .split("\n")
-        .map((player) => normalizeFullName(player))
-        .filter(Boolean),
-    }));
+    const preparedDraft = prepareTournamentDraft(draft);
+    const name = preparedDraft.name;
 
     if (!name) {
       setStatusMessage("Turnuva adı girilmeli.");
@@ -3548,41 +3998,32 @@ export function ClubApp() {
     }
 
     if (
-      !Number.isInteger(draft.match_duration_minutes) ||
-      draft.match_duration_minutes < 15 ||
-      draft.match_duration_minutes > 360
+      !Number.isInteger(preparedDraft.match_duration_minutes) ||
+      preparedDraft.match_duration_minutes < 15 ||
+      preparedDraft.match_duration_minutes > 360
     ) {
       setStatusMessage("Maç süresi 15 ile 360 dakika arasında olmalı.");
       return false;
     }
 
-    if (!draft.court_ids.length) {
+    if (!preparedDraft.court_ids.length) {
       setStatusMessage("Turnuva için en az bir kort seçilmeli.");
       return false;
     }
 
     if (
-      draft.group_stage_end_date < draft.group_stage_start_date ||
-      draft.finals_start_date <= draft.group_stage_end_date ||
-      draft.finals_end_date < draft.finals_start_date
+      preparedDraft.group_stage_end_date < preparedDraft.group_stage_start_date ||
+      preparedDraft.finals_start_date <= preparedDraft.group_stage_end_date ||
+      preparedDraft.finals_end_date < preparedDraft.finals_start_date
     ) {
       setStatusMessage("Turnuva tarih aralıkları sıralı olmalı.");
       return false;
     }
 
-    const invalidCategory = preparedCategories.find(
-      (category) =>
-        !category.name ||
-        category.group_count < 1 ||
-        category.group_size < 2 ||
-        !category.players.length ||
-        category.players.length > category.group_count * category.group_size,
-    );
+    const structureError = getTournamentDraftStructureError(preparedDraft);
 
-    if (invalidCategory) {
-      setStatusMessage(
-        `${invalidCategory.name || "Kategori"} oyuncu sayısı grup kapasitesine uygun değil.`,
-      );
+    if (structureError) {
+      setStatusMessage(structureError);
       return false;
     }
 
@@ -3595,12 +4036,12 @@ export function ClubApp() {
         .from("tournaments")
         .insert({
           created_by: user.id,
-          finals_end_date: draft.finals_end_date,
-          finals_start_date: draft.finals_start_date,
-          group_stage_end_date: draft.group_stage_end_date,
-          group_stage_start_date: draft.group_stage_start_date,
-          is_active: draft.is_active,
-          match_duration_minutes: draft.match_duration_minutes,
+          finals_end_date: preparedDraft.finals_end_date,
+          finals_start_date: preparedDraft.finals_start_date,
+          group_stage_end_date: preparedDraft.group_stage_end_date,
+          group_stage_start_date: preparedDraft.group_stage_start_date,
+          is_active: preparedDraft.is_active,
+          match_duration_minutes: preparedDraft.match_duration_minutes,
           name,
         })
         .select("*")
@@ -3615,7 +4056,7 @@ export function ClubApp() {
       createdTournamentId = (tournamentResult.data as Tournament).id;
 
       const courtResult = await supabase.from("tournament_courts").insert(
-        draft.court_ids.map((courtId) => ({
+        preparedDraft.court_ids.map((courtId) => ({
           court_id: courtId,
           tournament_id: createdTournamentId,
         })),
@@ -3625,12 +4066,38 @@ export function ClubApp() {
         throw new Error(courtResult.error.message);
       }
 
-      for (const [categoryIndex, categoryDraft] of preparedCategories.entries()) {
+      const playerResult = await supabase
+        .from("tournament_players")
+        .insert(
+          preparedDraft.players.map((player, playerIndex) => ({
+            display_name: player.display_name,
+            display_order: playerIndex + 1,
+            tournament_id: createdTournamentId,
+          })),
+        )
+        .select("*");
+
+      if (playerResult.error || !playerResult.data) {
+        throw new Error(
+          playerResult.error?.message ?? "Oyuncular oluşturulamadı.",
+        );
+      }
+
+      const playerIdsByClientId = new Map(
+        preparedDraft.players.map((player, index) => [
+          player.client_id,
+          (playerResult.data as TournamentPlayer[]).find(
+            (savedPlayer) => savedPlayer.display_order === index + 1,
+          )?.id ?? "",
+        ]),
+      );
+
+      for (const [categoryIndex, categoryDraft] of preparedDraft.categories.entries()) {
         const categoryResult = await supabase
           .from("tournament_categories")
           .insert({
             display_order: categoryIndex + 1,
-            group_count: categoryDraft.group_count,
+            group_count: categoryDraft.groups.length,
             group_size: categoryDraft.group_size,
             name: categoryDraft.name,
             tournament_id: createdTournamentId,
@@ -3645,14 +4112,13 @@ export function ClubApp() {
         }
 
         const category = categoryResult.data as TournamentCategory;
-        const groupNames = buildTournamentGroupNames(categoryDraft.group_count);
         const groupResult = await supabase
           .from("tournament_groups")
           .insert(
-            groupNames.map((groupName, groupIndex) => ({
+            categoryDraft.groups.map((group, groupIndex) => ({
               category_id: category.id,
               display_order: groupIndex + 1,
-              name: groupName,
+              name: group.name,
             })),
           )
           .select("*");
@@ -3663,29 +4129,78 @@ export function ClubApp() {
           );
         }
 
-        const groups = (groupResult.data as TournamentGroup[]).sort(
-          (first, second) => first.display_order - second.display_order,
+        const groupsByClientId = new Map(
+          categoryDraft.groups.map((group, index) => [
+            group.client_id,
+            (groupResult.data as TournamentGroup[]).find(
+              (savedGroup) => savedGroup.display_order === index + 1,
+            ),
+          ]),
         );
-        const participantResult = await supabase
-          .from("tournament_participants")
-          .insert(
-            categoryDraft.players.map((player, playerIndex) => {
-              const groupIndex = Math.min(
-                Math.floor(playerIndex / categoryDraft.group_size),
-                groups.length - 1,
-              );
 
-              return {
+        for (const groupDraft of categoryDraft.groups) {
+          const group = groupsByClientId.get(groupDraft.client_id);
+
+          if (!group) {
+            throw new Error("Turnuva grubu bulunamadı.");
+          }
+
+          const entryResult = await supabase
+            .from("tournament_entries")
+            .insert(
+              groupDraft.entries.map((entry, entryIndex) => ({
                 category_id: category.id,
-                display_name: player,
-                display_order: playerIndex + 1,
-                group_id: groups[groupIndex]?.id ?? null,
-              };
-            }),
-          );
+                display_order: entryIndex + 1,
+                group_id: group.id,
+              })),
+            )
+            .select("*");
 
-        if (participantResult.error) {
-          throw new Error(participantResult.error.message);
+          if (entryResult.error || !entryResult.data) {
+            throw new Error(
+              entryResult.error?.message ?? "Grup katılımcıları oluşturulamadı.",
+            );
+          }
+
+          const entryPlayerRows = groupDraft.entries.flatMap((entry, entryIndex) => {
+            const savedEntry = (entryResult.data as TournamentEntry[]).find(
+              (item) => item.display_order === entryIndex + 1,
+            );
+            const firstPlayerId = playerIdsByClientId.get(
+              entry.player1_client_id,
+            );
+            const secondPlayerId = entry.player2_client_id
+              ? playerIdsByClientId.get(entry.player2_client_id)
+              : null;
+
+            if (!savedEntry || !firstPlayerId) {
+              throw new Error("Katılımcı oyuncu bağlantısı kurulamadı.");
+            }
+
+            return [
+              {
+                entry_id: savedEntry.id,
+                player_id: firstPlayerId,
+                position: 1,
+              },
+              ...(secondPlayerId
+                ? [
+                    {
+                      entry_id: savedEntry.id,
+                      player_id: secondPlayerId,
+                      position: 2,
+                    },
+                  ]
+                : []),
+            ];
+          });
+          const entryPlayersResult = await supabase
+            .from("tournament_entry_players")
+            .insert(entryPlayerRows);
+
+          if (entryPlayersResult.error) {
+            throw new Error(entryPlayersResult.error.message);
+          }
         }
       }
 
@@ -3718,15 +4233,8 @@ export function ClubApp() {
     }
 
     const tournament = tournaments.find((item) => item.id === tournamentId);
-    const name = normalizeFullName(draft.name);
-    const preparedCategories = draft.categories.map((category) => ({
-      ...category,
-      name: normalizeFullName(category.name),
-      players: category.players_text
-        .split("\n")
-        .map((player) => normalizeFullName(player))
-        .filter(Boolean),
-    }));
+    const preparedDraft = prepareTournamentDraft(draft);
+    const name = preparedDraft.name;
 
     if (!tournament || !name) {
       setStatusMessage("Düzenlenecek turnuva bulunamadı.");
@@ -3734,87 +4242,99 @@ export function ClubApp() {
     }
 
     if (
-      !Number.isInteger(draft.match_duration_minutes) ||
-      draft.match_duration_minutes < 15 ||
-      draft.match_duration_minutes > 360
+      !Number.isInteger(preparedDraft.match_duration_minutes) ||
+      preparedDraft.match_duration_minutes < 15 ||
+      preparedDraft.match_duration_minutes > 360
     ) {
       setStatusMessage("Maç süresi 15 ile 360 dakika arasında olmalı.");
       return false;
     }
 
-    if (!draft.court_ids.length) {
+    if (!preparedDraft.court_ids.length) {
       setStatusMessage("Turnuva için en az bir kort seçilmeli.");
       return false;
     }
 
     if (
-      draft.group_stage_end_date < draft.group_stage_start_date ||
-      draft.finals_start_date <= draft.group_stage_end_date ||
-      draft.finals_end_date < draft.finals_start_date
+      preparedDraft.group_stage_end_date <
+        preparedDraft.group_stage_start_date ||
+      preparedDraft.finals_start_date <=
+        preparedDraft.group_stage_end_date ||
+      preparedDraft.finals_end_date < preparedDraft.finals_start_date
     ) {
       setStatusMessage("Turnuva tarih aralıkları sıralı olmalı.");
       return false;
     }
 
-    const invalidCategory = preparedCategories.find((category) => {
-      const normalizedPlayers = category.players.map((player) =>
-        player.toLocaleLowerCase("tr-TR"),
-      );
+    const structureError = getTournamentDraftStructureError(preparedDraft);
 
-      return (
-        !category.name ||
-        category.group_count < 1 ||
-        category.group_size < 2 ||
-        !category.players.length ||
-        category.players.length > category.group_count * category.group_size ||
-        new Set(normalizedPlayers).size !== normalizedPlayers.length
-      );
-    });
-
-    if (invalidCategory) {
-      setStatusMessage(
-        `${invalidCategory.name || "Kategori"} oyuncu listesi veya grup kapasitesi uygun değil.`,
-      );
+    if (structureError) {
+      setStatusMessage(structureError);
       return false;
     }
 
-    const draftCategoryIds = new Set(
-      preparedCategories.flatMap((category) =>
+    const retainedCategoryDraftIds = new Set(
+      preparedDraft.categories.flatMap((category) =>
         category.id ? [category.id] : [],
       ),
     );
     const removedCategoryWithMatches = tournament.categories.find(
       (category) =>
-        !draftCategoryIds.has(category.id) &&
+        !retainedCategoryDraftIds.has(category.id) &&
         tournament.matches.some((match) => match.category_id === category.id),
     );
 
     if (removedCategoryWithMatches) {
       setStatusMessage(
-        `${removedCategoryWithMatches.name} kategorisinin maçları olduğu için kategori kaldırılamaz.`,
+        removedCategoryWithMatches.name +
+          " kategorisinin maçları olduğu için kategori kaldırılamaz.",
       );
       return false;
     }
 
-    for (const categoryDraft of preparedCategories) {
-      if (!categoryDraft.id) {
-        continue;
-      }
-
-      const existingGroups = tournament.groups
-        .filter((group) => group.category_id === categoryDraft.id)
-        .sort((first, second) => first.display_order - second.display_order);
-      const groupsToRemove = existingGroups.slice(categoryDraft.group_count);
-      const hasMatchesInRemovedGroup = groupsToRemove.some((group) =>
+    const retainedGroupDraftIds = new Set(
+      preparedDraft.categories.flatMap((category) =>
+        category.groups.flatMap((group) => (group.id ? [group.id] : [])),
+      ),
+    );
+    const removedGroupWithMatches = tournament.groups.find(
+      (group) =>
+        !retainedGroupDraftIds.has(group.id) &&
         tournament.matches.some((match) => match.group_id === group.id),
-      );
+    );
 
-      if (hasMatchesInRemovedGroup) {
-        setStatusMessage(
-          `${categoryDraft.name} kategorisinde maçı bulunan gruplar azaltılamaz.`,
-        );
-        return false;
-      }
+    if (removedGroupWithMatches) {
+      setStatusMessage(
+        "Grup " +
+          removedGroupWithMatches.name +
+          " maçları olduğu için kaldırılamaz.",
+      );
+      return false;
+    }
+
+    const retainedEntryDraftIds = new Set(
+      preparedDraft.categories.flatMap((category) =>
+        category.groups.flatMap((group) =>
+          group.entries.flatMap((entry) => (entry.id ? [entry.id] : [])),
+        ),
+      ),
+    );
+    const removedEntryWithMatches = tournament.participants.find(
+      (participant) =>
+        !retainedEntryDraftIds.has(participant.id) &&
+        tournament.matches.some(
+          (match) =>
+            match.player1_entry_id === participant.id ||
+            match.player2_entry_id === participant.id,
+        ),
+    );
+
+    if (removedEntryWithMatches) {
+      setStatusMessage(
+        removedEntryWithMatches.display_name +
+          " maçları olduğu için kaldırılamaz; oyuncularını değiştirebilirsiniz.",
+      );
+      return false;
     }
 
     setIsSaving(true);
@@ -3824,12 +4344,12 @@ export function ClubApp() {
       const tournamentResult = await supabase
         .from("tournaments")
         .update({
-          finals_end_date: draft.finals_end_date,
-          finals_start_date: draft.finals_start_date,
-          group_stage_end_date: draft.group_stage_end_date,
-          group_stage_start_date: draft.group_stage_start_date,
-          is_active: draft.is_active,
-          match_duration_minutes: draft.match_duration_minutes,
+          finals_end_date: preparedDraft.finals_end_date,
+          finals_start_date: preparedDraft.finals_start_date,
+          group_stage_end_date: preparedDraft.group_stage_end_date,
+          group_stage_start_date: preparedDraft.group_stage_start_date,
+          is_active: preparedDraft.is_active,
+          match_duration_minutes: preparedDraft.match_duration_minutes,
           name,
         })
         .eq("id", tournamentId);
@@ -3848,7 +4368,7 @@ export function ClubApp() {
       }
 
       const insertCourtsResult = await supabase.from("tournament_courts").insert(
-        draft.court_ids.map((courtId) => ({
+        preparedDraft.court_ids.map((courtId) => ({
           court_id: courtId,
           tournament_id: tournamentId,
         })),
@@ -3858,24 +4378,69 @@ export function ClubApp() {
         throw new Error(insertCourtsResult.error.message);
       }
 
-      for (const [categoryIndex, categoryDraft] of preparedCategories.entries()) {
-        const existingCategory = categoryDraft.id
-          ? tournament.categories.find(
-              (category) => category.id === categoryDraft.id,
-            )
-          : null;
-        let categoryId = existingCategory?.id ?? null;
+      const playerIdsByClientId = new Map<string, string>();
+      const retainedPlayerIds = new Set<string>();
 
-        if (existingCategory) {
+      for (const [playerIndex, playerDraft] of preparedDraft.players.entries()) {
+        if (playerDraft.id) {
+          const playerResult = await supabase
+            .from("tournament_players")
+            .update({
+              display_name: playerDraft.display_name,
+              display_order: playerIndex + 1,
+            })
+            .eq("id", playerDraft.id)
+            .eq("tournament_id", tournamentId);
+
+          if (playerResult.error) {
+            throw new Error(playerResult.error.message);
+          }
+
+          playerIdsByClientId.set(playerDraft.client_id, playerDraft.id);
+          retainedPlayerIds.add(playerDraft.id);
+        } else {
+          const playerResult = await supabase
+            .from("tournament_players")
+            .insert({
+              display_name: playerDraft.display_name,
+              display_order: playerIndex + 1,
+              tournament_id: tournamentId,
+            })
+            .select("*")
+            .single();
+
+          if (playerResult.error || !playerResult.data) {
+            throw new Error(
+              playerResult.error?.message ?? "Oyuncu eklenemedi.",
+            );
+          }
+
+          const savedPlayer = playerResult.data as TournamentPlayer;
+          playerIdsByClientId.set(playerDraft.client_id, savedPlayer.id);
+          retainedPlayerIds.add(savedPlayer.id);
+        }
+      }
+
+      const retainedCategoryIds = new Set<string>();
+      const retainedGroupIds = new Set<string>();
+      const retainedEntryIds = new Set<string>();
+
+      for (const [
+        categoryIndex,
+        categoryDraft,
+      ] of preparedDraft.categories.entries()) {
+        let categoryId = categoryDraft.id ?? null;
+
+        if (categoryDraft.id) {
           const categoryResult = await supabase
             .from("tournament_categories")
             .update({
               display_order: categoryIndex + 1,
-              group_count: categoryDraft.group_count,
+              group_count: categoryDraft.groups.length,
               group_size: categoryDraft.group_size,
               name: categoryDraft.name,
             })
-            .eq("id", existingCategory.id)
+            .eq("id", categoryDraft.id)
             .eq("tournament_id", tournamentId);
 
           if (categoryResult.error) {
@@ -3886,7 +4451,7 @@ export function ClubApp() {
             .from("tournament_categories")
             .insert({
               display_order: categoryIndex + 1,
-              group_count: categoryDraft.group_count,
+              group_count: categoryDraft.groups.length,
               group_size: categoryDraft.group_size,
               name: categoryDraft.name,
               tournament_id: tournamentId,
@@ -3906,125 +4471,169 @@ export function ClubApp() {
         if (!categoryId) {
           throw new Error("Kategori kaydı bulunamadı.");
         }
+        retainedCategoryIds.add(categoryId);
 
-        const existingGroups = tournament.groups
-          .filter((group) => group.category_id === categoryId)
-          .sort((first, second) => first.display_order - second.display_order);
-        const targetGroups = existingGroups.slice(0, categoryDraft.group_count);
-        const missingGroupCount = categoryDraft.group_count - targetGroups.length;
+        for (const [groupIndex, groupDraft] of categoryDraft.groups.entries()) {
+          let groupId = groupDraft.id ?? null;
 
-        if (missingGroupCount > 0) {
-          const usedNames = new Set(existingGroups.map((group) => group.name));
-          const newGroupNames = buildTournamentGroupNames(
-            categoryDraft.group_count + existingGroups.length + 26,
-          )
-            .filter((groupName) => !usedNames.has(groupName))
-            .slice(0, missingGroupCount);
-          const groupResult = await supabase
-            .from("tournament_groups")
-            .insert(
-              newGroupNames.map((groupName, groupIndex) => ({
+          if (groupDraft.id) {
+            const groupResult = await supabase
+              .from("tournament_groups")
+              .update({
                 category_id: categoryId,
-                display_order: targetGroups.length + groupIndex + 1,
-                name: groupName,
-              })),
-            )
-            .select("*");
+                display_order: groupIndex + 1,
+                name: groupDraft.name,
+              })
+              .eq("id", groupDraft.id);
 
-          if (groupResult.error || !groupResult.data) {
-            throw new Error(
-              groupResult.error?.message ?? "Turnuva grupları eklenemedi.",
-            );
-          }
-
-          targetGroups.push(
-            ...(groupResult.data as TournamentGroup[]).sort(
-              (first, second) => first.display_order - second.display_order,
-            ),
-          );
-        }
-
-        const groupIdsToDelete = existingGroups
-          .slice(categoryDraft.group_count)
-          .map((group) => group.id);
-
-        if (groupIdsToDelete.length) {
-          const deleteGroupsResult = await supabase
-            .from("tournament_groups")
-            .delete()
-            .in("id", groupIdsToDelete);
-
-          if (deleteGroupsResult.error) {
-            throw new Error(deleteGroupsResult.error.message);
-          }
-        }
-
-        const existingParticipants = tournament.participants.filter(
-          (participant) => participant.category_id === categoryId,
-        );
-        const participantsByName = new Map(
-          existingParticipants.map((participant) => [
-            participant.display_name.toLocaleLowerCase("tr-TR"),
-            participant,
-          ]),
-        );
-        const retainedParticipantIds = new Set<string>();
-
-        for (const [playerIndex, player] of categoryDraft.players.entries()) {
-          const groupIndex = Math.min(
-            Math.floor(playerIndex / categoryDraft.group_size),
-            targetGroups.length - 1,
-          );
-          const existingParticipant = participantsByName.get(
-            player.toLocaleLowerCase("tr-TR"),
-          );
-          const participantPayload = {
-            category_id: categoryId,
-            display_name: player,
-            display_order: playerIndex + 1,
-            group_id: targetGroups[groupIndex]?.id ?? null,
-          };
-
-          if (existingParticipant) {
-            const participantResult = await supabase
-              .from("tournament_participants")
-              .update(participantPayload)
-              .eq("id", existingParticipant.id);
-
-            if (participantResult.error) {
-              throw new Error(participantResult.error.message);
+            if (groupResult.error) {
+              throw new Error(groupResult.error.message);
             }
-
-            retainedParticipantIds.add(existingParticipant.id);
           } else {
-            const participantResult = await supabase
-              .from("tournament_participants")
-              .insert(participantPayload);
+            const groupResult = await supabase
+              .from("tournament_groups")
+              .insert({
+                category_id: categoryId,
+                display_order: groupIndex + 1,
+                name: groupDraft.name,
+              })
+              .select("*")
+              .single();
 
-            if (participantResult.error) {
-              throw new Error(participantResult.error.message);
+            if (groupResult.error || !groupResult.data) {
+              throw new Error(
+                groupResult.error?.message ?? "Turnuva grubu eklenemedi.",
+              );
             }
+
+            groupId = (groupResult.data as TournamentGroup).id;
           }
-        }
 
-        const participantIdsToDelete = existingParticipants
-          .filter((participant) => !retainedParticipantIds.has(participant.id))
-          .map((participant) => participant.id);
+          if (!groupId) {
+            throw new Error("Turnuva grubu bulunamadı.");
+          }
+          retainedGroupIds.add(groupId);
 
-        if (participantIdsToDelete.length) {
-          const deleteParticipantsResult = await supabase
-            .from("tournament_participants")
-            .delete()
-            .in("id", participantIdsToDelete);
+          for (const [entryIndex, entryDraft] of groupDraft.entries.entries()) {
+            let entryId = entryDraft.id ?? null;
 
-          if (deleteParticipantsResult.error) {
-            throw new Error(deleteParticipantsResult.error.message);
+            if (entryDraft.id) {
+              const entryResult = await supabase
+                .from("tournament_entries")
+                .update({
+                  category_id: categoryId,
+                  display_order: entryIndex + 1,
+                  group_id: groupId,
+                })
+                .eq("id", entryDraft.id);
+
+              if (entryResult.error) {
+                throw new Error(entryResult.error.message);
+              }
+            } else {
+              const entryResult = await supabase
+                .from("tournament_entries")
+                .insert({
+                  category_id: categoryId,
+                  display_order: entryIndex + 1,
+                  group_id: groupId,
+                })
+                .select("*")
+                .single();
+
+              if (entryResult.error || !entryResult.data) {
+                throw new Error(
+                  entryResult.error?.message ??
+                    "Grup katılımcısı eklenemedi.",
+                );
+              }
+
+              entryId = (entryResult.data as TournamentEntry).id;
+            }
+
+            if (!entryId) {
+              throw new Error("Grup katılımcısı bulunamadı.");
+            }
+            retainedEntryIds.add(entryId);
+
+            const deleteEntryPlayersResult = await supabase
+              .from("tournament_entry_players")
+              .delete()
+              .eq("entry_id", entryId);
+
+            if (deleteEntryPlayersResult.error) {
+              throw new Error(deleteEntryPlayersResult.error.message);
+            }
+
+            const firstPlayerId = playerIdsByClientId.get(
+              entryDraft.player1_client_id,
+            );
+            const secondPlayerId = entryDraft.player2_client_id
+              ? playerIdsByClientId.get(entryDraft.player2_client_id)
+              : null;
+
+            if (!firstPlayerId) {
+              throw new Error("Katılımcının ilk oyuncusu bulunamadı.");
+            }
+
+            const entryPlayersResult = await supabase
+              .from("tournament_entry_players")
+              .insert([
+                {
+                  entry_id: entryId,
+                  player_id: firstPlayerId,
+                  position: 1,
+                },
+                ...(secondPlayerId
+                  ? [
+                      {
+                        entry_id: entryId,
+                        player_id: secondPlayerId,
+                        position: 2,
+                      },
+                    ]
+                  : []),
+              ]);
+
+            if (entryPlayersResult.error) {
+              throw new Error(entryPlayersResult.error.message);
+            }
           }
         }
       }
 
+      const entryIdsToDelete = tournament.participants
+        .filter((participant) => !retainedEntryIds.has(participant.id))
+        .map((participant) => participant.id);
+
+      if (entryIdsToDelete.length) {
+        const deleteEntriesResult = await supabase
+          .from("tournament_entries")
+          .delete()
+          .in("id", entryIdsToDelete);
+
+        if (deleteEntriesResult.error) {
+          throw new Error(deleteEntriesResult.error.message);
+        }
+      }
+
+      const groupIdsToDelete = tournament.groups
+        .filter((group) => !retainedGroupIds.has(group.id))
+        .map((group) => group.id);
+
+      if (groupIdsToDelete.length) {
+        const deleteGroupsResult = await supabase
+          .from("tournament_groups")
+          .delete()
+          .in("id", groupIdsToDelete);
+
+        if (deleteGroupsResult.error) {
+          throw new Error(deleteGroupsResult.error.message);
+        }
+      }
+
       const categoryIdsToDelete = tournament.categories
-        .filter((category) => !draftCategoryIds.has(category.id))
+        .filter((category) => !retainedCategoryIds.has(category.id))
         .map((category) => category.id);
 
       if (categoryIdsToDelete.length) {
@@ -4038,8 +4647,23 @@ export function ClubApp() {
         }
       }
 
+      const playerIdsToDelete = tournament.players
+        .filter((player) => !retainedPlayerIds.has(player.id))
+        .map((player) => player.id);
+
+      if (playerIdsToDelete.length) {
+        const deletePlayersResult = await supabase
+          .from("tournament_players")
+          .delete()
+          .in("id", playerIdsToDelete);
+
+        if (deletePlayersResult.error) {
+          throw new Error(deletePlayersResult.error.message);
+        }
+      }
+
       await loadTournamentData();
-      setStatusMessage(`${name} turnuvası güncellendi.`);
+      setStatusMessage(name + " turnuvası güncellendi.");
       return true;
     } catch (error) {
       setStatusMessage(
@@ -4099,8 +4723,30 @@ export function ClubApp() {
     const allowedCourtIds = new Set(
       tournament?.courts.map((court) => court.court_id) ?? [],
     );
+    const availableEntries =
+      tournament?.participants.filter(
+        (participant) =>
+          participant.category_id === category?.id &&
+          (!group || participant.group_id === group.id),
+      ) ?? [];
+    const player1Entry = availableEntries.find(
+      (participant) =>
+        normalizeFullName(participant.display_name) === player1Name,
+    );
+    const player2Entry = availableEntries.find(
+      (participant) =>
+        normalizeFullName(participant.display_name) === player2Name,
+    );
 
-    if (!tournament || !category || !player1Name || !player2Name) {
+    if (
+      !tournament ||
+      !category ||
+      !player1Name ||
+      !player2Name ||
+      !player1Entry ||
+      !player2Entry ||
+      player1Entry.id === player2Entry.id
+    ) {
       setStatusMessage("Maç bilgileri eksik veya turnuva bulunamadı.");
       return;
     }
@@ -4122,7 +4768,9 @@ export function ClubApp() {
         ends_at: endsAt.toISOString(),
         group_id: group?.id ?? null,
         player1_name: player1Name,
+        player1_entry_id: player1Entry.id,
         player2_name: player2Name,
+        player2_entry_id: player2Entry.id,
         starts_at: startsAt.toISOString(),
         status: tournamentMatchEditForm.status,
       })
@@ -4593,6 +5241,7 @@ export function ClubApp() {
           bookingWindowDays={effectiveBookingWindowDays}
           canMarkLesson={canMarkLesson}
           canChooseOwner={canManageReservations}
+          canUseTournament={canManageReservations}
           currentTime={currentTime}
           form={reservationForm}
           isSaving={isSaving}
@@ -4602,6 +5251,8 @@ export function ClubApp() {
           setForm={setReservationForm}
           settings={settings}
           timeSlots={timeSlots}
+          tournamentTimeSlots={tournamentTimeSlots}
+          tournaments={tournaments}
         />
       ) : null}
 
@@ -5070,57 +5721,78 @@ function DayCalendar({
   const dayTournamentMatches = tournamentMatches.filter((match) =>
     isSameDay(new Date(match.starts_at), selectedDate),
   );
-  const calendarTimeSlots = Array.from(
-    new Set([
-      ...timeSlots,
-      ...dayTournamentMatches.map((match) =>
-        format(new Date(match.starts_at), "HH:mm"),
-      ),
-    ]),
-  ).sort((first, second) => first.localeCompare(second));
+  const calendarTimeSlots = [...timeSlots];
+  const latestTournamentEnd = dayTournamentMatches.reduce(
+    (latest, match) => Math.max(latest, new Date(match.ends_at).getTime()),
+    0,
+  );
+
+  while (calendarTimeSlots.length && latestTournamentEnd) {
+    const lastSlot = calendarTimeSlots[calendarTimeSlots.length - 1];
+    const lastSlotStartsAt = buildLocalDateTime(
+      dateInputValue(selectedDate),
+      lastSlot,
+    );
+    const lastSlotEndsAt = addMinutes(lastSlotStartsAt, reservationSlotMinutes);
+
+    if (lastSlotEndsAt.getTime() >= latestTournamentEnd) {
+      break;
+    }
+
+    calendarTimeSlots.push(formatTime(lastSlotEndsAt));
+  }
   const gridTemplateColumns = `clamp(48px, 14vw, 96px) repeat(${visibleCourts.length}, minmax(0, 1fr))`;
+  const tournamentOverlays = dayTournamentMatches.flatMap((match) => {
+    const courtIndex = visibleCourts.findIndex(
+      (court) => court.id === match.court_id,
+    );
+
+    if (courtIndex < 0) {
+      return [];
+    }
+
+    const startsAt = new Date(match.starts_at);
+    const endsAt = new Date(match.ends_at);
+    const baseRowIndex = calendarTimeSlots.findIndex((slot) => {
+      const rowStartsAt = buildLocalDateTime(
+        dateInputValue(selectedDate),
+        slot,
+      );
+      const rowEndsAt = addMinutes(rowStartsAt, reservationSlotMinutes);
+      return startsAt >= rowStartsAt && startsAt < rowEndsAt;
+    });
+
+    if (baseRowIndex < 0) {
+      return [];
+    }
+
+    const baseRowStartsAt = buildLocalDateTime(
+      dateInputValue(selectedDate),
+      calendarTimeSlots[baseRowIndex],
+    );
+    const startOffsetMinutes =
+      (startsAt.getTime() - baseRowStartsAt.getTime()) / 60_000;
+    const durationMinutes = Math.max(
+      (endsAt.getTime() - startsAt.getTime()) / 60_000,
+      15,
+    );
+
+    return [
+      {
+        baseRowIndex,
+        courtIndex,
+        durationPercent: (durationMinutes / reservationSlotMinutes) * 100,
+        match,
+        offsetPercent: (startOffsetMinutes / reservationSlotMinutes) * 100,
+      },
+    ];
+  });
 
   return (
-    <div className="space-y-2">
-      {courts.length > DAY_CALENDAR_COURT_COUNT ? (
-        <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2">
-          <button
-            aria-label="Önceki kortları göster"
-            className="grid size-11 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] transition hover:bg-[#eee9dd] disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={visibleCourtWindowStart === 0}
-            onClick={() =>
-              onCourtWindowStartChange(
-                Math.max(visibleCourtWindowStart - 1, 0),
-              )
-            }
-            title="Önceki kortlar"
-            type="button"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <div className="grid h-11 place-items-center rounded-md border border-[#cfc8b8] bg-white px-3 text-center text-sm font-semibold text-[#34443a]">
-            {visibleCourts.map((court) => court.name).join(" · ")}
-          </div>
-          <button
-            aria-label="Sonraki kortları göster"
-            className="grid size-11 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] transition hover:bg-[#eee9dd] disabled:cursor-not-allowed disabled:opacity-40"
-            disabled={visibleCourtWindowStart === lastCourtWindowStart}
-            onClick={() =>
-              onCourtWindowStartChange(
-                Math.min(visibleCourtWindowStart + 1, lastCourtWindowStart),
-              )
-            }
-            title="Sonraki kortlar"
-            type="button"
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-      ) : null}
-
+    <div>
       <div className="w-full overflow-hidden rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
         <div
-          className="w-full min-w-0"
+          className="relative w-full min-w-0"
           style={{
             display: "grid",
             gridTemplateColumns,
@@ -5129,18 +5801,48 @@ function DayCalendar({
           <div className="grid place-items-center border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[8px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
             Saat
           </div>
-          {visibleCourts.map((court) => (
+          {visibleCourts.map((court, courtIndex) => (
             <div
-              className="grid min-w-0 place-items-center break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[9px] font-semibold leading-tight sm:p-3 sm:text-sm"
+              className="relative grid min-w-0 place-items-center break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-8 py-2 text-center text-sm font-bold leading-tight sm:p-3 sm:px-11 sm:text-lg"
               key={court.id}
             >
+              {courts.length > DAY_CALENDAR_COURT_COUNT &&
+              courtIndex === 0 &&
+              visibleCourtWindowStart > 0 ? (
+                <button
+                  aria-label="Önceki kortları göster"
+                  className="absolute left-1 grid size-8 place-items-center rounded-md text-[#17211c] transition hover:bg-[#e3ddcf] sm:left-2 sm:size-9"
+                  onClick={() =>
+                    onCourtWindowStartChange(visibleCourtWindowStart - 1)
+                  }
+                  title="Önceki kortlar"
+                  type="button"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+              ) : null}
               {court.name}
+              {courts.length > DAY_CALENDAR_COURT_COUNT &&
+              courtIndex === visibleCourts.length - 1 &&
+              visibleCourtWindowStart < lastCourtWindowStart ? (
+                <button
+                  aria-label="Sonraki kortları göster"
+                  className="absolute right-1 grid size-8 place-items-center rounded-md text-[#17211c] transition hover:bg-[#e3ddcf] sm:right-2 sm:size-9"
+                  onClick={() =>
+                    onCourtWindowStartChange(visibleCourtWindowStart + 1)
+                  }
+                  title="Sonraki kortlar"
+                  type="button"
+                >
+                  <ChevronRight size={22} />
+                </button>
+              ) : null}
             </div>
           ))}
 
-        {calendarTimeSlots.map((slot) => {
+        {calendarTimeSlots.map((slot, rowIndex) => {
           const slotIsPast = isPastCalendarSlot(selectedDate, slot, currentTime);
-          const timeCellClassName = `grid place-items-center border-r border-t border-[#eee7db] px-0.5 py-2 text-center text-[13px] font-bold leading-none min-[380px]:text-[14px] sm:p-3 sm:text-xl ${
+          const timeCellClassName = `grid h-16 place-items-center border-r border-t border-[#eee7db] px-0.5 py-2 text-center text-[13px] font-bold leading-none min-[380px]:text-[14px] sm:h-24 sm:p-3 sm:text-xl ${
             slotIsPast
               ? "bg-[#f1eee5] text-[#8b8f86]"
               : "text-[#17211c]"
@@ -5149,13 +5851,8 @@ function DayCalendar({
           return (
             <div className="contents" key={slot}>
               <div className={timeCellClassName}>{slot}</div>
-              {visibleCourts.map((court) => {
+              {visibleCourts.map((court, courtIndex) => {
                 const isRegularSlot = timeSlots.includes(slot);
-                const tournamentMatch = dayTournamentMatches.find(
-                  (match) =>
-                    match.court_id === court.id &&
-                    format(new Date(match.starts_at), "HH:mm") === slot,
-                );
                 const slotStartsAt = buildLocalDateTime(
                   dateInputValue(selectedDate),
                   slot,
@@ -5170,15 +5867,17 @@ function DayCalendar({
                   slotStartsAt,
                   slotEndsAt,
                 );
-                const slotBookable =
+                const slotWithinBookingWindow =
                   isRegularSlot &&
-                  !tournamentConflict &&
                   isBookableStart(
                     dateInputValue(selectedDate),
                     slot,
                     bookingWindowDays,
                     currentTime,
                   );
+                const slotCanOpen =
+                  slotWithinBookingWindow &&
+                  (!tournamentConflict || Boolean(onEditTournamentMatch));
                 const reservation = findReservationAtSlot(
                   reservations,
                   court.id,
@@ -5186,75 +5885,8 @@ function DayCalendar({
                   slot,
                 );
                 const cellClassName =
-                  "min-h-12 min-w-0 overflow-hidden border-r border-t border-[#eee7db] p-0.5 text-center transition min-[380px]:p-1 sm:min-h-20 sm:p-2";
-
-                if (tournamentMatch) {
-                  const isPastTournamentMatch =
-                    new Date(tournamentMatch.ends_at) < currentTime;
-                  const tournamentMatchContent = (
-                    <div
-                      className="grid w-full gap-0.5"
-                      title={`${tournamentMatch.tournament_name}: ${tournamentMatch.player1_name} / ${tournamentMatch.player2_name}`}
-                    >
-                      <p className="truncate text-[8px] font-bold uppercase leading-tight min-[380px]:text-[9px] sm:text-xs">
-                        {tournamentMatch.tournament_name}
-                      </p>
-                      <p className="truncate text-[8px] font-semibold leading-tight min-[380px]:text-[9px] sm:text-xs">
-                        {formatTime(new Date(tournamentMatch.starts_at))}–
-                        {formatTime(new Date(tournamentMatch.ends_at))}
-                      </p>
-                      <p className="truncate text-[9px] font-semibold leading-tight min-[380px]:text-[10px] sm:text-sm">
-                        {tournamentMatch.player1_name}
-                      </p>
-                      <p className="truncate text-[9px] font-semibold leading-tight min-[380px]:text-[10px] sm:text-sm">
-                        {tournamentMatch.player2_name}
-                      </p>
-                    </div>
-                  );
-                  const tournamentCellClassName = `${cellClassName} tournament-match-cell flex flex-col items-center justify-center ${
-                    isPastTournamentMatch ? "opacity-55" : ""
-                  }`;
-
-                  if (onEditTournamentMatch) {
-                    return (
-                      <button
-                        className={`${tournamentCellClassName} cursor-pointer`}
-                        key={`${court.id}-${slot}`}
-                        onClick={() => onEditTournamentMatch(tournamentMatch)}
-                        type="button"
-                      >
-                        {tournamentMatchContent}
-                      </button>
-                    );
-                  }
-
-                  return (
-                    <div
-                      className={tournamentCellClassName}
-                      key={`${court.id}-${slot}`}
-                    >
-                      {tournamentMatchContent}
-                    </div>
-                  );
-                }
-
-                if (tournamentConflict) {
-                  return (
-                    <div
-                      className={`${cellClassName} tournament-match-cell flex flex-col items-center justify-center opacity-75`}
-                      key={`${court.id}-${slot}`}
-                      title={`${tournamentConflict.tournament_name}: ${formatTime(new Date(tournamentConflict.starts_at))}–${formatTime(new Date(tournamentConflict.ends_at))}`}
-                    >
-                      <p className="truncate text-[8px] font-bold uppercase leading-tight min-[380px]:text-[9px] sm:text-xs">
-                        Turnuva maçı
-                      </p>
-                      <p className="truncate text-[8px] font-semibold leading-tight min-[380px]:text-[9px] sm:text-xs">
-                        {formatTime(new Date(tournamentConflict.starts_at))}–
-                        {formatTime(new Date(tournamentConflict.ends_at))}
-                      </p>
-                    </div>
-                  );
-                }
+                  "h-full w-full min-w-0 overflow-hidden border-r border-t border-[#eee7db] p-0.5 text-center transition min-[380px]:p-1 sm:p-2";
+                let cellContent: ReactNode;
 
                 if (reservation) {
                   const reservationLines = showReservationDetails
@@ -5285,55 +5917,121 @@ function DayCalendar({
                   );
 
                   if (onEditReservation && !slotIsPast) {
-                    return (
+                    cellContent = (
                       <button
                         className={`${reservedCellClassName} cursor-pointer`}
-                        key={`${court.id}-${slot}`}
                         onClick={() => onEditReservation(reservation)}
                         type="button"
                       >
                         {reservedCellContent}
                       </button>
                     );
+                  } else {
+                    cellContent = (
+                      <div className={reservedCellClassName}>
+                        {reservedCellContent}
+                      </div>
+                    );
                   }
-
-                  return (
-                    <div
-                      className={reservedCellClassName}
-                      key={`${court.id}-${slot}`}
+                } else {
+                  cellContent = (
+                    <button
+                      className={`${cellClassName} flex items-center justify-center ${
+                        slotIsPast
+                          ? "cursor-not-allowed bg-[#f1eee5] text-[#8b8f86]"
+                          : slotCanOpen && canCreateReservation
+                          ? "cursor-pointer bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
+                          : slotCanOpen
+                            ? "cursor-not-allowed bg-[#f0f8ef] text-[#237000]"
+                            : "cursor-not-allowed bg-white text-[#8b8f86]"
+                      }`}
+                      disabled={!slotCanOpen || !canCreateReservation}
+                      onClick={() =>
+                        onCreateReservation(court.id, selectedDate, slot)
+                      }
+                      type="button"
                     >
-                      {reservedCellContent}
-                    </div>
+                      <span className="text-[10px] font-semibold min-[380px]:text-[11px] sm:text-sm">
+                        {slotCanOpen ? "Açık" : "Kapalı"}
+                      </span>
+                    </button>
                   );
                 }
 
+                const cellTournamentOverlays = tournamentOverlays.filter(
+                  (overlay) =>
+                    overlay.baseRowIndex === rowIndex &&
+                    overlay.courtIndex === courtIndex,
+                );
+
                 return (
-                  <button
-                    className={`${cellClassName} flex items-center justify-center ${
-                      slotIsPast
-                        ? "cursor-not-allowed bg-[#f1eee5] text-[#8b8f86]"
-                        : slotBookable && canCreateReservation
-                        ? "cursor-pointer bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
-                        : slotBookable
-                          ? "cursor-not-allowed bg-[#f0f8ef] text-[#237000]"
-                          : "cursor-not-allowed bg-white text-[#8b8f86]"
-                    }`}
-                    disabled={!slotBookable || !canCreateReservation}
+                  <div
+                    className="relative h-16 min-w-0 overflow-visible sm:h-24"
                     key={`${court.id}-${slot}`}
-                    onClick={() =>
-                      onCreateReservation(court.id, selectedDate, slot)
-                    }
-                    type="button"
                   >
-                    <span className="text-[10px] font-semibold min-[380px]:text-[11px] sm:text-sm">
-                      {slotBookable ? "Açık" : "Kapalı"}
-                    </span>
-                  </button>
+                    {cellContent}
+                    {cellTournamentOverlays.map(
+                      ({ durationPercent, match, offsetPercent }) => {
+                        const isPastTournamentMatch =
+                          new Date(match.ends_at).getTime() < currentTime.getTime();
+                        const content = (
+                          <div
+                            className="grid min-h-0 w-full gap-0.5 overflow-hidden px-1 py-0.5 sm:px-2 sm:py-1"
+                            title={`${match.tournament_name}: ${match.player1_name} / ${match.player2_name}`}
+                          >
+                            <p className="truncate text-[8px] font-bold uppercase leading-tight min-[380px]:text-[9px] sm:text-xs">
+                              {match.tournament_name}
+                            </p>
+                            <p className="truncate text-[8px] font-semibold leading-tight min-[380px]:text-[9px] sm:text-xs">
+                              {formatTime(new Date(match.starts_at))}–
+                              {formatTime(new Date(match.ends_at))}
+                            </p>
+                            <p className="truncate text-[9px] font-semibold leading-tight min-[380px]:text-[10px] sm:text-sm">
+                              {match.player1_name}
+                            </p>
+                            <p className="truncate text-[9px] font-semibold leading-tight min-[380px]:text-[10px] sm:text-sm">
+                              {match.player2_name}
+                            </p>
+                          </div>
+                        );
+                        const overlayClassName = `tournament-match-cell pointer-events-auto absolute z-20 flex min-h-0 items-center justify-center overflow-hidden rounded-sm border border-[#1765a3] text-center shadow-sm ${
+                          isPastTournamentMatch ? "opacity-55" : ""
+                        }`;
+                        const overlayStyle = {
+                          height: `calc(${durationPercent}% - 0.25rem)`,
+                          left: "0.125rem",
+                          right: "0.125rem",
+                          top: `calc(${offsetPercent}% + 0.125rem)`,
+                        };
+
+                        return onEditTournamentMatch ? (
+                          <button
+                            className={`${overlayClassName} cursor-pointer`}
+                            key={match.id}
+                            onClick={() => onEditTournamentMatch(match)}
+                            style={overlayStyle}
+                            type="button"
+                          >
+                            {content}
+                          </button>
+                        ) : (
+                          <div
+                            className={overlayClassName}
+                            key={match.id}
+                            style={overlayStyle}
+                          >
+                            {content}
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
                 );
               })}
             </div>
           );
         })}
+
         </div>
       </div>
     </div>
@@ -7606,19 +8304,102 @@ function AdminFoldout({
 }
 
 function ReservationModeToggle<T extends ReservationFormState>({
+  activeCourts = [],
   canUseLesson,
+  canUseTournament = false,
   form,
   setForm,
+  tournaments = [],
 }: {
+  activeCourts?: Court[];
   canUseLesson: boolean;
+  canUseTournament?: boolean;
   form: T;
   setForm: (form: T) => void;
+  tournaments?: TournamentWithDetails[];
 }) {
-  const matchTypes: MatchType[] = canUseLesson
-    ? ["singles", "doubles", "lesson"]
-    : ["singles", "doubles"];
+  const matchTypes: MatchType[] = [
+    "singles",
+    "doubles",
+    ...(canUseLesson ? (["lesson"] as MatchType[]) : []),
+    ...(canUseTournament ? (["tournament"] as MatchType[]) : []),
+  ];
 
   function setMatchType(matchType: MatchType) {
+    if (matchType === "tournament") {
+      const tournament =
+        tournaments.find((item) => item.id === form.tournament_id) ??
+        tournaments.find((item) => item.is_active) ??
+        tournaments[0] ??
+        null;
+      const category =
+        tournament?.categories.find(
+          (item) => item.id === form.tournament_category_id,
+        ) ??
+        tournament?.categories
+          .slice()
+          .sort((first, second) => first.display_order - second.display_order)[0] ??
+        null;
+      const group =
+        tournament?.groups.find(
+          (item) =>
+            item.id === form.tournament_group_id &&
+            item.category_id === category?.id,
+        ) ??
+        tournament?.groups
+          .filter((item) => item.category_id === category?.id)
+          .sort((first, second) => first.display_order - second.display_order)[0] ??
+        null;
+      const participants =
+        tournament?.participants
+          .filter(
+            (participant) =>
+              participant.category_id === category?.id &&
+              (!group || participant.group_id === group.id),
+          )
+          .sort((first, second) => first.display_order - second.display_order) ??
+        [];
+      const allowedCourtIds = new Set(
+        tournament?.courts.map((court) => court.court_id) ?? [],
+      );
+      const selectedCourt = activeCourts.find((court) =>
+        allowedCourtIds.has(court.id),
+      );
+      const stageStartDate = group
+        ? tournament?.group_stage_start_date
+        : tournament?.finals_start_date;
+      const stageEndDate = group
+        ? tournament?.group_stage_end_date
+        : tournament?.finals_end_date;
+      const selectedDateIsInStage = Boolean(
+        stageStartDate &&
+          stageEndDate &&
+          form.date >= stageStartDate &&
+          form.date <= stageEndDate,
+      );
+
+      setForm({
+        ...form,
+        court_id: selectedCourt?.id ?? form.court_id,
+        date:
+          selectedDateIsInStage || !stageStartDate
+            ? form.date
+            : stageStartDate,
+        is_custom: false,
+        is_lesson: false,
+        match_type: matchType,
+        student_name: "",
+        team1_player1_name: participants[0]?.display_name ?? "",
+        team1_player2_name: "",
+        team2_player1_name: participants[1]?.display_name ?? "",
+        team2_player2_name: "",
+        tournament_category_id: category?.id ?? "",
+        tournament_group_id: group?.id ?? "",
+        tournament_id: tournament?.id ?? "",
+      });
+      return;
+    }
+
     setForm({
       ...form,
       is_lesson: matchType === "lesson",
@@ -7632,9 +8413,8 @@ function ReservationModeToggle<T extends ReservationFormState>({
 
   return (
     <div
-      className={`grid rounded-md border border-[#cfc8b8] bg-white p-1 ${
-        canUseLesson ? "grid-cols-3" : "grid-cols-2"
-      }`}
+      className="grid rounded-md border border-[#cfc8b8] bg-white p-1"
+      style={{ gridTemplateColumns: `repeat(${matchTypes.length}, minmax(0, 1fr))` }}
     >
       {matchTypes.map((matchType) => (
         <button
@@ -7655,19 +8435,25 @@ function ReservationModeToggle<T extends ReservationFormState>({
 }
 
 function MatchSetupFields<T extends ReservationFormState>({
+  activeCourts = [],
   canEditTrainer,
   canUseLesson,
+  canUseTournament = false,
   form,
   listId,
   ownerOptions,
   setForm,
+  tournaments = [],
 }: {
+  activeCourts?: Court[];
   canEditTrainer: boolean;
   canUseLesson: boolean;
+  canUseTournament?: boolean;
   form: T;
   listId: string;
   ownerOptions: Profile[];
   setForm: (form: T) => void;
+  tournaments?: TournamentWithDetails[];
 }) {
   const playerOptions = Array.from(
     new Set(
@@ -7717,9 +8503,12 @@ function MatchSetupFields<T extends ReservationFormState>({
   return (
     <div className="grid min-w-0 gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2 min-[380px]:p-2.5">
       <ReservationModeToggle
+        activeCourts={activeCourts}
         canUseLesson={canUseLesson}
+        canUseTournament={canUseTournament}
         form={form}
         setForm={setForm}
+        tournaments={tournaments}
       />
 
       <datalist id={listId}>
@@ -7728,7 +8517,14 @@ function MatchSetupFields<T extends ReservationFormState>({
         ))}
       </datalist>
 
-      {form.match_type === "lesson" ? (
+      {form.match_type === "tournament" ? (
+        <TournamentSetupFields
+          activeCourts={activeCourts}
+          form={form}
+          setForm={setForm}
+          tournaments={tournaments}
+        />
+      ) : form.match_type === "lesson" ? (
         <LessonSetupFields
           canEditTrainer={canEditTrainer}
           form={form}
@@ -7749,6 +8545,249 @@ function MatchSetupFields<T extends ReservationFormState>({
           {renderPlayerRow("Eşi", "team2_player2_name")}
         </div>
       )}
+    </div>
+  );
+}
+
+function TournamentSetupFields<T extends ReservationFormState>({
+  activeCourts,
+  form,
+  setForm,
+  tournaments,
+}: {
+  activeCourts: Court[];
+  form: T;
+  setForm: (form: T) => void;
+  tournaments: TournamentWithDetails[];
+}) {
+  const selectedTournament =
+    tournaments.find((tournament) => tournament.id === form.tournament_id) ??
+    tournaments.find((tournament) => tournament.is_active) ??
+    tournaments[0] ??
+    null;
+  const categories =
+    selectedTournament?.categories
+      .slice()
+      .sort((first, second) => first.display_order - second.display_order) ?? [];
+  const selectedCategory =
+    categories.find((category) => category.id === form.tournament_category_id) ??
+    categories[0] ??
+    null;
+  const groups =
+    selectedTournament?.groups
+      .filter((group) => group.category_id === selectedCategory?.id)
+      .sort((first, second) => first.display_order - second.display_order) ?? [];
+  const selectedGroup =
+    groups.find((group) => group.id === form.tournament_group_id) ?? null;
+  const participants =
+    selectedTournament?.participants
+      .filter(
+        (participant) =>
+          participant.category_id === selectedCategory?.id &&
+          (!selectedGroup || participant.group_id === selectedGroup.id),
+      )
+      .sort((first, second) => first.display_order - second.display_order) ?? [];
+
+  function getTournamentCourtId(tournament: TournamentWithDetails) {
+    const allowedCourtIds = new Set(
+      tournament.courts.map((court) => court.court_id),
+    );
+    return (
+      activeCourts.find((court) => allowedCourtIds.has(court.id))?.id ??
+      form.court_id
+    );
+  }
+
+  function getStageDate(
+    tournament: TournamentWithDetails,
+    group: TournamentGroup | null,
+  ) {
+    const stageStart = group
+      ? tournament.group_stage_start_date
+      : tournament.finals_start_date;
+    const stageEnd = group
+      ? tournament.group_stage_end_date
+      : tournament.finals_end_date;
+    return form.date >= stageStart && form.date <= stageEnd
+      ? form.date
+      : stageStart;
+  }
+
+  function changeTournament(tournamentId: string) {
+    const tournament = tournaments.find((item) => item.id === tournamentId);
+
+    if (!tournament) {
+      return;
+    }
+
+    const category = tournament.categories
+      .slice()
+      .sort((first, second) => first.display_order - second.display_order)[0];
+    const group = tournament.groups
+      .filter((item) => item.category_id === category?.id)
+      .sort((first, second) => first.display_order - second.display_order)[0];
+    const nextParticipants = tournament.participants
+      .filter(
+        (participant) =>
+          participant.category_id === category?.id &&
+          (!group || participant.group_id === group.id),
+      )
+      .sort((first, second) => first.display_order - second.display_order);
+
+    setForm({
+      ...form,
+      court_id: getTournamentCourtId(tournament),
+      date: getStageDate(tournament, group ?? null),
+      team1_player1_name: nextParticipants[0]?.display_name ?? "",
+      team2_player1_name: nextParticipants[1]?.display_name ?? "",
+      tournament_category_id: category?.id ?? "",
+      tournament_group_id: group?.id ?? "",
+      tournament_id: tournament.id,
+    });
+  }
+
+  function changeCategory(categoryId: string) {
+    if (!selectedTournament) {
+      return;
+    }
+
+    const group = selectedTournament.groups
+      .filter((item) => item.category_id === categoryId)
+      .sort((first, second) => first.display_order - second.display_order)[0];
+    const nextParticipants = selectedTournament.participants
+      .filter(
+        (participant) =>
+          participant.category_id === categoryId &&
+          (!group || participant.group_id === group.id),
+      )
+      .sort((first, second) => first.display_order - second.display_order);
+
+    setForm({
+      ...form,
+      date: getStageDate(selectedTournament, group ?? null),
+      team1_player1_name: nextParticipants[0]?.display_name ?? "",
+      team2_player1_name: nextParticipants[1]?.display_name ?? "",
+      tournament_category_id: categoryId,
+      tournament_group_id: group?.id ?? "",
+    });
+  }
+
+  function changeGroup(groupId: string) {
+    if (!selectedTournament || !selectedCategory) {
+      return;
+    }
+
+    const group = groups.find((item) => item.id === groupId) ?? null;
+    const nextParticipants = selectedTournament.participants
+      .filter(
+        (participant) =>
+          participant.category_id === selectedCategory.id &&
+          (!group || participant.group_id === group.id),
+      )
+      .sort((first, second) => first.display_order - second.display_order);
+
+    setForm({
+      ...form,
+      date: getStageDate(selectedTournament, group),
+      team1_player1_name: nextParticipants[0]?.display_name ?? "",
+      team2_player1_name: nextParticipants[1]?.display_name ?? "",
+      tournament_group_id: group?.id ?? "",
+    });
+  }
+
+  if (!selectedTournament) {
+    return (
+      <p className="rounded-md border border-[#e6dfd2] bg-white p-3 text-sm text-[#68756b]">
+        Önce bir turnuva oluşturulmalı.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid min-w-0 gap-2 rounded-md border border-[#e6dfd2] bg-[#eef6eb] p-2 min-[380px]:p-2.5">
+      <Field label="Turnuva">
+        <select
+          className="input input-compact"
+          onChange={(event) => changeTournament(event.target.value)}
+          required
+          value={selectedTournament.id}
+        >
+          {tournaments.map((tournament) => (
+            <option key={tournament.id} value={tournament.id}>
+              {tournament.name}{tournament.is_active ? "" : " (pasif)"}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Kategori">
+          <select
+            className="input input-compact"
+            onChange={(event) => changeCategory(event.target.value)}
+            required
+            value={selectedCategory?.id ?? ""}
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Grup">
+          <select
+            className="input input-compact"
+            disabled={!selectedCategory}
+            onChange={(event) => changeGroup(event.target.value)}
+            value={selectedGroup?.id ?? ""}
+          >
+            <option value="">Final (grupsuz)</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                Grup {group.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="1. Oyuncu">
+          <select
+            className="input input-compact"
+            onChange={(event) =>
+              setForm({ ...form, team1_player1_name: event.target.value })
+            }
+            required
+            value={form.team1_player1_name}
+          >
+            <option value="">Oyuncu seçin</option>
+            {participants.map((participant) => (
+              <option key={participant.id} value={participant.display_name}>
+                {participant.display_name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="2. Oyuncu">
+          <select
+            className="input input-compact"
+            onChange={(event) =>
+              setForm({ ...form, team2_player1_name: event.target.value })
+            }
+            required
+            value={form.team2_player1_name}
+          >
+            <option value="">Oyuncu seçin</option>
+            {participants.map((participant) => (
+              <option key={participant.id} value={participant.display_name}>
+                {participant.display_name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
     </div>
   );
 }
@@ -7923,6 +8962,7 @@ function ReservationDialog({
   bookingWindowDays,
   canMarkLesson,
   canChooseOwner,
+  canUseTournament,
   currentTime,
   form,
   isSaving,
@@ -7932,11 +8972,14 @@ function ReservationDialog({
   setForm,
   settings,
   timeSlots,
+  tournamentTimeSlots,
+  tournaments,
 }: {
   activeCourts: Court[];
   bookingWindowDays: number;
   canMarkLesson: boolean;
   canChooseOwner: boolean;
+  canUseTournament: boolean;
   currentTime: Date;
   form: ReservationFormState;
   isSaving: boolean;
@@ -7946,23 +8989,76 @@ function ReservationDialog({
   setForm: (form: ReservationFormState) => void;
   settings: ClubSettings;
   timeSlots: string[];
+  tournamentTimeSlots: string[];
+  tournaments: TournamentWithDetails[];
 }) {
-  const selectedStart = buildLocalDateTime(form.date, form.start_time);
-  const selectedEnd = addSlotDuration(selectedStart, settings);
-  const selectedSlotBookable = isBookableStart(
-    form.date,
-    form.start_time,
-    bookingWindowDays,
-    currentTime,
+  const isTournamentForm =
+    canUseTournament && form.match_type === "tournament";
+  const selectedTournament = tournaments.find(
+    (tournament) => tournament.id === form.tournament_id,
   );
+  const selectedTournamentGroup = selectedTournament?.groups.find(
+    (group) => group.id === form.tournament_group_id,
+  );
+  const tournamentClosingTime = buildLocalDateTime(
+    form.date,
+    settings.closing_time,
+  );
+  const availableTournamentTimeSlots = selectedTournament
+    ? tournamentTimeSlots.filter(
+        (slot) =>
+          addMinutes(
+            buildLocalDateTime(form.date, slot),
+            selectedTournament.match_duration_minutes,
+          ) <= tournamentClosingTime,
+      )
+    : tournamentTimeSlots;
+  const availableTimeSlots = isTournamentForm
+    ? availableTournamentTimeSlots
+    : timeSlots;
+  const selectedTournamentCourtIds = new Set(
+    selectedTournament?.courts.map((court) => court.court_id) ?? [],
+  );
+  const selectableCourts = isTournamentForm
+    ? activeCourts.filter((court) => selectedTournamentCourtIds.has(court.id))
+    : activeCourts;
+  const selectedStart = buildLocalDateTime(form.date, form.start_time);
+  const selectedEnd =
+    isTournamentForm && selectedTournament
+      ? addMinutes(selectedStart, selectedTournament.match_duration_minutes)
+      : addSlotDuration(selectedStart, settings);
+  const selectedSlotBookable =
+    isBookableStart(
+      form.date,
+      form.start_time,
+      bookingWindowDays,
+      currentTime,
+    ) &&
+    (!isTournamentForm || selectedEnd <= tournamentClosingTime);
   const canUseLesson = canUseLessonForSelectedOwner(
     form,
     ownerOptions,
     canChooseOwner,
     canMarkLesson,
   );
-  const maxBookingDate = dateInputValue(addDays(currentTime, bookingWindowDays));
-  const minBookingDate = dateInputValue(currentTime);
+  const generalMaxBookingDate = dateInputValue(
+    addDays(currentTime, bookingWindowDays),
+  );
+  const generalMinBookingDate = dateInputValue(currentTime);
+  const tournamentMinDate = selectedTournamentGroup
+    ? selectedTournament?.group_stage_start_date
+    : selectedTournament?.finals_start_date;
+  const tournamentMaxDate = selectedTournamentGroup
+    ? selectedTournament?.group_stage_end_date
+    : selectedTournament?.finals_end_date;
+  const minBookingDate =
+    isTournamentForm && tournamentMinDate
+      ? [generalMinBookingDate, tournamentMinDate].sort()[1]
+      : generalMinBookingDate;
+  const maxBookingDate =
+    isTournamentForm && tournamentMaxDate
+      ? [generalMaxBookingDate, tournamentMaxDate].sort()[0]
+      : generalMaxBookingDate;
 
   function handleDateChange(dateValue: string) {
     setForm({
@@ -7971,11 +9067,11 @@ function ReservationDialog({
       start_time:
         firstBookableSlot(
           dateValue,
-          timeSlots,
+          availableTimeSlots,
           bookingWindowDays,
           currentTime,
         ) ??
-        timeSlots[0] ??
+        availableTimeSlots[0] ??
         form.start_time,
     });
   }
@@ -8025,8 +9121,11 @@ function ReservationDialog({
                 <>
                   <ReservationModeToggle
                     canUseLesson={canUseLesson}
+                    canUseTournament={canUseTournament}
+                    activeCourts={activeCourts}
                     form={form}
                     setForm={setForm}
+                    tournaments={tournaments}
                   />
                   {isLessonForm(form) ? (
                     <LessonSetupFields
@@ -8051,12 +9150,15 @@ function ReservationDialog({
               ) : (
                 <>
                   <MatchSetupFields
+                    activeCourts={activeCourts}
                     canEditTrainer
                     canUseLesson={canUseLesson}
+                    canUseTournament={canUseTournament}
                     form={form}
                     listId="reservation-player-options"
                     ownerOptions={ownerOptions}
                     setForm={setForm}
+                    tournaments={tournaments}
                   />
                 </>
               )}
@@ -8066,10 +9168,13 @@ function ReservationDialog({
               <MatchSetupFields
                 canEditTrainer={false}
                 canUseLesson={canUseLesson}
+                canUseTournament={canUseTournament}
+                activeCourts={activeCourts}
                 form={form}
                 listId="reservation-player-options"
                 ownerOptions={ownerOptions}
                 setForm={setForm}
+                tournaments={tournaments}
               />
             </div>
           )}
@@ -8084,7 +9189,7 @@ function ReservationDialog({
                 required
                 value={form.court_id}
               >
-                {activeCourts.map((court) => (
+                {selectableCourts.map((court) => (
                   <option key={court.id} value={court.id}>
                     {court.name}
                   </option>
@@ -8113,7 +9218,13 @@ function ReservationDialog({
                 required
                 value={form.start_time}
               >
-                {timeSlots.map((slot) => {
+                {isTournamentForm &&
+                !availableTimeSlots.includes(form.start_time) ? (
+                  <option disabled value={form.start_time}>
+                    {form.start_time} - maç kapanış saatini aşıyor
+                  </option>
+                ) : null}
+                {availableTimeSlots.map((slot) => {
                   const optionBookable = isBookableStart(
                     form.date,
                     slot,

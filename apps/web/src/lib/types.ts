@@ -133,6 +133,31 @@ export type TournamentParticipant = {
   group_id: string | null;
   display_name: string;
   display_order: number;
+  player_ids: string[];
+  created_at: string;
+};
+
+export type TournamentPlayer = {
+  id: string;
+  tournament_id: string;
+  display_name: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentEntry = {
+  id: string;
+  category_id: string;
+  group_id: string | null;
+  display_order: number;
+  created_at: string;
+};
+
+export type TournamentEntryPlayer = {
+  entry_id: string;
+  player_id: string;
+  position: 1 | 2;
   created_at: string;
 };
 
@@ -147,6 +172,8 @@ export type TournamentMatch = {
   ends_at: string;
   player1_name: string;
   player2_name: string;
+  player1_entry_id: string;
+  player2_entry_id: string;
   round_label: string | null;
   status: TournamentMatchStatus;
   source_key: string | null;
@@ -161,6 +188,7 @@ export type TournamentWithDetails = Tournament & {
   courts: TournamentCourt[];
   categories: TournamentCategory[];
   groups: TournamentGroup[];
+  players: TournamentPlayer[];
   participants: TournamentParticipant[];
   matches: TournamentMatch[];
 };

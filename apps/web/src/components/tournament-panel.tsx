@@ -29,13 +29,32 @@ type TournamentDetailTab = "schedule" | "players";
 type TournamentAdminMode = "create" | "edit";
 const tournamentDurationOptions = [30, 45, 60, 75, 90, 105, 120, 150, 180];
 
+export type TournamentPlayerDraft = {
+  id?: string;
+  client_id: string;
+  display_name: string;
+};
+
+export type TournamentEntryDraft = {
+  id?: string;
+  client_id: string;
+  player1_client_id: string;
+  player2_client_id: string;
+};
+
+export type TournamentGroupDraft = {
+  id?: string;
+  client_id: string;
+  name: string;
+  entries: TournamentEntryDraft[];
+};
+
 export type TournamentCategoryDraft = {
   id?: string;
   client_id: string;
   name: string;
-  group_count: number;
   group_size: number;
-  players_text: string;
+  groups: TournamentGroupDraft[];
 };
 
 export type TournamentDraft = {
@@ -47,8 +66,21 @@ export type TournamentDraft = {
   finals_end_date: string;
   is_active: boolean;
   court_ids: string[];
+  players: TournamentPlayerDraft[];
   categories: TournamentCategoryDraft[];
 };
+
+function clientId(prefix: string, index: number) {
+  return `${prefix}-${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`;
+}
+
+function newGroupDraft(index: number): TournamentGroupDraft {
+  return {
+    client_id: clientId("group", index),
+    entries: [],
+    name: groupLabel(index),
+  };
+}
 
 function dateInputValue(date: Date) {
   return format(date, "yyyy-MM-dd");
@@ -66,11 +98,10 @@ function addCalendarDays(date: Date, days: number) {
 
 function newCategoryDraft(index: number): TournamentCategoryDraft {
   return {
-    client_id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
-    name: "",
-    group_count: 1,
+    client_id: clientId("category", index),
+    groups: [newGroupDraft(0)],
     group_size: 4,
-    players_text: "",
+    name: "",
   };
 }
 
@@ -88,6 +119,7 @@ function newTournamentDraft(courts: Court[]): TournamentDraft {
     finals_end_date: dateInputValue(addCalendarDays(finalsStart, 7)),
     is_active: false,
     court_ids: courts.filter((court) => court.is_active).map((court) => court.id),
+    players: [],
     categories: [newCategoryDraft(0)],
   };
 }
@@ -95,10 +127,6 @@ function newTournamentDraft(courts: Court[]): TournamentDraft {
 function tournamentDraftFromDetails(
   tournament: TournamentWithDetails,
 ): TournamentDraft {
-  const groupOrder = new Map(
-    tournament.groups.map((group) => [group.id, group.display_order]),
-  );
-
   return {
     name: tournament.name,
     match_duration_minutes: tournament.match_duration_minutes,
@@ -108,25 +136,41 @@ function tournamentDraftFromDetails(
     finals_end_date: tournament.finals_end_date,
     is_active: tournament.is_active,
     court_ids: tournament.courts.map((court) => court.court_id),
+    players: tournament.players
+      .slice()
+      .sort((first, second) => first.display_order - second.display_order)
+      .map((player) => ({
+        client_id: player.id,
+        display_name: player.display_name,
+        id: player.id,
+      })),
     categories: [...tournament.categories]
       .sort((first, second) => first.display_order - second.display_order)
       .map((category) => ({
         id: category.id,
         client_id: category.id,
+        groups: tournament.groups
+          .filter((group) => group.category_id === category.id)
+          .sort((first, second) => first.display_order - second.display_order)
+          .map((group) => ({
+            client_id: group.id,
+            entries: tournament.participants
+              .filter((participant) => participant.group_id === group.id)
+              .sort(
+                (first, second) =>
+                  first.display_order - second.display_order,
+              )
+              .map((participant) => ({
+                client_id: participant.id,
+                id: participant.id,
+                player1_client_id: participant.player_ids[0] ?? "",
+                player2_client_id: participant.player_ids[1] ?? "",
+              })),
+            id: group.id,
+            name: group.name,
+          })),
         name: category.name,
-        group_count: category.group_count,
         group_size: category.group_size,
-        players_text: tournament.participants
-          .filter((participant) => participant.category_id === category.id)
-          .sort((first, second) => {
-            const groupDifference =
-              (groupOrder.get(first.group_id ?? "") ?? Number.MAX_SAFE_INTEGER) -
-              (groupOrder.get(second.group_id ?? "") ?? Number.MAX_SAFE_INTEGER);
-
-            return groupDifference || first.display_order - second.display_order;
-          })
-          .map((participant) => participant.display_name)
-          .join("\n"),
       })),
   };
 }
@@ -229,6 +273,7 @@ export function TournamentDetailPanel({
   const [anchorDate, setAnchorDate] = useState(initialAnchorDate);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
+  const [playerFilterId, setPlayerFilterId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
   const [playersCategoryId, setPlayersCategoryId] = useState(firstCategoryId);
@@ -244,7 +289,7 @@ export function TournamentDetailPanel({
 
     return Array.from(
       new Set(
-        selectedTournament.participants.map((participant) => participant.display_name),
+        selectedTournament.players.map((player) => player.display_name),
       ),
     ).sort((first, second) => first.localeCompare(second, "tr"));
   }, [selectedTournament]);
@@ -289,6 +334,20 @@ export function TournamentDetailPanel({
           return false;
         }
 
+        if (playerFilterId) {
+          const firstEntry = selectedTournament.participants.find(
+            (participant) => participant.id === match.player1_entry_id,
+          );
+          const secondEntry = selectedTournament.participants.find(
+            (participant) => participant.id === match.player2_entry_id,
+          );
+
+          return Boolean(
+            firstEntry?.player_ids.includes(playerFilterId) ||
+              secondEntry?.player_ids.includes(playerFilterId),
+          );
+        }
+
         return (
           !search ||
           normalizeSearch(`${match.player1_name} ${match.player2_name}`).includes(
@@ -304,6 +363,7 @@ export function TournamentDetailPanel({
     anchorDate,
     categoryFilter,
     groupFilter,
+    playerFilterId,
     playerSearch,
     scope,
     selectedTournament,
@@ -379,21 +439,31 @@ export function TournamentDetailPanel({
     setGroupFilter(firstGroup?.id ?? "all");
   }
 
+  function showPlayerMatches(playerId: string, playerName: string) {
+    setPlayerFilterId(playerId);
+    setPlayerSearch(playerName);
+    setCategoryFilter("all");
+    setGroupFilter("all");
+    setScope("all");
+    setFiltersOpen(true);
+    setDetailTab("schedule");
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <section className="overflow-hidden rounded-lg border border-[#ddd7c8] bg-[#fffdf8]">
         <div className="bg-[#17211c] px-4 py-5 text-white sm:px-6">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#b9d8ae]">
-            <Trophy size={18} />
-            Turnuva
+          <h2 className="text-2xl font-semibold">{selectedTournament.name}</h2>
+          <div className="mt-2 grid gap-1 text-sm text-[#d5ded7]">
+            <p>
+              Grup maçları: {formatTournamentDate(selectedTournament.group_stage_start_date)}–
+              {formatTournamentDate(selectedTournament.group_stage_end_date)}
+            </p>
+            <p>
+              Finaller: {formatTournamentDate(selectedTournament.finals_start_date)}–
+              {formatTournamentDate(selectedTournament.finals_end_date)}
+            </p>
           </div>
-          <h2 className="mt-2 text-2xl font-semibold">{selectedTournament.name}</h2>
-          <p className="mt-2 text-sm text-[#d5ded7]">
-            Grup maçları {formatTournamentDate(selectedTournament.group_stage_start_date)}–
-            {formatTournamentDate(selectedTournament.group_stage_end_date)} · Finaller{" "}
-            {formatTournamentDate(selectedTournament.finals_start_date)}–
-            {formatTournamentDate(selectedTournament.finals_end_date)}
-          </p>
         </div>
 
         <div className="grid grid-cols-2 p-2 sm:px-6">
@@ -473,6 +543,82 @@ export function TournamentDetailPanel({
             </button>
           </div>
 
+          {filtersOpen ? (
+            <div className="mt-3 grid gap-3 rounded-md border border-[#eee7db] bg-white p-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
+                <label className="relative min-w-0">
+                  <span className="sr-only">Kişi veya takım</span>
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-[#68756b]"
+                    size={17}
+                  />
+                  <input
+                    className="input !pl-10"
+                    list={playerListId}
+                    onChange={(event) => {
+                      setPlayerFilterId(null);
+                      setPlayerSearch(event.target.value);
+                    }}
+                    placeholder="Oyuncu veya takım yazın"
+                    value={playerSearch}
+                  />
+                  <datalist id={playerListId}>
+                    {participantOptions.map((participant) => (
+                      <option key={participant} value={participant} />
+                    ))}
+                  </datalist>
+                </label>
+                <button
+                  aria-label="Filtreleri temizle"
+                  className="grid size-11 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#34443a] transition hover:bg-[#eee9dd] disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={!activeFilterCount}
+                  onClick={() => {
+                    setPlayerFilterId(null);
+                    setPlayerSearch("");
+                    setCategoryFilter("all");
+                    setGroupFilter("all");
+                  }}
+                  title="Filtreleri temizle"
+                  type="button"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  aria-label="Kategori filtresi"
+                  className="input"
+                  onChange={(event) => changeCategoryFilter(event.target.value)}
+                  value={categoryFilter}
+                >
+                  <option value="all">Kategori seçin</option>
+                  {selectedTournament.categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Grup filtresi"
+                  className="input"
+                  disabled={categoryFilter === "all"}
+                  onChange={(event) => setGroupFilter(event.target.value)}
+                  value={groupFilter}
+                >
+                  {categoryFilter === "all" ? (
+                    <option value="all">Önce kategori</option>
+                  ) : null}
+                  {availableGroups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      Grup {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ) : null}
+
           {scope !== "all" ? (
             <div className="mt-3 grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2">
               <button
@@ -498,74 +644,6 @@ export function TournamentDetailPanel({
               >
                 <ChevronRight size={18} />
               </button>
-            </div>
-          ) : null}
-
-          {filtersOpen ? (
-            <div className="mt-3 grid gap-3 rounded-md border border-[#eee7db] bg-white p-3 md:grid-cols-3">
-              <label className="relative block">
-                <span className="sr-only">Kişi veya takım</span>
-                <Search
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#68756b]"
-                  size={17}
-                />
-                <input
-                  className="input pl-10"
-                  list={playerListId}
-                  onChange={(event) => setPlayerSearch(event.target.value)}
-                  placeholder="Oyuncu veya takım yazın"
-                  value={playerSearch}
-                />
-                <datalist id={playerListId}>
-                  {participantOptions.map((participant) => (
-                    <option key={participant} value={participant} />
-                  ))}
-                </datalist>
-              </label>
-              <select
-                aria-label="Kategori filtresi"
-                className="input"
-                onChange={(event) => changeCategoryFilter(event.target.value)}
-                value={categoryFilter}
-              >
-                <option value="all">Kategori seçin</option>
-                {selectedTournament.categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              {categoryFilter !== "all" ? (
-                <select
-                  aria-label="Grup filtresi"
-                  className="input"
-                  onChange={(event) => setGroupFilter(event.target.value)}
-                  value={groupFilter}
-                >
-                  {availableGroups.map((group) => (
-                    <option key={group.id} value={group.id}>
-                      Grup {group.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="grid min-h-11 place-items-center rounded-md border border-dashed border-[#cfc8b8] px-3 text-center text-xs text-[#68756b]">
-                  Grup seçmek için önce kategori seçin
-                </div>
-              )}
-              {activeFilterCount ? (
-                <button
-                  className="secondary-button md:col-span-3 md:justify-self-end"
-                  onClick={() => {
-                    setPlayerSearch("");
-                    setCategoryFilter("all");
-                    setGroupFilter("all");
-                  }}
-                  type="button"
-                >
-                  Filtreleri temizle
-                </button>
-              ) : null}
             </div>
           ) : null}
 
@@ -694,10 +772,28 @@ export function TournamentDetailPanel({
                         )
                         .map((participant) => (
                           <li
-                            className="rounded bg-[#f6f1e7] px-3 py-2"
+                            className="flex flex-wrap gap-1.5 rounded bg-[#f6f1e7] px-3 py-2"
                             key={participant.id}
                           >
-                            {participant.display_name}
+                            {participant.player_ids.map((playerId) => {
+                              const player = selectedTournament.players.find(
+                                (item) => item.id === playerId,
+                              );
+
+                              return player ? (
+                                <button
+                                  className="rounded-md border border-[#cfc8b8] bg-white px-2 py-1 text-left text-xs font-semibold text-[#237000] transition hover:bg-[#eaf5e6]"
+                                  key={player.id}
+                                  onClick={() =>
+                                    showPlayerMatches(player.id, player.display_name)
+                                  }
+                                  title={`${player.display_name} maçlarını göster`}
+                                  type="button"
+                                >
+                                  {player.display_name}
+                                </button>
+                              ) : null;
+                            })}
                           </li>
                         ))}
                     </ul>
@@ -777,6 +873,67 @@ export function TournamentAdminPanel({
     }));
   }
 
+  function updatePlayer(playerId: string, displayName: string) {
+    setDraft((current) => ({
+      ...current,
+      players: current.players.map((player) =>
+        player.client_id === playerId
+          ? { ...player, display_name: displayName }
+          : player,
+      ),
+    }));
+  }
+
+  function updateGroup(
+    categoryId: string,
+    groupId: string,
+    fields: Partial<TournamentGroupDraft>,
+  ) {
+    setDraft((current) => ({
+      ...current,
+      categories: current.categories.map((category) =>
+        category.client_id === categoryId
+          ? {
+              ...category,
+              groups: category.groups.map((group) =>
+                group.client_id === groupId ? { ...group, ...fields } : group,
+              ),
+            }
+          : category,
+      ),
+    }));
+  }
+
+  function updateEntry(
+    categoryId: string,
+    groupId: string,
+    entryId: string,
+    fields: Partial<TournamentEntryDraft>,
+  ) {
+    setDraft((current) => ({
+      ...current,
+      categories: current.categories.map((category) =>
+        category.client_id === categoryId
+          ? {
+              ...category,
+              groups: category.groups.map((group) =>
+                group.client_id === groupId
+                  ? {
+                      ...group,
+                      entries: group.entries.map((entry) =>
+                        entry.client_id === entryId
+                          ? { ...entry, ...fields }
+                          : entry,
+                      ),
+                    }
+                  : group,
+              ),
+            }
+          : category,
+      ),
+    }));
+  }
+
   function startCreate() {
     setMode("create");
     setDraft(newTournamentDraft(courts));
@@ -851,133 +1008,232 @@ export function TournamentAdminPanel({
       ) : null}
 
       <form className="mt-5 space-y-5" onSubmit={submitTournament}>
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-2 text-sm font-medium text-[#34443a] md:col-span-2">
-            Turnuva adı
-            <input
-              className="input"
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, name: event.target.value }))
+        <details className="group rounded-md border border-[#ddd7c8] bg-white" open>
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 font-semibold [&::-webkit-details-marker]:hidden">
+            Genel
+            <ChevronRight className="transition group-open:rotate-90" size={18} />
+          </summary>
+          <div className="grid gap-4 border-t border-[#eee7db] p-4 md:grid-cols-2">
+            <label className="grid gap-2 text-sm font-medium text-[#34443a] md:col-span-2">
+              Turnuva adı
+              <input
+                className="input"
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, name: event.target.value }))
+                }
+                placeholder="Örn. 29 Ekim"
+                required
+                value={draft.name}
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-[#34443a] md:col-span-2">
+              Maç süresi
+              <select
+                className="input"
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    match_duration_minutes: Number(event.target.value),
+                  }))
+                }
+                value={draft.match_duration_minutes}
+              >
+                {tournamentDurationOptions.map((duration) => (
+                  <option key={duration} value={duration}>
+                    {duration === 60
+                      ? "1 saat"
+                      : duration === 90
+                        ? "1 saat 30 dakika"
+                        : duration === 120
+                          ? "2 saat"
+                          : `${duration} dakika`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <TournamentDateField
+              label="Grup maçları başlangıç"
+              onChange={(value) =>
+                setDraft((current) => ({ ...current, group_stage_start_date: value }))
               }
-              placeholder="Örn. 29 Ekim"
-              required
-              value={draft.name}
+              value={draft.group_stage_start_date}
             />
-          </label>
-          <label className="grid gap-2 text-sm font-medium text-[#34443a] md:col-span-2">
-            Maç süresi
-            <select
-              className="input"
-              onChange={(event) =>
+            <TournamentDateField
+              label="Grup maçları bitiş"
+              min={draft.group_stage_start_date}
+              onChange={(value) =>
+                setDraft((current) => ({ ...current, group_stage_end_date: value }))
+              }
+              value={draft.group_stage_end_date}
+            />
+            <TournamentDateField
+              label="Finaller başlangıç"
+              min={draft.group_stage_end_date}
+              onChange={(value) =>
+                setDraft((current) => ({ ...current, finals_start_date: value }))
+              }
+              value={draft.finals_start_date}
+            />
+            <TournamentDateField
+              label="Finaller bitiş"
+              min={draft.finals_start_date}
+              onChange={(value) =>
+                setDraft((current) => ({ ...current, finals_end_date: value }))
+              }
+              value={draft.finals_end_date}
+            />
+            <fieldset className="md:col-span-2">
+              <legend className="text-sm font-semibold text-[#34443a]">
+                Kullanılabilecek kortlar
+              </legend>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {courts.map((court) => {
+                  const isSelected = draft.court_ids.includes(court.id);
+
+                  return (
+                    <label
+                      className={`inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm ${
+                        isSelected
+                          ? "border-[#237000] bg-[#eaf5e6] text-[#237000]"
+                          : "border-[#cfc8b8] bg-white"
+                      }`}
+                      key={court.id}
+                    >
+                      <input
+                        checked={isSelected}
+                        className="size-4 accent-[#237000]"
+                        onChange={(event) =>
+                          setDraft((current) => ({
+                            ...current,
+                            court_ids: event.target.checked
+                              ? [...current.court_ids, court.id]
+                              : current.court_ids.filter((id) => id !== court.id),
+                          }))
+                        }
+                        type="checkbox"
+                      />
+                      {court.name}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <label
+              className={`tournament-active-toggle flex items-start gap-3 rounded-md border p-4 text-sm md:col-span-2 ${
+                draft.is_active ? "is-active" : "border-[#ddd7c8] bg-white"
+              }`}
+            >
+              <input
+                checked={draft.is_active}
+                className="mt-0.5 size-4 accent-[#237000]"
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    is_active: event.target.checked,
+                  }))
+                }
+                type="checkbox"
+              />
+              <span>
+                <span className="flex items-center gap-2 font-semibold">
+                  {draft.is_active ? <Check size={16} /> : null}
+                  {draft.is_active ? "Aktif" : "Pasif"}
+                </span>
+                <span className="mt-1 block text-xs opacity-80">
+                  Aktif turnuva kullanıcıların ana ekranında isimli kısayol olarak görünür.
+                </span>
+              </span>
+            </label>
+          </div>
+        </details>
+
+        <section className="rounded-md border border-[#ddd7c8] bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold">Oyuncular</h3>
+              <p className="mt-1 text-xs text-[#68756b]">
+                Oyuncuları bir kez ekleyin; tekler ve çiftlerde aynı kaydı kullanın.
+              </p>
+            </div>
+            <button
+              className="secondary-button shrink-0"
+              onClick={() =>
                 setDraft((current) => ({
                   ...current,
-                  match_duration_minutes: Number(event.target.value),
+                  players: [
+                    ...current.players,
+                    {
+                      client_id: clientId("player", current.players.length),
+                      display_name: "",
+                    },
+                  ],
                 }))
               }
-              value={draft.match_duration_minutes}
+              type="button"
             >
-              {tournamentDurationOptions.map((duration) => (
-                <option key={duration} value={duration}>
-                  {duration === 60
-                    ? "1 saat"
-                    : duration === 90
-                      ? "1 saat 30 dakika"
-                      : duration === 120
-                        ? "2 saat"
-                        : duration === 150
-                          ? "2 saat 30 dakika"
-                          : duration === 180
-                            ? "3 saat"
-                            : `${duration} dakika`}
-                </option>
-              ))}
-            </select>
-            <span className="text-xs font-normal text-[#68756b]">
-              Maç başlangıç saati korunur; bitiş bu süreye göre otomatik hesaplanır.
-            </span>
-          </label>
-          <TournamentDateField
-            label="Grup maçları başlangıç"
-            onChange={(value) =>
-              setDraft((current) => ({
-                ...current,
-                group_stage_start_date: value,
-              }))
-            }
-            value={draft.group_stage_start_date}
-          />
-          <TournamentDateField
-            label="Grup maçları bitiş"
-            min={draft.group_stage_start_date}
-            onChange={(value) =>
-              setDraft((current) => ({
-                ...current,
-                group_stage_end_date: value,
-              }))
-            }
-            value={draft.group_stage_end_date}
-          />
-          <TournamentDateField
-            label="Finaller başlangıç"
-            min={draft.group_stage_end_date}
-            onChange={(value) =>
-              setDraft((current) => ({ ...current, finals_start_date: value }))
-            }
-            value={draft.finals_start_date}
-          />
-          <TournamentDateField
-            label="Finaller bitiş"
-            min={draft.finals_start_date}
-            onChange={(value) =>
-              setDraft((current) => ({ ...current, finals_end_date: value }))
-            }
-            value={draft.finals_end_date}
-          />
-        </div>
-
-        <fieldset>
-          <legend className="text-sm font-semibold text-[#34443a]">
-            Kullanılabilecek kortlar
-          </legend>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {courts.map((court) => {
-              const isSelected = draft.court_ids.includes(court.id);
+              <CirclePlus size={16} />
+              Oyuncu
+            </button>
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {draft.players.map((player, index) => {
+              const isUsed = draft.categories.some((category) =>
+                category.groups.some((group) =>
+                  group.entries.some(
+                    (entry) =>
+                      entry.player1_client_id === player.client_id ||
+                      entry.player2_client_id === player.client_id,
+                  ),
+                ),
+              );
 
               return (
-                <label
-                  className={`inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm ${
-                    isSelected
-                      ? "border-[#237000] bg-[#eaf5e6] text-[#237000]"
-                      : "border-[#cfc8b8] bg-white"
-                  }`}
-                  key={court.id}
+                <div
+                  className="grid grid-cols-[32px_minmax(0,1fr)_36px] items-center gap-2"
+                  key={player.client_id}
                 >
+                  <span className="text-center text-xs font-semibold text-[#68756b]">
+                    {index + 1}
+                  </span>
                   <input
-                    checked={isSelected}
-                    className="size-4 accent-[#237000]"
+                    aria-label={`${index + 1}. oyuncu adı`}
+                    className="input input-compact"
                     onChange={(event) =>
+                      updatePlayer(player.client_id, event.target.value)
+                    }
+                    placeholder="Oyuncu adı"
+                    required
+                    value={player.display_name}
+                  />
+                  <button
+                    aria-label={`${player.display_name || "Oyuncu"} kaldır`}
+                    className="grid size-9 place-items-center rounded-md text-[#a0543b] hover:bg-[#f6f1e7] disabled:opacity-35"
+                    disabled={isUsed}
+                    onClick={() =>
                       setDraft((current) => ({
                         ...current,
-                        court_ids: event.target.checked
-                          ? [...current.court_ids, court.id]
-                          : current.court_ids.filter((id) => id !== court.id),
+                        players: current.players.filter(
+                          (item) => item.client_id !== player.client_id,
+                        ),
                       }))
                     }
-                    type="checkbox"
-                  />
-                  {court.name}
-                </label>
+                    title={isUsed ? "Önce kategori/grup atamalarından çıkarın" : "Oyuncuyu kaldır"}
+                    type="button"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               );
             })}
           </div>
-        </fieldset>
+        </section>
 
-        <div className="space-y-3">
+        <section className="space-y-3 rounded-md border border-[#ddd7c8] bg-[#f6f1e7] p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="font-semibold">Kategoriler ve oyuncular</h3>
+              <h3 className="font-semibold">Kategoriler ve gruplar</h3>
               <p className="mt-1 text-xs text-[#68756b]">
-                Her satıra bir oyuncu veya çift takım yazın.
+                Gruplara tek oyuncu veya iki oyunculu takım atayın.
               </p>
             </div>
             <button
@@ -998,12 +1254,8 @@ export function TournamentAdminPanel({
             </button>
           </div>
 
-          {draft.categories.map((category, index) => {
-            const playerCount = category.players_text
-              .split("\n")
-              .map((player) => player.trim())
-              .filter(Boolean).length;
-            const hasScheduledMatches = Boolean(
+          {draft.categories.map((category, categoryIndex) => {
+            const categoryHasMatches = Boolean(
               category.id &&
                 selectedTournament?.matches.some(
                   (match) => match.category_id === category.id,
@@ -1011,135 +1263,249 @@ export function TournamentAdminPanel({
             );
 
             return (
-              <div
-                className="rounded-md border border-[#ddd7c8] bg-white p-4"
+              <details
+                className="group rounded-md border border-[#ddd7c8] bg-white"
                 key={category.client_id}
+                open
               >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold">Kategori {index + 1}</p>
-                  {draft.categories.length > 1 ? (
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 [&::-webkit-details-marker]:hidden">
+                  <span className="font-semibold">
+                    {category.name || `Kategori ${categoryIndex + 1}`}
+                  </span>
+                  <ChevronRight className="transition group-open:rotate-90" size={17} />
+                </summary>
+                <div className="space-y-3 border-t border-[#eee7db] p-3">
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_40px]">
+                    <label className="grid gap-1.5 text-xs font-semibold text-[#34443a]">
+                      Kategori adı
+                      <input
+                        className="input input-compact"
+                        onChange={(event) =>
+                          updateCategory(category.client_id, { name: event.target.value })
+                        }
+                        required
+                        value={category.name}
+                      />
+                    </label>
+                    <label className="grid gap-1.5 text-xs font-semibold text-[#34443a]">
+                      Grup kapasitesi
+                      <input
+                        className="input input-compact"
+                        max={32}
+                        min={2}
+                        onChange={(event) =>
+                          updateCategory(category.client_id, {
+                            group_size: Number(event.target.value),
+                          })
+                        }
+                        required
+                        type="number"
+                        value={category.group_size}
+                      />
+                    </label>
                     <button
                       aria-label="Kategoriyi kaldır"
-                      className="grid size-8 place-items-center rounded-md text-[#a0543b] hover:bg-[#f6f1e7] disabled:opacity-40"
-                      disabled={hasScheduledMatches}
+                      className="mt-auto grid size-10 place-items-center rounded-md text-[#a0543b] hover:bg-[#f6f1e7] disabled:opacity-35"
+                      disabled={categoryHasMatches || draft.categories.length === 1}
                       onClick={() =>
                         setDraft((current) => ({
                           ...current,
                           categories: current.categories.filter(
-                            (currentCategory) =>
-                              currentCategory.client_id !== category.client_id,
+                            (item) => item.client_id !== category.client_id,
                           ),
                         }))
                       }
-                      title={
-                        hasScheduledMatches
-                          ? "Maçı bulunan kategori kaldırılamaz"
-                          : "Kategoriyi kaldır"
-                      }
+                      title={categoryHasMatches ? "Maçı bulunan kategori kaldırılamaz" : "Kategoriyi kaldır"}
                       type="button"
                     >
                       <X size={16} />
                     </button>
-                  ) : null}
-                </div>
-
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  <label className="grid gap-2 text-sm font-medium text-[#34443a] sm:col-span-3">
-                    Kategori adı
-                    <input
-                      className="input"
-                      onChange={(event) =>
-                        updateCategory(category.client_id, {
-                          name: event.target.value,
-                        })
-                      }
-                      required
-                      value={category.name}
-                    />
-                  </label>
-                  <label className="grid gap-2 text-sm font-medium text-[#34443a]">
-                    Grup sayısı
-                    <input
-                      className="input"
-                      max={12}
-                      min={1}
-                      onChange={(event) =>
-                        updateCategory(category.client_id, {
-                          group_count: Number(event.target.value),
-                        })
-                      }
-                      required
-                      type="number"
-                      value={category.group_count}
-                    />
-                  </label>
-                  <label className="grid gap-2 text-sm font-medium text-[#34443a]">
-                    Gruptaki kişi/takım
-                    <input
-                      className="input"
-                      max={32}
-                      min={2}
-                      onChange={(event) =>
-                        updateCategory(category.client_id, {
-                          group_size: Number(event.target.value),
-                        })
-                      }
-                      required
-                      type="number"
-                      value={category.group_size}
-                    />
-                  </label>
-                  <div className="rounded-md bg-[#f1eee5] px-3 py-2 text-sm text-[#546257]">
-                    <span className="block text-xs">Kapasite</span>
-                    <span className="mt-1 block font-semibold text-[#17211c]">
-                      {category.group_count * category.group_size} · {playerCount} eklendi
-                    </span>
                   </div>
-                  <label className="grid gap-2 text-sm font-medium text-[#34443a] sm:col-span-3">
-                    Oyuncular / takımlar
-                    <textarea
-                      className="min-h-36 w-full rounded-md border border-[#cfc8b8] bg-white p-3 text-sm outline-none focus:border-[#237000]"
-                      onChange={(event) =>
+
+                  <div className="flex justify-end">
+                    <button
+                      className="secondary-button"
+                      onClick={() =>
                         updateCategory(category.client_id, {
-                          players_text: event.target.value,
+                          groups: [
+                            ...category.groups,
+                            newGroupDraft(category.groups.length),
+                          ],
                         })
                       }
-                      required
-                      value={category.players_text}
-                    />
-                  </label>
+                      type="button"
+                    >
+                      <CirclePlus size={15} />
+                      Grup ekle
+                    </button>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {category.groups.map((group) => {
+                      const groupHasMatches = Boolean(
+                        group.id &&
+                          selectedTournament?.matches.some(
+                            (match) => match.group_id === group.id,
+                          ),
+                      );
+
+                      return (
+                        <div
+                          className="rounded-md border border-[#e6dfd2] bg-[#fffdf8] p-3"
+                          key={group.client_id}
+                        >
+                          <div className="grid grid-cols-[minmax(0,1fr)_auto_36px] items-end gap-2">
+                            <label className="grid gap-1.5 text-xs font-semibold text-[#34443a]">
+                              Grup adı
+                              <input
+                                className="input input-compact"
+                                onChange={(event) =>
+                                  updateGroup(category.client_id, group.client_id, {
+                                    name: event.target.value,
+                                  })
+                                }
+                                required
+                                value={group.name}
+                              />
+                            </label>
+                            <span className="mb-2 text-xs font-semibold text-[#68756b]">
+                              {group.entries.length}/{category.group_size}
+                            </span>
+                            <button
+                              aria-label={`Grup ${group.name} kaldır`}
+                              className="grid size-9 place-items-center rounded-md text-[#a0543b] hover:bg-[#f6f1e7] disabled:opacity-35"
+                              disabled={groupHasMatches || category.groups.length === 1}
+                              onClick={() =>
+                                updateCategory(category.client_id, {
+                                  groups: category.groups.filter(
+                                    (item) => item.client_id !== group.client_id,
+                                  ),
+                                })
+                              }
+                              title={groupHasMatches ? "Maçı bulunan grup kaldırılamaz" : "Grubu kaldır"}
+                              type="button"
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
+
+                          <div className="mt-3 grid gap-2">
+                            {group.entries.map((entry, entryIndex) => {
+                              const entryHasMatches = Boolean(
+                                entry.id &&
+                                  selectedTournament?.matches.some(
+                                    (match) =>
+                                      match.player1_entry_id === entry.id ||
+                                      match.player2_entry_id === entry.id,
+                                  ),
+                              );
+
+                              return (
+                                <div
+                                  className="grid grid-cols-[26px_minmax(0,1fr)_minmax(0,1fr)_36px] items-center gap-2"
+                                  key={entry.client_id}
+                                >
+                                  <span className="text-center text-xs font-semibold text-[#68756b]">
+                                    {entryIndex + 1}
+                                  </span>
+                                  <select
+                                    aria-label={`Grup ${group.name} ${entryIndex + 1}. katılımcı`}
+                                    className="input input-compact"
+                                    onChange={(event) =>
+                                      updateEntry(
+                                        category.client_id,
+                                        group.client_id,
+                                        entry.client_id,
+                                        { player1_client_id: event.target.value },
+                                      )
+                                    }
+                                    required
+                                    value={entry.player1_client_id}
+                                  >
+                                    <option value="">Oyuncu seçin</option>
+                                    {draft.players.map((player) => (
+                                      <option key={player.client_id} value={player.client_id}>
+                                        {player.display_name || "İsimsiz oyuncu"}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    aria-label={`Grup ${group.name} ${entryIndex + 1}. eş oyuncu`}
+                                    className="input input-compact"
+                                    onChange={(event) =>
+                                      updateEntry(
+                                        category.client_id,
+                                        group.client_id,
+                                        entry.client_id,
+                                        { player2_client_id: event.target.value },
+                                      )
+                                    }
+                                    value={entry.player2_client_id}
+                                  >
+                                    <option value="">Tek oyuncu</option>
+                                    {draft.players.map((player) => (
+                                      <option
+                                        disabled={player.client_id === entry.player1_client_id}
+                                        key={player.client_id}
+                                        value={player.client_id}
+                                      >
+                                        {player.display_name || "İsimsiz oyuncu"}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    aria-label="Katılımcıyı gruptan çıkar"
+                                    className="grid size-9 place-items-center rounded-md text-[#a0543b] hover:bg-[#f6f1e7] disabled:opacity-35"
+                                    disabled={entryHasMatches}
+                                    onClick={() =>
+                                      updateGroup(category.client_id, group.client_id, {
+                                        entries: group.entries.filter(
+                                          (item) => item.client_id !== entry.client_id,
+                                        ),
+                                      })
+                                    }
+                                    title={entryHasMatches ? "Maçı bulunan katılımcı kaldırılamaz; oyuncusunu değiştirebilirsiniz" : "Katılımcıyı çıkar"}
+                                    type="button"
+                                  >
+                                    <X size={15} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <button
+                            className="secondary-button mt-3"
+                            disabled={
+                              !draft.players.length ||
+                              group.entries.length >= category.group_size
+                            }
+                            onClick={() =>
+                              updateGroup(category.client_id, group.client_id, {
+                                entries: [
+                                  ...group.entries,
+                                  {
+                                    client_id: clientId("entry", group.entries.length),
+                                    player1_client_id: draft.players[0]?.client_id ?? "",
+                                    player2_client_id: "",
+                                  },
+                                ],
+                              })
+                            }
+                            type="button"
+                          >
+                            <CirclePlus size={15} />
+                            Katılımcı ekle
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              </details>
             );
           })}
-        </div>
-
-        <label
-          className={`tournament-active-toggle flex items-start gap-3 rounded-md border p-4 text-sm ${
-            draft.is_active ? "is-active" : "border-[#ddd7c8] bg-white"
-          }`}
-        >
-          <input
-            checked={draft.is_active}
-            className="mt-0.5 size-4 accent-[#237000]"
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                is_active: event.target.checked,
-              }))
-            }
-            type="checkbox"
-          />
-          <span>
-            <span className="flex items-center gap-2 font-semibold">
-              {draft.is_active ? <Check size={16} /> : null}
-              {draft.is_active ? "Aktif" : "Pasif"}
-            </span>
-            <span className="mt-1 block text-xs opacity-80">
-              Aktif turnuva kullanıcıların ana ekranında isimli kısayol olarak görünür.
-            </span>
-          </span>
-        </label>
+        </section>
 
         <button
           className="primary-button w-full sm:w-auto"
@@ -1182,8 +1548,4 @@ function TournamentDateField({
       />
     </label>
   );
-}
-
-export function buildTournamentGroupNames(groupCount: number) {
-  return Array.from({ length: groupCount }, (_, index) => groupLabel(index));
 }
