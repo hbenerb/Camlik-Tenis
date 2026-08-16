@@ -6332,9 +6332,12 @@ function WeekCalendar({
             isSameDay(new Date(reservation.starts_at), day),
         );
         const visibleReservationCount = canOpenDay ? dayReservations.length : 0;
-        const tournamentMatchCount = tournamentMatches.filter((match) =>
+        const dayTournamentMatches = tournamentMatches.filter((match) =>
           isSameDay(new Date(match.starts_at), day),
-        ).length;
+        );
+        const tournamentMatchCount = dayTournamentMatches.length;
+        const tournamentIndicatorColor =
+          dayTournamentMatches[0]?.tournament_color;
         const status = visibleDayAvailability(
           day,
           bookingWindowDays,
@@ -6368,7 +6371,10 @@ function WeekCalendar({
                 : ""}
             </p>
             {tournamentMatchCount ? (
-              <p className="mt-0.5 truncate text-center text-[8px] font-bold text-[#2563eb] min-[380px]:text-[9px] sm:text-xs">
+              <p
+                className="mt-0.5 truncate text-center text-[8px] font-bold min-[380px]:text-[9px] sm:text-xs"
+                style={{ color: tournamentIndicatorColor }}
+              >
                 {tournamentMatchCount} turnuva
               </p>
             ) : null}
@@ -6427,9 +6433,12 @@ function MonthCalendar({
             isSameDay(new Date(reservation.starts_at), day),
         ).length;
         const visibleCount = canOpenDay ? count : 0;
-        const tournamentMatchCount = tournamentMatches.filter((match) =>
+        const dayTournamentMatches = tournamentMatches.filter((match) =>
           isSameDay(new Date(match.starts_at), day),
-        ).length;
+        );
+        const tournamentMatchCount = dayTournamentMatches.length;
+        const tournamentIndicatorColor =
+          dayTournamentMatches[0]?.tournament_color;
         const status = visibleDayAvailability(
           day,
           bookingWindowDays,
@@ -6462,7 +6471,10 @@ function MonthCalendar({
               {visibleCount > 0 ? `${visibleCount} rez.` : ""}
             </p>
             {tournamentMatchCount ? (
-              <p className="mt-0.5 truncate text-center text-[8px] font-bold text-[#2563eb] min-[380px]:text-[9px] sm:text-xs">
+              <p
+                className="mt-0.5 truncate text-center text-[8px] font-bold min-[380px]:text-[9px] sm:text-xs"
+                style={{ color: tournamentIndicatorColor }}
+              >
                 {tournamentMatchCount} turnuva
               </p>
             ) : null}

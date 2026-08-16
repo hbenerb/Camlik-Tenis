@@ -181,15 +181,6 @@ html.theme-light-root body {
   color: #c7d1c9 !important;
 }
 
-/* Tournament schedule colors stay mode-specific for contrast. */
-.tournament-match-time {
-  color: #237000;
-}
-
-.theme-dark .tournament-match-time {
-  color: #2563eb;
-}
-
 .tournament-court-toggle.is-selected {
   border-color: #237000 !important;
   background: #eaf5e6 !important;

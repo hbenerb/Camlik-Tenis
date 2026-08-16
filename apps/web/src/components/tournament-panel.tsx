@@ -473,16 +473,18 @@ export function TournamentDetailPanel({
 
   const tournamentColor =
     selectedTournament.color || DEFAULT_TOURNAMENT_COLOR;
+  const tournamentTextColor = getTournamentTextColor(tournamentColor);
+  const tournamentAccentStyle = {
+    backgroundColor: tournamentColor,
+    color: tournamentTextColor,
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <section className="overflow-hidden rounded-lg border border-[#ddd7c8] bg-[#fffdf8]">
         <div
           className="relative px-4 py-5 pr-16 sm:px-6 sm:pr-20"
-          style={{
-            backgroundColor: tournamentColor,
-            color: getTournamentTextColor(tournamentColor),
-          }}
+          style={tournamentAccentStyle}
         >
           <button
             aria-label="Turnuva ekranından çık"
@@ -508,23 +510,25 @@ export function TournamentDetailPanel({
 
         <div className="grid grid-cols-2 p-2 sm:px-6">
           <button
-            className={`h-11 rounded-md text-sm font-semibold ${
+            className={`h-11 rounded-md text-sm font-semibold transition ${
               detailTab === "schedule"
-                ? "bg-[#237000] text-white"
+                ? "hover:opacity-90"
                 : "text-[#546257] hover:bg-[#eee9dd]"
             }`}
             onClick={openSchedule}
+            style={detailTab === "schedule" ? tournamentAccentStyle : undefined}
             type="button"
           >
             Takvim
           </button>
           <button
-            className={`h-11 rounded-md text-sm font-semibold ${
+            className={`h-11 rounded-md text-sm font-semibold transition ${
               detailTab === "players"
-                ? "bg-[#237000] text-white"
+                ? "hover:opacity-90"
                 : "text-[#546257] hover:bg-[#eee9dd]"
             }`}
             onClick={() => setDetailTab("players")}
+            style={detailTab === "players" ? tournamentAccentStyle : undefined}
             type="button"
           >
             Oyuncular
@@ -544,9 +548,9 @@ export function TournamentDetailPanel({
                 ] as const
               ).map(([value, label]) => (
                 <button
-                  className={`h-10 rounded px-2 text-xs font-semibold sm:text-sm ${
+                  className={`h-10 rounded px-2 text-xs font-semibold transition sm:text-sm ${
                     scope === value
-                      ? "bg-[#237000] text-white"
+                      ? "hover:opacity-90"
                       : "text-[#546257] hover:bg-[#eee9dd]"
                   }`}
                   key={value}
@@ -556,6 +560,7 @@ export function TournamentDetailPanel({
                       setAnchorDate(new Date(defaultAnchorTimestamp));
                     }
                   }}
+                  style={scope === value ? tournamentAccentStyle : undefined}
                   type="button"
                 >
                   {label}
@@ -567,16 +572,27 @@ export function TournamentDetailPanel({
               aria-expanded={filtersOpen}
               className={`relative grid size-11 place-items-center rounded-md border ${
                 filtersOpen || activeFilterCount
-                  ? "border-[#237000] bg-[#f0f8ef] text-[#237000]"
+                  ? "transition hover:opacity-90"
                   : "border-[#cfc8b8] bg-white text-[#34443a]"
               }`}
               onClick={() => setFiltersOpen((current) => !current)}
+              style={
+                filtersOpen || activeFilterCount
+                  ? {
+                      ...tournamentAccentStyle,
+                      borderColor: tournamentColor,
+                    }
+                  : undefined
+              }
               title="Filtreleme"
               type="button"
             >
               <ListFilter size={19} />
               {activeFilterCount ? (
-                <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#237000] text-[10px] font-bold text-white">
+                <span
+                  className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-current text-[10px] font-bold"
+                  style={tournamentAccentStyle}
+                >
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -698,8 +714,11 @@ export function TournamentDetailPanel({
                   className="overflow-hidden rounded-md border border-[#ddd7c8]"
                   key={date}
                 >
-                  <div className="sticky top-0 z-10 bg-[#237000] px-4 py-2.5 text-white">
-                    <h4 className="font-semibold capitalize text-white">
+                  <div
+                    className="sticky top-0 z-10 px-4 py-2.5"
+                    style={tournamentAccentStyle}
+                  >
+                    <h4 className="font-semibold capitalize">
                       {formatMatchDay(localDate(date))}
                     </h4>
                   </div>
@@ -722,8 +741,9 @@ export function TournamentDetailPanel({
                         >
                           <time
                             className={`text-xl font-bold tabular-nums sm:text-2xl ${
-                              isPast ? "text-[#68756b]" : "tournament-match-time"
+                              isPast ? "text-[#68756b]" : ""
                             }`}
+                            style={isPast ? undefined : { color: tournamentColor }}
                           >
                             {format(new Date(match.starts_at), "HH:mm")}
                           </time>
@@ -800,7 +820,10 @@ export function TournamentDetailPanel({
                     className="rounded-md border border-[#ddd7c8] bg-white p-4"
                     key={group.id}
                   >
-                    <p className="text-xs font-bold uppercase tracking-wide text-[#237000]">
+                    <p
+                      className="text-xs font-bold uppercase tracking-wide"
+                      style={{ color: tournamentColor }}
+                    >
                       Grup {group.name}
                     </p>
                     <ul className="mt-3 space-y-2 text-sm">
@@ -822,11 +845,15 @@ export function TournamentDetailPanel({
 
                               return player ? (
                                 <button
-                                  className="rounded-md border border-[#cfc8b8] bg-white px-2 py-1 text-left text-xs font-semibold text-[#237000] transition hover:bg-[#eaf5e6]"
+                                  className="rounded-md border bg-white px-2 py-1 text-left text-xs font-semibold transition hover:opacity-80"
                                   key={player.id}
                                   onClick={() =>
                                     showPlayerMatches(player.id, player.display_name)
                                   }
+                                  style={{
+                                    borderColor: tournamentColor,
+                                    color: tournamentColor,
+                                  }}
                                   title={`${player.display_name} maçlarını göster`}
                                   type="button"
                                 >
