@@ -730,6 +730,17 @@ export function TournamentDetailPanel({
                       const group = selectedTournament.groups.find(
                         (item) => item.id === match.group_id,
                       );
+                      const firstEntry = selectedTournament.participants.find(
+                        (participant) =>
+                          participant.id === match.player1_entry_id,
+                      );
+                      const secondEntry = selectedTournament.participants.find(
+                        (participant) =>
+                          participant.id === match.player2_entry_id,
+                      );
+                      const isDoublesMatch =
+                        (firstEntry?.player_ids.length ?? 0) > 1 ||
+                        (secondEntry?.player_ids.length ?? 0) > 1;
                       const isPast = new Date(match.ends_at) < currentTime;
 
                       return (
@@ -748,13 +759,24 @@ export function TournamentDetailPanel({
                             {format(new Date(match.starts_at), "HH:mm")}
                           </time>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold sm:text-base">
-                              {match.player1_name}
-                              <span className="px-2 text-xs font-normal text-[#8b8f86]">
-                                vs
-                              </span>
-                              {match.player2_name}
-                            </p>
+                            {isDoublesMatch ? (
+                              <div
+                                aria-label={`${match.player1_name} ve ${match.player2_name}`}
+                                className="grid gap-0.5 text-[12px] font-semibold leading-tight min-[380px]:text-[13px] sm:text-base"
+                                title={`${match.player1_name} vs ${match.player2_name}`}
+                              >
+                                <p className="truncate">{match.player1_name}</p>
+                                <p className="truncate">{match.player2_name}</p>
+                              </div>
+                            ) : (
+                              <p className="truncate text-sm font-semibold sm:text-base">
+                                {match.player1_name}
+                                <span className="px-2 text-xs font-normal text-[#8b8f86]">
+                                  vs
+                                </span>
+                                {match.player2_name}
+                              </p>
+                            )}
                             <div className="mt-1 flex min-w-0 items-center justify-between gap-3 text-xs text-[#68756b]">
                               <p className="truncate">
                                 {category?.name ?? "Kategori"}
