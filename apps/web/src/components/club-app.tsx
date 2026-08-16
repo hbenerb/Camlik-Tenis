@@ -327,6 +327,7 @@ const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
 
 const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
 const GUEST_CALENDAR_WINDOW_DAYS = 365;
+const DAY_CALENDAR_COURT_COUNT = 2;
 const GUEST_SESSION_STORAGE_KEY = "camlik-tenis-guest-session";
 const GUEST_RESERVATION_MESSAGE =
   "Rezervasyon yapmak için üye olmanız ve giriş yapmanız gereklidir.";
@@ -4785,12 +4786,26 @@ function CalendarPanel({
   tournamentMatches: CalendarTournamentMatch[];
 }) {
   const [isBookingInfoOpen, setIsBookingInfoOpen] = useState(false);
+  const [dayCourtWindowStart, setDayCourtWindowStart] = useState(0);
   const isBackwardDisabled =
     !canViewPastDays && startOfDay(selectedDate) <= startOfDay(currentTime);
   const slotDurationText = formatDurationText(settings.reservation_slot_minutes);
   const cancellationDeadlineText = formatDurationText(
     settings.cancellation_deadline_hours * 60,
   );
+
+  function selectCalendarView(view: CalendarView) {
+    if (view === "day") {
+      setDayCourtWindowStart(0);
+    }
+
+    setCalendarView(view);
+  }
+
+  function refreshCalendar() {
+    setDayCourtWindowStart(0);
+    onRefresh();
+  }
 
   return (
     <div className="mx-auto w-full space-y-3 sm:space-y-4">
@@ -4895,7 +4910,7 @@ function CalendarPanel({
                       : "text-[#546257] hover:bg-[#eee9dd]"
                   }`}
                   key={view}
-                  onClick={() => setCalendarView(view)}
+                  onClick={() => selectCalendarView(view)}
                   type="button"
                 >
                   {viewLabels[view]}
@@ -4905,7 +4920,7 @@ function CalendarPanel({
             <button
               aria-label="Yenile"
               className="grid size-10 shrink-0 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd]"
-              onClick={onRefresh}
+              onClick={refreshCalendar}
               title="Yenile"
               type="button"
             >
@@ -4960,12 +4975,13 @@ function CalendarPanel({
         <DayCalendar
           bookingWindowDays={bookingWindowDays}
           canCreateReservation={canCreateReservation}
-          canViewPastDays={canViewPastDays}
           courts={activeCourts}
+          courtWindowStart={dayCourtWindowStart}
           currentTime={currentTime}
           onEditReservation={onEditReservation}
           onEditTournamentMatch={onEditTournamentMatch}
           onCreateReservation={onCreateReservation}
+          onCourtWindowStartChange={setDayCourtWindowStart}
           reservations={reservations}
           reservationSlotMinutes={settings.reservation_slot_minutes}
           selectedDate={selectedDate}
@@ -4982,7 +4998,7 @@ function CalendarPanel({
           currentTime={currentTime}
           reservations={reservations}
           selectedDate={selectedDate}
-          setCalendarView={setCalendarView}
+          setCalendarView={selectCalendarView}
           setSelectedDate={setSelectedDate}
           timeSlots={timeSlots}
           tournamentMatches={tournamentMatches}
@@ -4996,7 +5012,7 @@ function CalendarPanel({
           currentTime={currentTime}
           reservations={reservations}
           selectedDate={selectedDate}
-          setCalendarView={setCalendarView}
+          setCalendarView={selectCalendarView}
           setSelectedDate={setSelectedDate}
           timeSlots={timeSlots}
           tournamentMatches={tournamentMatches}
@@ -5009,8 +5025,10 @@ function CalendarPanel({
 function DayCalendar({
   bookingWindowDays,
   canCreateReservation,
+  courtWindowStart,
   courts,
   currentTime,
+  onCourtWindowStartChange,
   onEditReservation,
   onEditTournamentMatch,
   onCreateReservation,
@@ -5023,9 +5041,10 @@ function DayCalendar({
 }: {
   bookingWindowDays: number;
   canCreateReservation: boolean;
-  canViewPastDays: boolean;
+  courtWindowStart: number;
   courts: Court[];
   currentTime: Date;
+  onCourtWindowStartChange: (start: number) => void;
   onEditReservation?: (reservation: Reservation) => void;
   onEditTournamentMatch?: (match: TournamentMatch) => void;
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
@@ -5036,7 +5055,18 @@ function DayCalendar({
   timeSlots: string[];
   tournamentMatches: CalendarTournamentMatch[];
 }) {
-  const compactCourtGrid = courts.length <= 3;
+  const lastCourtWindowStart = Math.max(
+    courts.length - DAY_CALENDAR_COURT_COUNT,
+    0,
+  );
+  const visibleCourtWindowStart = Math.min(
+    courtWindowStart,
+    lastCourtWindowStart,
+  );
+  const visibleCourts = courts.slice(
+    visibleCourtWindowStart,
+    visibleCourtWindowStart + DAY_CALENDAR_COURT_COUNT,
+  );
   const dayTournamentMatches = tournamentMatches.filter((match) =>
     isSameDay(new Date(match.starts_at), selectedDate),
   );
@@ -5048,30 +5078,65 @@ function DayCalendar({
       ),
     ]),
   ).sort((first, second) => first.localeCompare(second));
-  const gridTemplateColumns = compactCourtGrid
-    ? `clamp(48px, 14vw, 96px) repeat(${courts.length}, minmax(0, 1fr))`
-    : `112px repeat(${courts.length}, minmax(116px, 1fr))`;
+  const gridTemplateColumns = `clamp(48px, 14vw, 96px) repeat(${visibleCourts.length}, minmax(0, 1fr))`;
 
   return (
-    <div className="w-full overflow-x-auto rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
-      <div
-        className={compactCourtGrid ? "w-full min-w-0" : "min-w-[560px]"}
-        style={{
-          display: "grid",
-          gridTemplateColumns,
-        }}
-      >
-        <div className="grid place-items-center border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[8px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
-          Saat
-        </div>
-        {courts.map((court) => (
-          <div
-            className="grid min-w-0 place-items-center break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[9px] font-semibold leading-tight sm:p-3 sm:text-sm"
-            key={court.id}
+    <div className="space-y-2">
+      {courts.length > DAY_CALENDAR_COURT_COUNT ? (
+        <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2">
+          <button
+            aria-label="Önceki kortları göster"
+            className="grid size-11 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] transition hover:bg-[#eee9dd] disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={visibleCourtWindowStart === 0}
+            onClick={() =>
+              onCourtWindowStartChange(
+                Math.max(visibleCourtWindowStart - 1, 0),
+              )
+            }
+            title="Önceki kortlar"
+            type="button"
           >
-            {court.name}
+            <ChevronLeft size={18} />
+          </button>
+          <div className="grid h-11 place-items-center rounded-md border border-[#cfc8b8] bg-white px-3 text-center text-sm font-semibold text-[#34443a]">
+            {visibleCourts.map((court) => court.name).join(" · ")}
           </div>
-        ))}
+          <button
+            aria-label="Sonraki kortları göster"
+            className="grid size-11 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] transition hover:bg-[#eee9dd] disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={visibleCourtWindowStart === lastCourtWindowStart}
+            onClick={() =>
+              onCourtWindowStartChange(
+                Math.min(visibleCourtWindowStart + 1, lastCourtWindowStart),
+              )
+            }
+            title="Sonraki kortlar"
+            type="button"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      ) : null}
+
+      <div className="w-full overflow-hidden rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
+        <div
+          className="w-full min-w-0"
+          style={{
+            display: "grid",
+            gridTemplateColumns,
+          }}
+        >
+          <div className="grid place-items-center border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[8px] font-semibold uppercase text-[#68756b] sm:p-3 sm:text-xs">
+            Saat
+          </div>
+          {visibleCourts.map((court) => (
+            <div
+              className="grid min-w-0 place-items-center break-words border-b border-r border-[#e6dfd2] bg-[#f3efe5] px-0.5 py-2 text-center text-[9px] font-semibold leading-tight sm:p-3 sm:text-sm"
+              key={court.id}
+            >
+              {court.name}
+            </div>
+          ))}
 
         {calendarTimeSlots.map((slot) => {
           const slotIsPast = isPastCalendarSlot(selectedDate, slot, currentTime);
@@ -5084,7 +5149,7 @@ function DayCalendar({
           return (
             <div className="contents" key={slot}>
               <div className={timeCellClassName}>{slot}</div>
-              {courts.map((court) => {
+              {visibleCourts.map((court) => {
                 const isRegularSlot = timeSlots.includes(slot);
                 const tournamentMatch = dayTournamentMatches.find(
                   (match) =>
@@ -5269,6 +5334,7 @@ function DayCalendar({
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
