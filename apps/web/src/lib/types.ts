@@ -92,6 +92,7 @@ export type AppPushSubscription = {
 export type Tournament = {
   id: string;
   name: string;
+  match_duration_minutes: number;
   group_stage_start_date: string;
   group_stage_end_date: string;
   finals_start_date: string;

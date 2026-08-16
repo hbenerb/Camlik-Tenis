@@ -4,6 +4,7 @@ import type { User } from "@supabase/supabase-js";
 import Image from "next/image";
 import {
   addDays,
+  addMinutes,
   addMonths,
   addWeeks,
   format,
@@ -174,7 +175,6 @@ type TournamentMatchEditFormState = {
   category_id: string;
   court_id: string;
   date: string;
-  end_time: string;
   group_id: string;
   player1_name: string;
   player2_name: string;
@@ -721,6 +721,33 @@ function isBookableStart(
   return (
     startsAt >= currentTime &&
     isBookableDay(startsAt, bookingWindowDays, currentTime)
+  );
+}
+
+function timeRangesOverlap(
+  firstStartsAt: Date,
+  firstEndsAt: Date,
+  secondStartsAt: Date,
+  secondEndsAt: Date,
+) {
+  return firstStartsAt < secondEndsAt && secondStartsAt < firstEndsAt;
+}
+
+function findTournamentMatchConflict(
+  matches: CalendarTournamentMatch[],
+  courtId: string,
+  startsAt: Date,
+  endsAt: Date,
+) {
+  return matches.find(
+    (match) =>
+      match.court_id === courtId &&
+      timeRangesOverlap(
+        startsAt,
+        endsAt,
+        new Date(match.starts_at),
+        new Date(match.ends_at),
+      ),
   );
 }
 
@@ -1326,7 +1353,6 @@ export function ClubApp() {
       category_id: "",
       court_id: "",
       date: dateInputValue(new Date()),
-      end_time: "10:00",
       group_id: "",
       player1_name: "",
       player2_name: "",
@@ -1367,12 +1393,12 @@ export function ClubApp() {
   );
   const calendarTournamentMatches = useMemo(
     () =>
-      (isAdmin(profile) ? tournaments : activeTournaments).flatMap((tournament) =>
+      activeTournaments.flatMap((tournament) =>
         tournament.matches
           .filter((match) => match.status !== "canceled")
           .map((match) => ({ ...match, tournament_name: tournament.name })),
       ),
-    [activeTournaments, profile, tournaments],
+    [activeTournaments],
   );
 
   const timeSlots = useMemo(() => buildTimeSlots(settings), [settings]);
@@ -2898,14 +2924,28 @@ export function ClubApp() {
       return;
     }
 
-    setIsSaving(true);
-    setStatusMessage(null);
-
     const startsAt = buildLocalDateTime(
       reservationForm.date,
       reservationForm.start_time,
     );
     const endsAt = addSlotDuration(startsAt, settings);
+    const tournamentConflict = findTournamentMatchConflict(
+      calendarTournamentMatches,
+      reservationForm.court_id,
+      startsAt,
+      endsAt,
+    );
+
+    if (tournamentConflict) {
+      setStatusMessage(
+        `Bu saat ${tournamentConflict.tournament_name} turnuvasındaki bir maçla çakışıyor.`,
+      );
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+
     const selectedOwner =
       reservationOwnerOptions.find(
         (owner) => owner.id === (reservationForm.user_id || user.id),
@@ -2992,14 +3032,28 @@ export function ClubApp() {
       return;
     }
 
-    setIsSaving(true);
-    setStatusMessage(null);
-
     const startsAt = buildLocalDateTime(
       reservationEditForm.date,
       reservationEditForm.start_time,
     );
     const endsAt = addSlotDuration(startsAt, settings);
+    const tournamentConflict = findTournamentMatchConflict(
+      calendarTournamentMatches,
+      reservationEditForm.court_id,
+      startsAt,
+      endsAt,
+    );
+
+    if (reservationEditForm.status === "confirmed" && tournamentConflict) {
+      setStatusMessage(
+        `Bu saat ${tournamentConflict.tournament_name} turnuvasındaki bir maçla çakışıyor.`,
+      );
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+
     const selectedOwner =
       reservationOwnerOptions.find(
         (owner) =>
@@ -3492,6 +3546,15 @@ export function ClubApp() {
       return false;
     }
 
+    if (
+      !Number.isInteger(draft.match_duration_minutes) ||
+      draft.match_duration_minutes < 15 ||
+      draft.match_duration_minutes > 360
+    ) {
+      setStatusMessage("Maç süresi 15 ile 360 dakika arasında olmalı.");
+      return false;
+    }
+
     if (!draft.court_ids.length) {
       setStatusMessage("Turnuva için en az bir kort seçilmeli.");
       return false;
@@ -3536,6 +3599,7 @@ export function ClubApp() {
           group_stage_end_date: draft.group_stage_end_date,
           group_stage_start_date: draft.group_stage_start_date,
           is_active: draft.is_active,
+          match_duration_minutes: draft.match_duration_minutes,
           name,
         })
         .select("*")
@@ -3668,6 +3732,15 @@ export function ClubApp() {
       return false;
     }
 
+    if (
+      !Number.isInteger(draft.match_duration_minutes) ||
+      draft.match_duration_minutes < 15 ||
+      draft.match_duration_minutes > 360
+    ) {
+      setStatusMessage("Maç süresi 15 ile 360 dakika arasında olmalı.");
+      return false;
+    }
+
     if (!draft.court_ids.length) {
       setStatusMessage("Turnuva için en az bir kort seçilmeli.");
       return false;
@@ -3755,6 +3828,7 @@ export function ClubApp() {
           group_stage_end_date: draft.group_stage_end_date,
           group_stage_start_date: draft.group_stage_start_date,
           is_active: draft.is_active,
+          match_duration_minutes: draft.match_duration_minutes,
           name,
         })
         .eq("id", tournamentId);
@@ -3984,13 +4058,11 @@ export function ClubApp() {
     }
 
     const startsAt = new Date(match.starts_at);
-    const endsAt = new Date(match.ends_at);
     setEditingTournamentMatch(match);
     setTournamentMatchEditForm({
       category_id: match.category_id,
       court_id: match.court_id ?? "",
       date: dateInputValue(startsAt),
-      end_time: formatTime(endsAt),
       group_id: match.group_id ?? "",
       player1_name: match.player1_name,
       player2_name: match.player2_name,
@@ -4015,10 +4087,6 @@ export function ClubApp() {
       tournamentMatchEditForm.date,
       tournamentMatchEditForm.start_time,
     );
-    const endsAt = buildLocalDateTime(
-      tournamentMatchEditForm.date,
-      tournamentMatchEditForm.end_time,
-    );
     const category = tournament?.categories.find(
       (item) => item.id === tournamentMatchEditForm.category_id,
     );
@@ -4041,10 +4109,7 @@ export function ClubApp() {
       return;
     }
 
-    if (endsAt <= startsAt) {
-      setStatusMessage("Maç bitiş saati başlangıç saatinden sonra olmalı.");
-      return;
-    }
+    const endsAt = addMinutes(startsAt, tournament.match_duration_minutes);
 
     setIsSaving(true);
     setStatusMessage(null);
@@ -4394,7 +4459,6 @@ export function ClubApp() {
 
           {!isLoading && visibleActiveTab === "tournaments" ? (
             <TournamentDetailPanel
-              courts={courts}
               currentTime={currentTime}
               key={selectedTournamentId ?? "active-tournament"}
               selectedTournamentId={selectedTournamentId}
@@ -4903,6 +4967,7 @@ function CalendarPanel({
           onEditTournamentMatch={onEditTournamentMatch}
           onCreateReservation={onCreateReservation}
           reservations={reservations}
+          reservationSlotMinutes={settings.reservation_slot_minutes}
           selectedDate={selectedDate}
           showReservationDetails={showReservationDetails}
           timeSlots={timeSlots}
@@ -4950,6 +5015,7 @@ function DayCalendar({
   onEditTournamentMatch,
   onCreateReservation,
   reservations,
+  reservationSlotMinutes,
   selectedDate,
   showReservationDetails,
   timeSlots,
@@ -4964,6 +5030,7 @@ function DayCalendar({
   onEditTournamentMatch?: (match: TournamentMatch) => void;
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
   reservations: Reservation[];
+  reservationSlotMinutes: number;
   selectedDate: Date;
   showReservationDetails: boolean;
   timeSlots: string[];
@@ -5019,19 +5086,34 @@ function DayCalendar({
               <div className={timeCellClassName}>{slot}</div>
               {courts.map((court) => {
                 const isRegularSlot = timeSlots.includes(slot);
+                const tournamentMatch = dayTournamentMatches.find(
+                  (match) =>
+                    match.court_id === court.id &&
+                    format(new Date(match.starts_at), "HH:mm") === slot,
+                );
+                const slotStartsAt = buildLocalDateTime(
+                  dateInputValue(selectedDate),
+                  slot,
+                );
+                const slotEndsAt = addMinutes(
+                  slotStartsAt,
+                  reservationSlotMinutes,
+                );
+                const tournamentConflict = findTournamentMatchConflict(
+                  dayTournamentMatches,
+                  court.id,
+                  slotStartsAt,
+                  slotEndsAt,
+                );
                 const slotBookable =
                   isRegularSlot &&
+                  !tournamentConflict &&
                   isBookableStart(
                     dateInputValue(selectedDate),
                     slot,
                     bookingWindowDays,
                     currentTime,
                   );
-                const tournamentMatch = dayTournamentMatches.find(
-                  (match) =>
-                    match.court_id === court.id &&
-                    format(new Date(match.starts_at), "HH:mm") === slot,
-                );
                 const reservation = findReservationAtSlot(
                   reservations,
                   court.id,
@@ -5051,6 +5133,10 @@ function DayCalendar({
                     >
                       <p className="truncate text-[8px] font-bold uppercase leading-tight min-[380px]:text-[9px] sm:text-xs">
                         {tournamentMatch.tournament_name}
+                      </p>
+                      <p className="truncate text-[8px] font-semibold leading-tight min-[380px]:text-[9px] sm:text-xs">
+                        {formatTime(new Date(tournamentMatch.starts_at))}–
+                        {formatTime(new Date(tournamentMatch.ends_at))}
                       </p>
                       <p className="truncate text-[9px] font-semibold leading-tight min-[380px]:text-[10px] sm:text-sm">
                         {tournamentMatch.player1_name}
@@ -5083,6 +5169,24 @@ function DayCalendar({
                       key={`${court.id}-${slot}`}
                     >
                       {tournamentMatchContent}
+                    </div>
+                  );
+                }
+
+                if (tournamentConflict) {
+                  return (
+                    <div
+                      className={`${cellClassName} tournament-match-cell flex flex-col items-center justify-center opacity-75`}
+                      key={`${court.id}-${slot}`}
+                      title={`${tournamentConflict.tournament_name}: ${formatTime(new Date(tournamentConflict.starts_at))}–${formatTime(new Date(tournamentConflict.ends_at))}`}
+                    >
+                      <p className="truncate text-[8px] font-bold uppercase leading-tight min-[380px]:text-[9px] sm:text-xs">
+                        Turnuva maçı
+                      </p>
+                      <p className="truncate text-[8px] font-semibold leading-tight min-[380px]:text-[9px] sm:text-xs">
+                        {formatTime(new Date(tournamentConflict.starts_at))}–
+                        {formatTime(new Date(tournamentConflict.ends_at))}
+                      </p>
                     </div>
                   );
                 }
@@ -8297,6 +8401,15 @@ function TournamentMatchEditDialog({
       tournament.participants.map((participant) => participant.display_name),
     ),
   ).sort((first, second) => first.localeCompare(second, "tr"));
+  const matchEndTime =
+    form.date && form.start_time
+      ? formatTime(
+          addMinutes(
+            buildLocalDateTime(form.date, form.start_time),
+            tournament.match_duration_minutes,
+          ),
+        )
+      : "—";
 
   function changeCategory(categoryId: string) {
     const firstGroup = tournamentGroups
@@ -8451,17 +8564,11 @@ function TournamentMatchEditDialog({
                 value={form.start_time}
               />
             </Field>
-            <Field label="Bitiş">
-              <input
-                className="input"
-                onChange={(event) =>
-                  setForm({ ...form, end_time: event.target.value })
-                }
-                required
-                step={900}
-                type="time"
-                value={form.end_time}
-              />
+            <Field label="Süre / bitiş">
+              <div className="input flex items-center text-sm">
+                {formatDurationText(tournament.match_duration_minutes)} ·{" "}
+                {matchEndTime}
+              </div>
             </Field>
           </div>
 

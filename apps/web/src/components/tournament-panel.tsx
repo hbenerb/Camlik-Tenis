@@ -10,26 +10,24 @@ import {
   startOfWeek,
 } from "date-fns";
 import {
-  CalendarDays,
   Check,
   ChevronLeft,
   ChevronRight,
   CirclePlus,
   ListFilter,
-  MapPin,
   Search,
   Trophy,
-  Users,
   X,
 } from "lucide-react";
 import { useId, useMemo, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 
 import type { Court, TournamentWithDetails } from "@/lib/types";
 
 type TournamentScheduleScope = "all" | "day" | "week";
 type TournamentDetailTab = "schedule" | "players";
 type TournamentAdminMode = "create" | "edit";
+const tournamentDurationOptions = [30, 45, 60, 75, 90, 105, 120, 150, 180];
 
 export type TournamentCategoryDraft = {
   id?: string;
@@ -42,6 +40,7 @@ export type TournamentCategoryDraft = {
 
 export type TournamentDraft = {
   name: string;
+  match_duration_minutes: number;
   group_stage_start_date: string;
   group_stage_end_date: string;
   finals_start_date: string;
@@ -82,6 +81,7 @@ function newTournamentDraft(courts: Court[]): TournamentDraft {
 
   return {
     name: "",
+    match_duration_minutes: 60,
     group_stage_start_date: dateInputValue(today),
     group_stage_end_date: dateInputValue(groupEnd),
     finals_start_date: dateInputValue(finalsStart),
@@ -101,6 +101,7 @@ function tournamentDraftFromDetails(
 
   return {
     name: tournament.name,
+    match_duration_minutes: tournament.match_duration_minutes,
     group_stage_start_date: tournament.group_stage_start_date,
     group_stage_end_date: tournament.group_stage_end_date,
     finals_start_date: tournament.finals_start_date,
@@ -203,12 +204,10 @@ function defaultTournamentDate(
 }
 
 export function TournamentDetailPanel({
-  courts,
   currentTime,
   selectedTournamentId,
   tournaments,
 }: {
-  courts: Court[];
   currentTime: Date;
   selectedTournamentId: string | null;
   tournaments: TournamentWithDetails[];
@@ -237,15 +236,6 @@ export function TournamentDetailPanel({
   const defaultAnchorTimestamp = selectedTournament
     ? defaultTournamentDate(selectedTournament, currentTime).getTime()
     : startOfDay(currentTime).getTime();
-
-  const selectedCourtNames = useMemo(() => {
-    if (!selectedTournament) {
-      return [];
-    }
-
-    const courtIds = new Set(selectedTournament.courts.map((court) => court.court_id));
-    return courts.filter((court) => courtIds.has(court.id)).map((court) => court.name);
-  }, [courts, selectedTournament]);
 
   const participantOptions = useMemo(() => {
     if (!selectedTournament) {
@@ -406,25 +396,7 @@ export function TournamentDetailPanel({
           </p>
         </div>
 
-        <div className="grid gap-3 p-4 sm:grid-cols-3 sm:p-6">
-          <TournamentSummaryCard
-            icon={<CalendarDays size={18} />}
-            label="Program"
-            value={`${selectedTournament.matches.length} maç`}
-          />
-          <TournamentSummaryCard
-            icon={<Users size={18} />}
-            label="Katılım"
-            value={`${selectedTournament.participants.length} oyuncu / takım`}
-          />
-          <TournamentSummaryCard
-            icon={<MapPin size={18} />}
-            label="Kortlar"
-            value={selectedCourtNames.join(", ") || "Kort seçilmedi"}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 border-t border-[#ddd7c8] p-2 sm:px-6">
+        <div className="grid grid-cols-2 p-2 sm:px-6">
           <button
             className={`h-11 rounded-md text-sm font-semibold ${
               detailTab === "schedule"
@@ -452,59 +424,53 @@ export function TournamentDetailPanel({
 
       {detailTab === "schedule" ? (
         <section className="rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-lg font-semibold">Maç takvimi</h3>
-              <p className="mt-1 text-sm text-[#68756b]">
-                Geçmiş maçlar soluk, yaklaşan maçlar belirgin gösterilir.
-              </p>
+          <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
+            <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
+              {(
+                [
+                  ["all", "Tümü"],
+                  ["day", "Günlük"],
+                  ["week", "Haftalık"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  className={`h-10 rounded px-2 text-xs font-semibold sm:text-sm ${
+                    scope === value
+                      ? "bg-[#237000] text-white"
+                      : "text-[#546257] hover:bg-[#eee9dd]"
+                  }`}
+                  key={value}
+                  onClick={() => {
+                    setScope(value);
+                    if (value !== "all") {
+                      setAnchorDate(new Date(defaultAnchorTimestamp));
+                    }
+                  }}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
             </div>
             <button
+              aria-label="Filtreleme"
               aria-expanded={filtersOpen}
-              className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${
+              className={`relative grid size-11 place-items-center rounded-md border ${
                 filtersOpen || activeFilterCount
                   ? "border-[#237000] bg-[#f0f8ef] text-[#237000]"
                   : "border-[#cfc8b8] bg-white text-[#34443a]"
               }`}
               onClick={() => setFiltersOpen((current) => !current)}
+              title="Filtreleme"
               type="button"
             >
-              <ListFilter size={17} />
-              Filtreleme
+              <ListFilter size={19} />
               {activeFilterCount ? (
-                <span className="rounded-full bg-[#237000] px-2 py-0.5 text-xs text-white">
+                <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#237000] text-[10px] font-bold text-white">
                   {activeFilterCount}
                 </span>
               ) : null}
             </button>
-          </div>
-
-          <div className="mt-4 grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
-            {(
-              [
-                ["all", "Tümü"],
-                ["day", "Günlük"],
-                ["week", "Haftalık"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                className={`h-10 rounded px-2 text-xs font-semibold sm:text-sm ${
-                  scope === value
-                    ? "bg-[#237000] text-white"
-                    : "text-[#546257] hover:bg-[#eee9dd]"
-                }`}
-                key={value}
-                onClick={() => {
-                  setScope(value);
-                  if (value !== "all") {
-                    setAnchorDate(new Date(defaultAnchorTimestamp));
-                  }
-                }}
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
           </div>
 
           {scope !== "all" ? (
@@ -608,15 +574,18 @@ export function TournamentDetailPanel({
           </p>
 
           {matchesByDay.length ? (
-            <div className="mt-4 space-y-5">
+            <div className="mt-4 space-y-4">
               {matchesByDay.map(([date, matches]) => (
-                <div key={date}>
-                  <div className="sticky top-0 z-10 border-b border-[#ddd7c8] bg-[#fffdf8] py-2">
-                    <h4 className="font-semibold capitalize">
+                <div
+                  className="overflow-hidden rounded-md border border-[#ddd7c8]"
+                  key={date}
+                >
+                  <div className="sticky top-0 z-10 bg-[#237000] px-4 py-2.5 text-white">
+                    <h4 className="font-semibold capitalize text-white">
                       {formatMatchDay(localDate(date))}
                     </h4>
                   </div>
-                  <div className="divide-y divide-[#eee7db]">
+                  <div className="divide-y divide-[#eee7db] bg-white">
                     {matches.map((match) => {
                       const category = selectedTournament.categories.find(
                         (item) => item.id === match.category_id,
@@ -628,35 +597,36 @@ export function TournamentDetailPanel({
 
                       return (
                         <article
-                          className={`grid gap-2 py-3 transition sm:grid-cols-[80px_minmax(0,1fr)_auto] sm:items-center sm:gap-4 ${
+                          className={`grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 px-3 py-3 transition sm:grid-cols-[78px_minmax(0,1fr)] sm:gap-4 sm:px-4 ${
                             isPast ? "opacity-45" : ""
                           }`}
                           key={match.id}
                         >
                           <time
-                            className={`text-sm font-bold ${
+                            className={`text-xl font-bold tabular-nums sm:text-2xl ${
                               isPast ? "text-[#68756b]" : "text-[#2563eb]"
                             }`}
                           >
                             {format(new Date(match.starts_at), "HH:mm")}
                           </time>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold">
+                            <p className="truncate text-sm font-semibold sm:text-base">
                               {match.player1_name}
                               <span className="px-2 text-xs font-normal text-[#8b8f86]">
                                 vs
                               </span>
                               {match.player2_name}
                             </p>
-                            <p className="mt-1 text-xs text-[#68756b]">
-                              {category?.name ?? "Kategori"}
-                              {group ? ` · Grup ${group.name}` : ""}
-                              {match.phase === "final" ? " · Final" : ""}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-[#68756b]">
-                            <MapPin size={13} />
-                            {match.courts?.name ?? "Kort belirlenecek"}
+                            <div className="mt-1 flex min-w-0 items-center justify-between gap-3 text-xs text-[#68756b]">
+                              <p className="truncate">
+                                {category?.name ?? "Kategori"}
+                                {group ? ` · Grup ${group.name}` : ""}
+                                {match.phase === "final" ? " · Final" : ""}
+                              </p>
+                              <p className="shrink-0 font-medium">
+                                {match.courts?.name ?? "Kort belirlenecek"}
+                              </p>
+                            </div>
                           </div>
                         </article>
                       );
@@ -893,6 +863,38 @@ export function TournamentAdminPanel({
               required
               value={draft.name}
             />
+          </label>
+          <label className="grid gap-2 text-sm font-medium text-[#34443a] md:col-span-2">
+            Maç süresi
+            <select
+              className="input"
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  match_duration_minutes: Number(event.target.value),
+                }))
+              }
+              value={draft.match_duration_minutes}
+            >
+              {tournamentDurationOptions.map((duration) => (
+                <option key={duration} value={duration}>
+                  {duration === 60
+                    ? "1 saat"
+                    : duration === 90
+                      ? "1 saat 30 dakika"
+                      : duration === 120
+                        ? "2 saat"
+                        : duration === 150
+                          ? "2 saat 30 dakika"
+                          : duration === 180
+                            ? "3 saat"
+                            : `${duration} dakika`}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs font-normal text-[#68756b]">
+              Maç başlangıç saati korunur; bitiş bu süreye göre otomatik hesaplanır.
+            </span>
           </label>
           <TournamentDateField
             label="Grup maçları başlangıç"
@@ -1179,26 +1181,6 @@ function TournamentDateField({
         value={value}
       />
     </label>
-  );
-}
-
-function TournamentSummaryCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-md border border-[#ddd7c8] bg-white p-4">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#68756b]">
-        {icon}
-        {label}
-      </div>
-      <p className="mt-2 text-sm font-semibold">{value}</p>
-    </div>
   );
 }
 
