@@ -5185,12 +5185,14 @@ export function ClubApp() {
             tournaments={tournamentShortcuts}
           />
           <nav className="grid grid-cols-3 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
-            <NavButton
-              icon={<CalendarDays size={22} />}
-              isActive={visibleActiveTab === "calendar"}
-              label="Takvim"
-              onClick={() => setActiveTab("calendar")}
-            />
+            {visibleActiveTab !== "calendar" ? (
+              <NavButton
+                icon={<CalendarDays size={22} />}
+                isActive={false}
+                label="Takvim"
+                onClick={() => setActiveTab("calendar")}
+              />
+            ) : null}
             {!isGuest ? (
               <>
                 <div className="hidden lg:block lg:w-full">
@@ -5243,33 +5245,33 @@ export function ClubApp() {
                   tournaments={tournamentShortcuts}
                 />
               </div>
-              {isGuest ? (
+              {isGuest && visibleActiveTab !== "calendar" ? (
                 <nav className="mb-3 grid grid-cols-1 gap-1.5 lg:hidden">
                   <button
-                    className={`h-11 min-w-0 rounded-md px-3 text-sm font-semibold ${
-                      visibleActiveTab === "calendar"
-                        ? "bg-[#237000] text-white"
-                        : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-                    }`}
+                    className="h-11 min-w-0 rounded-md border border-[#ddd7c8] bg-[#fffdf8] px-3 text-sm font-semibold text-[#546257]"
                     onClick={() => setActiveTab("calendar")}
                     type="button"
                   >
                     Takvim
                   </button>
                 </nav>
-              ) : (
-                <nav className="mb-3 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.25fr)_44px_44px] gap-1.5 lg:hidden">
-                  <button
-                    className={`h-11 min-w-0 rounded-md px-2 text-xs font-semibold min-[380px]:text-sm ${
-                      visibleActiveTab === "calendar"
-                        ? "bg-[#237000] text-white"
-                        : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-                    }`}
-                    onClick={() => setActiveTab("calendar")}
-                    type="button"
-                  >
-                    Takvim
-                  </button>
+              ) : !isGuest ? (
+                <nav
+                  className={`mb-3 grid gap-1.5 lg:hidden ${
+                    visibleActiveTab === "calendar"
+                      ? "grid-cols-[minmax(0,1fr)_44px_44px]"
+                      : "grid-cols-[minmax(0,0.85fr)_minmax(0,1.25fr)_44px_44px]"
+                  }`}
+                >
+                  {visibleActiveTab !== "calendar" ? (
+                    <button
+                      className="h-11 min-w-0 rounded-md border border-[#ddd7c8] bg-[#fffdf8] px-2 text-xs font-semibold text-[#546257] min-[380px]:text-sm"
+                      onClick={() => setActiveTab("calendar")}
+                      type="button"
+                    >
+                      Takvim
+                    </button>
+                  ) : null}
                   <button
                     className={`h-11 min-w-0 truncate rounded-md px-1.5 text-[11px] font-semibold min-[360px]:text-xs ${
                       visibleActiveTab === "reservations"
@@ -5308,7 +5310,7 @@ export function ClubApp() {
                     <UserIcon size={20} />
                   </button>
                 </nav>
-              )}
+              ) : null}
             </>
           ) : null}
           {notificationToast ? (
@@ -10043,7 +10045,7 @@ function TournamentShortcutButtons({
         return (
           <button
             aria-pressed={selectedTournamentId === tournament.id}
-            className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-md border px-3 text-left text-sm font-semibold transition hover:opacity-90 ${
+            className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] ${
               tournament.is_active ? "" : "opacity-70"
             }`}
             key={tournament.id}
