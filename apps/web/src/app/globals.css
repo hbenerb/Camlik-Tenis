@@ -181,14 +181,25 @@ html.theme-light-root body {
   color: #c7d1c9 !important;
 }
 
-.tournament-match-cell {
-  background: #2563eb !important;
-  color: #ffffff !important;
+/* Tournament schedule colors stay mode-specific for contrast. */
+.tournament-match-time {
+  color: #237000;
 }
 
-.theme-dark .tournament-match-cell {
-  background: #1d4ed8 !important;
-  color: #ffffff !important;
+.theme-dark .tournament-match-time {
+  color: #2563eb;
+}
+
+.tournament-court-toggle.is-selected {
+  border-color: #237000 !important;
+  background: #eaf5e6 !important;
+  color: #1f6500 !important;
+}
+
+.theme-dark .tournament-court-toggle.is-selected {
+  border-color: #61b96a !important;
+  background: #173726 !important;
+  color: #d6f7dd !important;
 }
 
 .tournament-active-toggle.is-active {

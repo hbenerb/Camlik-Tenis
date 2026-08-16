@@ -42,6 +42,8 @@ import type { FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  DEFAULT_TOURNAMENT_COLOR,
+  getTournamentTextColor,
   TournamentAdminPanel,
   TournamentDetailPanel,
 } from "@/components/tournament-panel";
@@ -187,6 +189,7 @@ type TournamentMatchEditFormState = {
   status: TournamentMatch["status"];
 };
 type CalendarTournamentMatch = TournamentMatch & {
+  tournament_color: string;
   tournament_name: string;
 };
 type NotificationIntervalUnit = "minutes" | "hours" | "days";
@@ -363,8 +366,13 @@ function normalizeFullName(value: string) {
 }
 
 function prepareTournamentDraft(draft: TournamentDraft) {
+  const color = /^#[0-9a-f]{6}$/i.test(draft.color)
+    ? draft.color.toUpperCase()
+    : DEFAULT_TOURNAMENT_COLOR;
+
   return {
     ...draft,
+    color,
     name: normalizeFullName(draft.name),
     players: draft.players.map((player) => ({
       ...player,
@@ -840,7 +848,7 @@ function timeRangesOverlap(
 }
 
 function findTournamentMatchConflict(
-  matches: CalendarTournamentMatch[],
+  matches: (TournamentMatch & { tournament_name: string })[],
   courtId: string,
   startsAt: Date,
   endsAt: Date,
@@ -1508,7 +1516,12 @@ export function ClubApp() {
       activeTournaments.flatMap((tournament) =>
         tournament.matches
           .filter((match) => match.status !== "canceled")
-          .map((match) => ({ ...match, tournament_name: tournament.name })),
+          .map((match) => ({
+            ...match,
+            tournament_color:
+              tournament.color || DEFAULT_TOURNAMENT_COLOR,
+            tournament_name: tournament.name,
+          })),
       ),
     [activeTournaments],
   );
@@ -4035,6 +4048,7 @@ export function ClubApp() {
       const tournamentResult = await supabase
         .from("tournaments")
         .insert({
+          color: preparedDraft.color,
           created_by: user.id,
           finals_end_date: preparedDraft.finals_end_date,
           finals_start_date: preparedDraft.finals_start_date,
@@ -4229,7 +4243,7 @@ export function ClubApp() {
     draft: TournamentDraft,
   ) {
     if (!supabase || !isAdmin(profile)) {
-      return false;
+      return null;
     }
 
     const tournament = tournaments.find((item) => item.id === tournamentId);
@@ -4238,7 +4252,7 @@ export function ClubApp() {
 
     if (!tournament || !name) {
       setStatusMessage("Düzenlenecek turnuva bulunamadı.");
-      return false;
+      return null;
     }
 
     if (
@@ -4247,12 +4261,12 @@ export function ClubApp() {
       preparedDraft.match_duration_minutes > 360
     ) {
       setStatusMessage("Maç süresi 15 ile 360 dakika arasında olmalı.");
-      return false;
+      return null;
     }
 
     if (!preparedDraft.court_ids.length) {
       setStatusMessage("Turnuva için en az bir kort seçilmeli.");
-      return false;
+      return null;
     }
 
     if (
@@ -4263,14 +4277,14 @@ export function ClubApp() {
       preparedDraft.finals_end_date < preparedDraft.finals_start_date
     ) {
       setStatusMessage("Turnuva tarih aralıkları sıralı olmalı.");
-      return false;
+      return null;
     }
 
     const structureError = getTournamentDraftStructureError(preparedDraft);
 
     if (structureError) {
       setStatusMessage(structureError);
-      return false;
+      return null;
     }
 
     const retainedCategoryDraftIds = new Set(
@@ -4289,7 +4303,7 @@ export function ClubApp() {
         removedCategoryWithMatches.name +
           " kategorisinin maçları olduğu için kategori kaldırılamaz.",
       );
-      return false;
+      return null;
     }
 
     const retainedGroupDraftIds = new Set(
@@ -4309,7 +4323,7 @@ export function ClubApp() {
           removedGroupWithMatches.name +
           " maçları olduğu için kaldırılamaz.",
       );
-      return false;
+      return null;
     }
 
     const retainedEntryDraftIds = new Set(
@@ -4334,66 +4348,164 @@ export function ClubApp() {
         removedEntryWithMatches.display_name +
           " maçları olduğu için kaldırılamaz; oyuncularını değiştirebilirsiniz.",
       );
-      return false;
+      return null;
     }
 
     setIsSaving(true);
     setStatusMessage(null);
 
     try {
-      const tournamentResult = await supabase
-        .from("tournaments")
-        .update({
-          finals_end_date: preparedDraft.finals_end_date,
-          finals_start_date: preparedDraft.finals_start_date,
-          group_stage_end_date: preparedDraft.group_stage_end_date,
-          group_stage_start_date: preparedDraft.group_stage_start_date,
-          is_active: preparedDraft.is_active,
-          match_duration_minutes: preparedDraft.match_duration_minutes,
-          name,
-        })
-        .eq("id", tournamentId);
+      let didChange = false;
+      const tournamentUpdates: Partial<
+        Pick<
+          Tournament,
+          | "finals_end_date"
+          | "finals_start_date"
+          | "color"
+          | "group_stage_end_date"
+          | "group_stage_start_date"
+          | "is_active"
+          | "match_duration_minutes"
+          | "name"
+        >
+      > = {};
 
-      if (tournamentResult.error) {
-        throw new Error(tournamentResult.error.message);
+      if (tournament.color !== preparedDraft.color) {
+        tournamentUpdates.color = preparedDraft.color;
+      }
+      if (tournament.name !== name) {
+        tournamentUpdates.name = name;
+      }
+      if (
+        tournament.match_duration_minutes !==
+        preparedDraft.match_duration_minutes
+      ) {
+        tournamentUpdates.match_duration_minutes =
+          preparedDraft.match_duration_minutes;
+      }
+      if (
+        tournament.group_stage_start_date !==
+        preparedDraft.group_stage_start_date
+      ) {
+        tournamentUpdates.group_stage_start_date =
+          preparedDraft.group_stage_start_date;
+      }
+      if (
+        tournament.group_stage_end_date !== preparedDraft.group_stage_end_date
+      ) {
+        tournamentUpdates.group_stage_end_date =
+          preparedDraft.group_stage_end_date;
+      }
+      if (tournament.finals_start_date !== preparedDraft.finals_start_date) {
+        tournamentUpdates.finals_start_date = preparedDraft.finals_start_date;
+      }
+      if (tournament.finals_end_date !== preparedDraft.finals_end_date) {
+        tournamentUpdates.finals_end_date = preparedDraft.finals_end_date;
+      }
+      if (tournament.is_active !== preparedDraft.is_active) {
+        tournamentUpdates.is_active = preparedDraft.is_active;
       }
 
-      const deleteCourtsResult = await supabase
-        .from("tournament_courts")
-        .delete()
-        .eq("tournament_id", tournamentId);
+      if (Object.keys(tournamentUpdates).length) {
+        const tournamentResult = await supabase
+          .from("tournaments")
+          .update(tournamentUpdates)
+          .eq("id", tournamentId);
 
-      if (deleteCourtsResult.error) {
-        throw new Error(deleteCourtsResult.error.message);
+        if (tournamentResult.error) {
+          throw new Error(tournamentResult.error.message);
+        }
+        didChange = true;
       }
 
-      const insertCourtsResult = await supabase.from("tournament_courts").insert(
-        preparedDraft.court_ids.map((courtId) => ({
-          court_id: courtId,
-          tournament_id: tournamentId,
-        })),
+      const currentCourtIds = new Set(
+        tournament.courts.map((court) => court.court_id),
+      );
+      const nextCourtIds = new Set(preparedDraft.court_ids);
+      const courtIdsToDelete = [...currentCourtIds].filter(
+        (courtId) => !nextCourtIds.has(courtId),
+      );
+      const courtIdsToInsert = preparedDraft.court_ids.filter(
+        (courtId) => !currentCourtIds.has(courtId),
       );
 
-      if (insertCourtsResult.error) {
-        throw new Error(insertCourtsResult.error.message);
+      if (courtIdsToDelete.length) {
+        const deleteCourtsResult = await supabase
+          .from("tournament_courts")
+          .delete()
+          .eq("tournament_id", tournamentId)
+          .in("court_id", courtIdsToDelete);
+
+        if (deleteCourtsResult.error) {
+          throw new Error(deleteCourtsResult.error.message);
+        }
+        didChange = true;
       }
 
+      if (courtIdsToInsert.length) {
+        const insertCourtsResult = await supabase
+          .from("tournament_courts")
+          .insert(
+            courtIdsToInsert.map((courtId) => ({
+              court_id: courtId,
+              tournament_id: tournamentId,
+            })),
+          );
+
+        if (insertCourtsResult.error) {
+          throw new Error(insertCourtsResult.error.message);
+        }
+        didChange = true;
+      }
+
+      const currentPlayersById = new Map(
+        tournament.players.map((player) => [player.id, player]),
+      );
+      const currentCategoriesById = new Map(
+        tournament.categories.map((category) => [category.id, category]),
+      );
+      const currentGroupsById = new Map(
+        tournament.groups.map((group) => [group.id, group]),
+      );
+      const currentEntriesById = new Map(
+        tournament.participants.map((participant) => [
+          participant.id,
+          participant,
+        ]),
+      );
       const playerIdsByClientId = new Map<string, string>();
       const retainedPlayerIds = new Set<string>();
 
       for (const [playerIndex, playerDraft] of preparedDraft.players.entries()) {
         if (playerDraft.id) {
-          const playerResult = await supabase
-            .from("tournament_players")
-            .update({
-              display_name: playerDraft.display_name,
-              display_order: playerIndex + 1,
-            })
-            .eq("id", playerDraft.id)
-            .eq("tournament_id", tournamentId);
+          const currentPlayer = currentPlayersById.get(playerDraft.id);
 
-          if (playerResult.error) {
-            throw new Error(playerResult.error.message);
+          if (!currentPlayer) {
+            throw new Error("Düzenlenecek oyuncu bulunamadı.");
+          }
+
+          const playerUpdates: Partial<
+            Pick<TournamentPlayer, "display_name" | "display_order">
+          > = {};
+
+          if (currentPlayer.display_name !== playerDraft.display_name) {
+            playerUpdates.display_name = playerDraft.display_name;
+          }
+          if (currentPlayer.display_order !== playerIndex + 1) {
+            playerUpdates.display_order = playerIndex + 1;
+          }
+
+          if (Object.keys(playerUpdates).length) {
+            const playerResult = await supabase
+              .from("tournament_players")
+              .update(playerUpdates)
+              .eq("id", playerDraft.id)
+              .eq("tournament_id", tournamentId);
+
+            if (playerResult.error) {
+              throw new Error(playerResult.error.message);
+            }
+            didChange = true;
           }
 
           playerIdsByClientId.set(playerDraft.client_id, playerDraft.id);
@@ -4418,12 +4530,16 @@ export function ClubApp() {
           const savedPlayer = playerResult.data as TournamentPlayer;
           playerIdsByClientId.set(playerDraft.client_id, savedPlayer.id);
           retainedPlayerIds.add(savedPlayer.id);
+          didChange = true;
         }
       }
 
       const retainedCategoryIds = new Set<string>();
       const retainedGroupIds = new Set<string>();
       const retainedEntryIds = new Set<string>();
+      const categoryIdsByClientId = new Map<string, string>();
+      const groupIdsByClientId = new Map<string, string>();
+      const entryIdsByClientId = new Map<string, string>();
 
       for (const [
         categoryIndex,
@@ -4432,19 +4548,43 @@ export function ClubApp() {
         let categoryId = categoryDraft.id ?? null;
 
         if (categoryDraft.id) {
-          const categoryResult = await supabase
-            .from("tournament_categories")
-            .update({
-              display_order: categoryIndex + 1,
-              group_count: categoryDraft.groups.length,
-              group_size: categoryDraft.group_size,
-              name: categoryDraft.name,
-            })
-            .eq("id", categoryDraft.id)
-            .eq("tournament_id", tournamentId);
+          const currentCategory = currentCategoriesById.get(categoryDraft.id);
 
-          if (categoryResult.error) {
-            throw new Error(categoryResult.error.message);
+          if (!currentCategory) {
+            throw new Error("Düzenlenecek kategori bulunamadı.");
+          }
+
+          const categoryUpdates: Partial<
+            Pick<
+              TournamentCategory,
+              "display_order" | "group_count" | "group_size" | "name"
+            >
+          > = {};
+
+          if (currentCategory.display_order !== categoryIndex + 1) {
+            categoryUpdates.display_order = categoryIndex + 1;
+          }
+          if (currentCategory.group_count !== categoryDraft.groups.length) {
+            categoryUpdates.group_count = categoryDraft.groups.length;
+          }
+          if (currentCategory.group_size !== categoryDraft.group_size) {
+            categoryUpdates.group_size = categoryDraft.group_size;
+          }
+          if (currentCategory.name !== categoryDraft.name) {
+            categoryUpdates.name = categoryDraft.name;
+          }
+
+          if (Object.keys(categoryUpdates).length) {
+            const categoryResult = await supabase
+              .from("tournament_categories")
+              .update(categoryUpdates)
+              .eq("id", categoryDraft.id)
+              .eq("tournament_id", tournamentId);
+
+            if (categoryResult.error) {
+              throw new Error(categoryResult.error.message);
+            }
+            didChange = true;
           }
         } else {
           const categoryResult = await supabase
@@ -4466,28 +4606,49 @@ export function ClubApp() {
           }
 
           categoryId = (categoryResult.data as TournamentCategory).id;
+          didChange = true;
         }
 
         if (!categoryId) {
           throw new Error("Kategori kaydı bulunamadı.");
         }
         retainedCategoryIds.add(categoryId);
+        categoryIdsByClientId.set(categoryDraft.client_id, categoryId);
 
         for (const [groupIndex, groupDraft] of categoryDraft.groups.entries()) {
           let groupId = groupDraft.id ?? null;
 
           if (groupDraft.id) {
-            const groupResult = await supabase
-              .from("tournament_groups")
-              .update({
-                category_id: categoryId,
-                display_order: groupIndex + 1,
-                name: groupDraft.name,
-              })
-              .eq("id", groupDraft.id);
+            const currentGroup = currentGroupsById.get(groupDraft.id);
 
-            if (groupResult.error) {
-              throw new Error(groupResult.error.message);
+            if (!currentGroup) {
+              throw new Error("Düzenlenecek turnuva grubu bulunamadı.");
+            }
+
+            const groupUpdates: Partial<
+              Pick<TournamentGroup, "category_id" | "display_order" | "name">
+            > = {};
+
+            if (currentGroup.category_id !== categoryId) {
+              groupUpdates.category_id = categoryId;
+            }
+            if (currentGroup.display_order !== groupIndex + 1) {
+              groupUpdates.display_order = groupIndex + 1;
+            }
+            if (currentGroup.name !== groupDraft.name) {
+              groupUpdates.name = groupDraft.name;
+            }
+
+            if (Object.keys(groupUpdates).length) {
+              const groupResult = await supabase
+                .from("tournament_groups")
+                .update(groupUpdates)
+                .eq("id", groupDraft.id);
+
+              if (groupResult.error) {
+                throw new Error(groupResult.error.message);
+              }
+              didChange = true;
             }
           } else {
             const groupResult = await supabase
@@ -4507,28 +4668,53 @@ export function ClubApp() {
             }
 
             groupId = (groupResult.data as TournamentGroup).id;
+            didChange = true;
           }
 
           if (!groupId) {
             throw new Error("Turnuva grubu bulunamadı.");
           }
           retainedGroupIds.add(groupId);
+          groupIdsByClientId.set(groupDraft.client_id, groupId);
 
           for (const [entryIndex, entryDraft] of groupDraft.entries.entries()) {
             let entryId = entryDraft.id ?? null;
+            let entryWasCreated = false;
 
             if (entryDraft.id) {
-              const entryResult = await supabase
-                .from("tournament_entries")
-                .update({
-                  category_id: categoryId,
-                  display_order: entryIndex + 1,
-                  group_id: groupId,
-                })
-                .eq("id", entryDraft.id);
+              const currentEntry = currentEntriesById.get(entryDraft.id);
 
-              if (entryResult.error) {
-                throw new Error(entryResult.error.message);
+              if (!currentEntry) {
+                throw new Error("Düzenlenecek grup katılımcısı bulunamadı.");
+              }
+
+              const entryUpdates: Partial<
+                Pick<
+                  TournamentEntry,
+                  "category_id" | "display_order" | "group_id"
+                >
+              > = {};
+
+              if (currentEntry.category_id !== categoryId) {
+                entryUpdates.category_id = categoryId;
+              }
+              if (currentEntry.display_order !== entryIndex + 1) {
+                entryUpdates.display_order = entryIndex + 1;
+              }
+              if (currentEntry.group_id !== groupId) {
+                entryUpdates.group_id = groupId;
+              }
+
+              if (Object.keys(entryUpdates).length) {
+                const entryResult = await supabase
+                  .from("tournament_entries")
+                  .update(entryUpdates)
+                  .eq("id", entryDraft.id);
+
+                if (entryResult.error) {
+                  throw new Error(entryResult.error.message);
+                }
+                didChange = true;
               }
             } else {
               const entryResult = await supabase
@@ -4549,21 +4735,15 @@ export function ClubApp() {
               }
 
               entryId = (entryResult.data as TournamentEntry).id;
+              entryWasCreated = true;
+              didChange = true;
             }
 
             if (!entryId) {
               throw new Error("Grup katılımcısı bulunamadı.");
             }
             retainedEntryIds.add(entryId);
-
-            const deleteEntryPlayersResult = await supabase
-              .from("tournament_entry_players")
-              .delete()
-              .eq("entry_id", entryId);
-
-            if (deleteEntryPlayersResult.error) {
-              throw new Error(deleteEntryPlayersResult.error.message);
-            }
+            entryIdsByClientId.set(entryDraft.client_id, entryId);
 
             const firstPlayerId = playerIdsByClientId.get(
               entryDraft.player1_client_id,
@@ -4576,27 +4756,46 @@ export function ClubApp() {
               throw new Error("Katılımcının ilk oyuncusu bulunamadı.");
             }
 
-            const entryPlayersResult = await supabase
-              .from("tournament_entry_players")
-              .insert([
-                {
-                  entry_id: entryId,
-                  player_id: firstPlayerId,
-                  position: 1,
-                },
-                ...(secondPlayerId
-                  ? [
-                      {
-                        entry_id: entryId,
-                        player_id: secondPlayerId,
-                        position: 2,
-                      },
-                    ]
-                  : []),
-              ]);
+            const nextEntryPlayerIds = [
+              firstPlayerId,
+              ...(secondPlayerId ? [secondPlayerId] : []),
+            ];
+            const currentEntryPlayerIds = entryDraft.id
+              ? currentEntriesById.get(entryDraft.id)?.player_ids ?? []
+              : [];
+            const entryPlayersChanged =
+              entryWasCreated ||
+              currentEntryPlayerIds.length !== nextEntryPlayerIds.length ||
+              currentEntryPlayerIds.some(
+                (playerId, index) => playerId !== nextEntryPlayerIds[index],
+              );
 
-            if (entryPlayersResult.error) {
-              throw new Error(entryPlayersResult.error.message);
+            if (entryPlayersChanged) {
+              if (!entryWasCreated) {
+                const deleteEntryPlayersResult = await supabase
+                  .from("tournament_entry_players")
+                  .delete()
+                  .eq("entry_id", entryId);
+
+                if (deleteEntryPlayersResult.error) {
+                  throw new Error(deleteEntryPlayersResult.error.message);
+                }
+              }
+
+              const entryPlayersResult = await supabase
+                .from("tournament_entry_players")
+                .insert(
+                  nextEntryPlayerIds.map((playerId, index) => ({
+                    entry_id: entryId,
+                    player_id: playerId,
+                    position: index + 1,
+                  })),
+                );
+
+              if (entryPlayersResult.error) {
+                throw new Error(entryPlayersResult.error.message);
+              }
+              didChange = true;
             }
           }
         }
@@ -4615,6 +4814,7 @@ export function ClubApp() {
         if (deleteEntriesResult.error) {
           throw new Error(deleteEntriesResult.error.message);
         }
+        didChange = true;
       }
 
       const groupIdsToDelete = tournament.groups
@@ -4630,6 +4830,7 @@ export function ClubApp() {
         if (deleteGroupsResult.error) {
           throw new Error(deleteGroupsResult.error.message);
         }
+        didChange = true;
       }
 
       const categoryIdsToDelete = tournament.categories
@@ -4645,6 +4846,7 @@ export function ClubApp() {
         if (deleteCategoriesResult.error) {
           throw new Error(deleteCategoriesResult.error.message);
         }
+        didChange = true;
       }
 
       const playerIdsToDelete = tournament.players
@@ -4660,18 +4862,44 @@ export function ClubApp() {
         if (deletePlayersResult.error) {
           throw new Error(deletePlayersResult.error.message);
         }
+        didChange = true;
       }
 
-      await loadTournamentData();
-      setStatusMessage(name + " turnuvası güncellendi.");
-      return true;
+      const savedDraft: TournamentDraft = {
+        ...preparedDraft,
+        players: preparedDraft.players.map((player) => ({
+          ...player,
+          id: playerIdsByClientId.get(player.client_id) ?? player.id,
+        })),
+        categories: preparedDraft.categories.map((category) => ({
+          ...category,
+          id: categoryIdsByClientId.get(category.client_id) ?? category.id,
+          groups: category.groups.map((group) => ({
+            ...group,
+            id: groupIdsByClientId.get(group.client_id) ?? group.id,
+            entries: group.entries.map((entry) => ({
+              ...entry,
+              id: entryIdsByClientId.get(entry.client_id) ?? entry.id,
+            })),
+          })),
+        })),
+      };
+
+      if (didChange) {
+        await loadTournamentData();
+        setStatusMessage(name + " turnuvasında değişen bilgiler kaydedildi.");
+      } else {
+        setStatusMessage("Kaydedilecek bir değişiklik yok.");
+      }
+
+      return savedDraft;
     } catch (error) {
       setStatusMessage(
         error instanceof Error
           ? error.message
           : "Turnuva güncellenirken bir hata oluştu.",
       );
-      return false;
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -5990,6 +6218,8 @@ function DayCalendar({
                       ({ durationPercent, match, offsetPercent }) => {
                         const isPastTournamentMatch =
                           new Date(match.ends_at).getTime() < currentTime.getTime();
+                        const matchColor =
+                          match.tournament_color || DEFAULT_TOURNAMENT_COLOR;
                         const content = (
                           <div
                             className="grid min-h-0 w-full gap-0.5 overflow-hidden px-1 py-0.5 sm:px-2 sm:py-1"
@@ -6010,10 +6240,13 @@ function DayCalendar({
                             </p>
                           </div>
                         );
-                        const overlayClassName = `tournament-match-cell pointer-events-auto absolute z-20 flex min-h-0 items-center justify-center overflow-hidden rounded-sm border border-[#1765a3] text-center shadow-sm ${
+                        const overlayClassName = `tournament-match-cell pointer-events-auto absolute z-20 flex min-h-0 items-center justify-center overflow-hidden rounded-sm border text-center shadow-sm ${
                           isPastTournamentMatch ? "opacity-55" : ""
                         }`;
                         const overlayStyle = {
+                          backgroundColor: matchColor,
+                          borderColor: matchColor,
+                          color: getTournamentTextColor(matchColor),
                           height: `calc(${durationPercent}% - 0.25rem)`,
                           left: "0.125rem",
                           right: "0.125rem",
@@ -6666,7 +6899,7 @@ function AdminPanel({
   onUpdateTournament: (
     tournamentId: string,
     draft: TournamentDraft,
-  ) => Promise<boolean>;
+  ) => Promise<TournamentDraft | null>;
   reservations: Reservation[];
   selectedTournamentId: string | null;
   settingsDraft: ClubSettings;
@@ -9791,30 +10024,37 @@ function TournamentShortcutButtons({
 
   return (
     <div className="mb-3 grid gap-2">
-      {tournaments.map((tournament) => (
-        <button
-          className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-md border px-3 text-left text-sm font-semibold ${
-            selectedTournamentId === tournament.id
-              ? "border-[#237000] bg-[#237000] text-white"
-              : tournament.is_active
-                ? "border-[#9ec596] bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
-                : "border-[#cfc8b8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
-          }`}
-          key={tournament.id}
-          onClick={() => onOpen(tournament.id)}
-          type="button"
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <Trophy className="shrink-0" size={18} />
-            <span className="truncate">{tournament.name}</span>
-          </span>
-          {!tournament.is_active && isManager ? (
-            <span className="shrink-0 rounded bg-[#f1eee5] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[#68756b]">
-              Pasif
+      {tournaments.map((tournament) => {
+        const tournamentColor =
+          tournament.color || DEFAULT_TOURNAMENT_COLOR;
+
+        return (
+          <button
+            aria-pressed={selectedTournamentId === tournament.id}
+            className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-md border px-3 text-left text-sm font-semibold transition hover:opacity-90 ${
+              tournament.is_active ? "" : "opacity-70"
+            }`}
+            key={tournament.id}
+            onClick={() => onOpen(tournament.id)}
+            style={{
+              backgroundColor: tournamentColor,
+              borderColor: tournamentColor,
+              color: getTournamentTextColor(tournamentColor),
+            }}
+            type="button"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <Trophy className="shrink-0" size={18} />
+              <span className="truncate">{tournament.name}</span>
             </span>
-          ) : null}
-        </button>
-      ))}
+            {!tournament.is_active && isManager ? (
+              <span className="shrink-0 rounded bg-[#f1eee5] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[#68756b]">
+                Pasif
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }

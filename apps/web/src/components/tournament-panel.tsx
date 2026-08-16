@@ -28,6 +28,23 @@ type TournamentScheduleScope = "all" | "day" | "week";
 type TournamentDetailTab = "schedule" | "players";
 type TournamentAdminMode = "create" | "edit";
 const tournamentDurationOptions = [30, 45, 60, 75, 90, 105, 120, 150, 180];
+export const DEFAULT_TOURNAMENT_COLOR = "#237000";
+
+export function getTournamentTextColor(color: string) {
+  const match = /^#([0-9a-f]{6})$/i.exec(color);
+
+  if (!match) {
+    return "#ffffff";
+  }
+
+  const value = Number.parseInt(match[1], 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  const perceivedBrightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+  return perceivedBrightness > 165 ? "#17211c" : "#ffffff";
+}
 
 export type TournamentPlayerDraft = {
   id?: string;
@@ -59,6 +76,7 @@ export type TournamentCategoryDraft = {
 
 export type TournamentDraft = {
   name: string;
+  color: string;
   match_duration_minutes: number;
   group_stage_start_date: string;
   group_stage_end_date: string;
@@ -112,6 +130,7 @@ function newTournamentDraft(courts: Court[]): TournamentDraft {
 
   return {
     name: "",
+    color: DEFAULT_TOURNAMENT_COLOR,
     match_duration_minutes: 60,
     group_stage_start_date: dateInputValue(today),
     group_stage_end_date: dateInputValue(groupEnd),
@@ -129,6 +148,7 @@ function tournamentDraftFromDetails(
 ): TournamentDraft {
   return {
     name: tournament.name,
+    color: tournament.color || DEFAULT_TOURNAMENT_COLOR,
     match_duration_minutes: tournament.match_duration_minutes,
     group_stage_start_date: tournament.group_stage_start_date,
     group_stage_end_date: tournament.group_stage_end_date,
@@ -451,13 +471,22 @@ export function TournamentDetailPanel({
     setDetailTab("schedule");
   }
 
+  const tournamentColor =
+    selectedTournament.color || DEFAULT_TOURNAMENT_COLOR;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <section className="overflow-hidden rounded-lg border border-[#ddd7c8] bg-[#fffdf8]">
-        <div className="relative bg-[#17211c] px-4 py-5 pr-16 text-white sm:px-6 sm:pr-20">
+        <div
+          className="relative px-4 py-5 pr-16 sm:px-6 sm:pr-20"
+          style={{
+            backgroundColor: tournamentColor,
+            color: getTournamentTextColor(tournamentColor),
+          }}
+        >
           <button
             aria-label="Turnuva ekranından çık"
-            className="absolute right-3 top-3 grid size-10 place-items-center rounded-md border border-white/35 bg-white/10 text-white transition hover:bg-white/20 sm:right-4 sm:top-4"
+            className="absolute right-3 top-3 grid size-10 place-items-center rounded-md border border-current bg-white/10 text-current transition hover:bg-white/20 sm:right-4 sm:top-4"
             onClick={onClose}
             title="Turnuva ekranından çık"
             type="button"
@@ -465,7 +494,7 @@ export function TournamentDetailPanel({
             <X size={21} />
           </button>
           <h2 className="text-2xl font-semibold">{selectedTournament.name}</h2>
-          <div className="mt-2 grid gap-1 text-sm text-[#d5ded7]">
+          <div className="mt-2 grid gap-1 text-sm text-current opacity-80">
             <p>
               Grup maçları: {formatTournamentDate(selectedTournament.group_stage_start_date)}–
               {formatTournamentDate(selectedTournament.group_stage_end_date)}
@@ -693,7 +722,7 @@ export function TournamentDetailPanel({
                         >
                           <time
                             className={`text-xl font-bold tabular-nums sm:text-2xl ${
-                              isPast ? "text-[#68756b]" : "text-[#2563eb]"
+                              isPast ? "text-[#68756b]" : "tournament-match-time"
                             }`}
                           >
                             {format(new Date(match.starts_at), "HH:mm")}
@@ -839,7 +868,7 @@ export function TournamentAdminPanel({
   onUpdateTournament: (
     tournamentId: string,
     draft: TournamentDraft,
-  ) => Promise<boolean>;
+  ) => Promise<TournamentDraft | null>;
   selectedTournamentId: string | null;
   tournaments: TournamentWithDetails[];
 }) {
@@ -858,18 +887,24 @@ export function TournamentAdminPanel({
 
   async function submitTournament(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const didSave =
-      mode === "edit" && selectedTournament
-        ? await onUpdateTournament(selectedTournament.id, draft)
-        : await onCreateTournament(draft);
+
+    if (mode === "edit" && selectedTournament) {
+      const savedDraft = await onUpdateTournament(selectedTournament.id, draft);
+
+      if (savedDraft) {
+        setDraft(savedDraft);
+      }
+
+      return;
+    }
+
+    const didSave = await onCreateTournament(draft);
 
     if (!didSave) {
       return;
     }
 
-    if (mode === "create") {
-      setMode("edit");
-    }
+    setMode("edit");
   }
 
   function updateCategory(
@@ -1019,6 +1054,17 @@ export function TournamentAdminPanel({
       ) : null}
 
       <form className="mt-5 space-y-5" onSubmit={submitTournament}>
+        {mode === "edit" ? (
+          <button
+            className="primary-button w-full sm:w-auto"
+            disabled={isSaving}
+            type="submit"
+          >
+            <Trophy size={17} />
+            {isSaving ? "Kaydediliyor" : "Değişiklikleri kaydet"}
+          </button>
+        ) : null}
+
         <details className="group rounded-md border border-[#ddd7c8] bg-white" open>
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4 font-semibold [&::-webkit-details-marker]:hidden">
             Genel
@@ -1035,6 +1081,20 @@ export function TournamentAdminPanel({
                 placeholder="Örn. 29 Ekim"
                 required
                 value={draft.name}
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-[#34443a] md:col-span-2">
+              Turnuva rengi
+              <input
+                className="h-11 w-full cursor-pointer rounded-md border border-[#cfc8b8] bg-white p-1"
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    color: event.target.value,
+                  }))
+                }
+                type="color"
+                value={draft.color}
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-[#34443a] md:col-span-2">
@@ -1103,9 +1163,9 @@ export function TournamentAdminPanel({
 
                   return (
                     <label
-                      className={`inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm ${
+                      className={`tournament-court-toggle inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-sm ${
                         isSelected
-                          ? "border-[#237000] bg-[#eaf5e6] text-[#237000]"
+                          ? "is-selected"
                           : "border-[#cfc8b8] bg-white"
                       }`}
                       key={court.id}
