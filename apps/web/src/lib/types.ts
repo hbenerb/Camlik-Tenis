@@ -4,6 +4,8 @@ export type CalendarView = "day" | "week" | "month";
 export type SkillLevel = "beginner" | "intermediate" | "advanced" | "master";
 export type NotificationScheduleType = "instant" | "scheduled" | "recurring";
 export type AppNotificationStatus = "active" | "canceled";
+export type TournamentMatchPhase = "group" | "final";
+export type TournamentMatchStatus = "scheduled" | "completed" | "canceled";
 
 export type Profile = {
   id: string;
@@ -85,4 +87,79 @@ export type AppPushSubscription = {
   user_agent: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type Tournament = {
+  id: string;
+  name: string;
+  group_stage_start_date: string;
+  group_stage_end_date: string;
+  finals_start_date: string;
+  finals_end_date: string;
+  is_active: boolean;
+  source_url: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentCourt = {
+  tournament_id: string;
+  court_id: string;
+};
+
+export type TournamentCategory = {
+  id: string;
+  tournament_id: string;
+  name: string;
+  group_count: number;
+  group_size: number;
+  display_order: number;
+  created_at: string;
+};
+
+export type TournamentGroup = {
+  id: string;
+  category_id: string;
+  name: string;
+  display_order: number;
+  created_at: string;
+};
+
+export type TournamentParticipant = {
+  id: string;
+  category_id: string;
+  group_id: string | null;
+  display_name: string;
+  display_order: number;
+  created_at: string;
+};
+
+export type TournamentMatch = {
+  id: string;
+  tournament_id: string;
+  category_id: string;
+  group_id: string | null;
+  court_id: string | null;
+  phase: TournamentMatchPhase;
+  starts_at: string;
+  ends_at: string;
+  player1_name: string;
+  player2_name: string;
+  round_label: string | null;
+  status: TournamentMatchStatus;
+  source_key: string | null;
+  created_at: string;
+  updated_at: string;
+  courts?: Pick<Court, "name"> | null;
+  tournament_categories?: Pick<TournamentCategory, "name"> | null;
+  tournament_groups?: Pick<TournamentGroup, "name"> | null;
+};
+
+export type TournamentWithDetails = Tournament & {
+  courts: TournamentCourt[];
+  categories: TournamentCategory[];
+  groups: TournamentGroup[];
+  participants: TournamentParticipant[];
+  matches: TournamentMatch[];
 };

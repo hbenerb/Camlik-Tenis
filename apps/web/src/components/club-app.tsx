@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Eye,
   Info,
   FileSpreadsheet,
   LogOut,
@@ -30,6 +31,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sun,
+  Trophy,
   User as UserIcon,
   Users,
   X,
@@ -38,6 +40,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  buildTournamentGroupNames,
+  TournamentPanel,
+} from "@/components/tournament-panel";
+import type { TournamentDraft } from "@/components/tournament-panel";
 import {
   addSlotDuration,
   buildLocalDateTime,
@@ -65,9 +72,22 @@ import type {
   Reservation,
   ReservationStatus,
   SkillLevel,
+  Tournament,
+  TournamentCategory,
+  TournamentCourt,
+  TournamentGroup,
+  TournamentMatch,
+  TournamentParticipant,
+  TournamentWithDetails,
 } from "@/lib/types";
 
-type AppTab = "calendar" | "reservations" | "messages" | "profile" | "admin";
+type AppTab =
+  | "calendar"
+  | "tournaments"
+  | "reservations"
+  | "messages"
+  | "profile"
+  | "admin";
 type OAuthProvider = "google";
 type ThemeMode = "light" | "dark";
 type DayAvailability = "past" | "bookable" | "future";
@@ -177,6 +197,16 @@ type NotificationToast = {
   message: string;
   occurrence_at: string;
 };
+type GuestReservationRow = Pick<
+  Reservation,
+  | "id"
+  | "court_id"
+  | "starts_at"
+  | "ends_at"
+  | "status"
+  | "created_at"
+  | "updated_at"
+>;
 
 const defaultSettings: ClubSettings = {
   id: 1,
@@ -280,6 +310,12 @@ const skillLevelLabels: Record<SkillLevel, string> = {
 const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
 
 const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
+const GUEST_CALENDAR_WINDOW_DAYS = 365;
+const GUEST_SESSION_STORAGE_KEY = "camlik-tenis-guest-session";
+const GUEST_RESERVATION_MESSAGE =
+  "Rezervasyon yapmak için üye olmanız ve giriş yapmanız gereklidir.";
+const RESERVATION_PERMISSION_MESSAGE =
+  "Rezervasyon yetkiniz bulunmuyor. Yetki almak için lütfen kulüple iletişime geçin.";
 const THEME_STORAGE_KEY = "camlik-tenis-theme";
 const NOTIFICATION_PROMPT_STORAGE_PREFIX = "camlik-tenis-notification-prompt";
 const EMPTY_PLAYER_LABEL = "-";
@@ -1203,11 +1239,16 @@ function arrayBufferToBase64Url(buffer: ArrayBuffer) {
 export function ClubApp() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [user, setUser] = useState<User | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<ClubSettings>(defaultSettings);
   const [settingsDraft, setSettingsDraft] =
     useState<ClubSettings>(defaultSettings);
   const [courts, setCourts] = useState<Court[]>([]);
+  const [tournaments, setTournaments] = useState<TournamentWithDetails[]>([]);
+  const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(
+    null,
+  );
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [adminNotifications, setAdminNotifications] = useState<AppNotification[]>(
     [],
@@ -1285,6 +1326,18 @@ export function ClubApp() {
     [courts],
   );
 
+  const activeTournaments = useMemo(
+    () => tournaments.filter((tournament) => tournament.is_active),
+    [tournaments],
+  );
+
+  const tournamentShortcuts = useMemo(
+    () => (isAdmin(profile) ? tournaments : activeTournaments),
+    [activeTournaments, profile, tournaments],
+  );
+  const canViewTournaments =
+    isAdmin(profile) || activeTournaments.length > 0;
+
   const timeSlots = useMemo(() => buildTimeSlots(settings), [settings]);
 
   const mustCompleteProfile =
@@ -1313,13 +1366,16 @@ export function ClubApp() {
     profile && Object.prototype.hasOwnProperty.call(profile, "can_book"),
   );
   const canCreateReservation =
-    canManageReservations ||
-    (reservationPermissionSchemaReady ? Boolean(profile?.can_book) : true);
+    !isGuest &&
+    (canManageReservations ||
+      (reservationPermissionSchemaReady ? Boolean(profile?.can_book) : true));
   const canMarkLesson = Boolean(profile?.is_trainer) || canManageReservations;
 
-  const effectiveBookingWindowDays = canManageReservations
-    ? ADMIN_EDIT_BOOKING_WINDOW_DAYS
-    : bookingWindowDays;
+  const effectiveBookingWindowDays = isGuest
+    ? GUEST_CALENDAR_WINDOW_DAYS
+    : canManageReservations
+      ? ADMIN_EDIT_BOOKING_WINDOW_DAYS
+      : bookingWindowDays;
 
   const visibleReservations = useMemo(() => {
     const range = getRangeForView(selectedDate, calendarView);
@@ -1704,6 +1760,177 @@ export function ClubApp() {
     [notificationPermission, supabase],
   );
 
+  const loadTournamentData = useCallback(async () => {
+    if (!supabase) {
+      return;
+    }
+
+    const [
+      tournamentResult,
+      tournamentCourtResult,
+      categoryResult,
+      groupResult,
+      participantResult,
+      matchResult,
+    ] = await Promise.all([
+      supabase
+        .from("tournaments")
+        .select("*")
+        .order("group_stage_start_date", { ascending: false }),
+      supabase.from("tournament_courts").select("*"),
+      supabase
+        .from("tournament_categories")
+        .select("*")
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("tournament_groups")
+        .select("*")
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("tournament_participants")
+        .select("*")
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("tournament_matches")
+        .select("*, courts(name)")
+        .order("starts_at", { ascending: true }),
+    ]);
+
+    const firstError = [
+      tournamentResult.error,
+      tournamentCourtResult.error,
+      categoryResult.error,
+      groupResult.error,
+      participantResult.error,
+      matchResult.error,
+    ].find(Boolean);
+
+    if (firstError) {
+      setTournaments([]);
+      return;
+    }
+
+    const loadedTournaments = (tournamentResult.data as Tournament[] | null) ?? [];
+    const loadedTournamentCourts =
+      (tournamentCourtResult.data as TournamentCourt[] | null) ?? [];
+    const loadedCategories =
+      (categoryResult.data as TournamentCategory[] | null) ?? [];
+    const loadedGroups = (groupResult.data as TournamentGroup[] | null) ?? [];
+    const loadedParticipants =
+      (participantResult.data as TournamentParticipant[] | null) ?? [];
+    const loadedMatches = (matchResult.data as TournamentMatch[] | null) ?? [];
+
+    const tournamentsWithDetails = loadedTournaments.map((tournament) => {
+      const categories = loadedCategories.filter(
+        (category) => category.tournament_id === tournament.id,
+      );
+      const categoryIds = new Set(categories.map((category) => category.id));
+
+      return {
+        ...tournament,
+        courts: loadedTournamentCourts.filter(
+          (tournamentCourt) => tournamentCourt.tournament_id === tournament.id,
+        ),
+        categories,
+        groups: loadedGroups.filter((group) => categoryIds.has(group.category_id)),
+        participants: loadedParticipants.filter((participant) =>
+          categoryIds.has(participant.category_id),
+        ),
+        matches: loadedMatches.filter(
+          (match) => match.tournament_id === tournament.id,
+        ),
+      } satisfies TournamentWithDetails;
+    });
+
+    setTournaments(tournamentsWithDetails);
+    setSelectedTournamentId((current) => {
+      if (
+        current &&
+        tournamentsWithDetails.some((tournament) => tournament.id === current)
+      ) {
+        return current;
+      }
+
+      return (
+        tournamentsWithDetails.find((tournament) => tournament.is_active)?.id ??
+        tournamentsWithDetails[0]?.id ??
+        null
+      );
+    });
+  }, [supabase]);
+
+  const loadGuestData = useCallback(async () => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setStatusMessage(null);
+    const loadedAt = new Date();
+    setCurrentTime(loadedAt);
+
+    const [settingsResult, courtsResult, reservationResult] = await Promise.all([
+      supabase.from("club_settings").select("*").eq("id", 1).maybeSingle(),
+      supabase.from("courts").select("*").order("display_order"),
+      supabase
+        .from("reservations")
+        .select(
+          "id, court_id, starts_at, ends_at, status, created_at, updated_at",
+        )
+        .eq("status", "confirmed")
+        .order("starts_at", { ascending: true }),
+    ]);
+
+    const loadedSettings =
+      (settingsResult.data as ClubSettings | null) ?? defaultSettings;
+    const loadedCourts = (courtsResult.data as Court[] | null) ?? [];
+    const courtNames = new Map(
+      loadedCourts.map((court) => [court.id, court.name]),
+    );
+
+    setProfile(null);
+    setMembers([]);
+    setAdminNotifications([]);
+    setUserNotifications([]);
+    setSettings(loadedSettings);
+    setSettingsDraft(loadedSettings);
+    setCourts(loadedCourts);
+
+    if (reservationResult.error) {
+      setReservations([]);
+      setStatusMessage(
+        "Misafir takvimi açılamadı. Supabase misafir erişim SQL'i çalıştırılmalı.",
+      );
+    } else {
+      const loadedReservations =
+        (reservationResult.data as GuestReservationRow[] | null) ?? [];
+
+      setReservations(
+        loadedReservations.map((reservation) => ({
+          ...reservation,
+          note: null,
+          profiles: null,
+          user_id: "",
+          courts: {
+            name: courtNames.get(reservation.court_id) ?? "Kort",
+          },
+        })),
+      );
+    }
+
+    if (settingsResult.error) {
+      setStatusMessage(
+        `Rezervasyon ayarları okunamadı: ${settingsResult.error.message}`,
+      );
+    } else if (courtsResult.error) {
+      setStatusMessage(`Kortlar okunamadı: ${courtsResult.error.message}`);
+    }
+
+    await loadTournamentData();
+    setIsLoading(false);
+  }, [loadTournamentData, supabase]);
+
   const loadData = useCallback(async (currentUser: User) => {
     if (!supabase) {
       setIsLoading(false);
@@ -1871,10 +2098,18 @@ export function ClubApp() {
       );
     }
 
-    await loadUserNotifications(currentUser, loadedAt);
+    await Promise.all([
+      loadUserNotifications(currentUser, loadedAt),
+      loadTournamentData(),
+    ]);
     setIsLoading(false);
     void processDueNotifications(currentUser, loadedProfile);
-  }, [loadUserNotifications, processDueNotifications, supabase]);
+  }, [
+    loadTournamentData,
+    loadUserNotifications,
+    processDueNotifications,
+    supabase,
+  ]);
 
   useEffect(() => {
     if (!supabase) {
@@ -1889,7 +2124,15 @@ export function ClubApp() {
       }
 
       setUser(data.user);
-      if (!data.user) {
+      if (data.user) {
+        window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+        setIsGuest(false);
+      } else if (
+        window.sessionStorage.getItem(GUEST_SESSION_STORAGE_KEY) === "1"
+      ) {
+        setIsGuest(true);
+        setIsLoading(true);
+      } else {
         setIsLoading(false);
       }
     });
@@ -1897,8 +2140,15 @@ export function ClubApp() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (!session?.user) {
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+
+      if (nextUser) {
+        window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+        setIsGuest(false);
+      } else if (
+        window.sessionStorage.getItem(GUEST_SESSION_STORAGE_KEY) !== "1"
+      ) {
         setIsLoading(false);
       }
     });
@@ -1920,6 +2170,18 @@ export function ClubApp() {
 
     return () => window.clearTimeout(timer);
   }, [loadData, user]);
+
+  useEffect(() => {
+    if (!isGuest || user) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void loadGuestData();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [isGuest, loadGuestData, user]);
 
   useEffect(() => {
     if (!user) {
@@ -2085,6 +2347,8 @@ export function ClubApp() {
       return;
     }
 
+    window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+    setIsGuest(false);
     setStatusMessage(null);
     setSigningInProvider(provider);
     await new Promise<void>((resolve) => {
@@ -2104,23 +2368,47 @@ export function ClubApp() {
     }
   }
 
+  function continueAsGuest() {
+    if (!supabase) {
+      return;
+    }
+
+    window.sessionStorage.setItem(GUEST_SESSION_STORAGE_KEY, "1");
+    setStatusMessage(null);
+    setActiveTab("calendar");
+    setSelectedDate(new Date());
+    setCalendarView("day");
+    setIsGuest(true);
+    setIsLoading(true);
+  }
+
   async function signOut() {
     if (!supabase) {
       return;
     }
 
-    await supabase.auth.signOut();
+    window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+    if (!isGuest) {
+      await supabase.auth.signOut();
+    }
+
     setUser(null);
+    setIsGuest(false);
     setProfile(null);
     setIsProfileSchemaReady(false);
     setProfileForm({ full_name: "", skill_level: "beginner" });
     setReservations([]);
+    setTournaments([]);
+    setSelectedTournamentId(null);
     setMembers([]);
     setAdminNotifications([]);
     setUserNotifications([]);
     setNotificationToast(null);
     setIsNotificationPromptOpen(false);
     setIsPushSubscriptionSynced(false);
+    setActiveTab("calendar");
+    setStatusMessage(null);
+    setIsLoading(false);
   }
 
   async function saveOwnProfile(event: FormEvent<HTMLFormElement>) {
@@ -2440,14 +2728,17 @@ export function ClubApp() {
   }
 
   function openReservationForm(courtId?: string, date?: Date, slot?: string) {
+    if (isGuest) {
+      setStatusMessage(GUEST_RESERVATION_MESSAGE);
+      return;
+    }
+
     if (!user) {
       return;
     }
 
     if (!canCreateReservation) {
-      setStatusMessage(
-        "Rezervasyon yetkiniz henüz açılmadı. Takvimi görebilir, rezervasyon için admin onayını bekleyebilirsiniz.",
-      );
+      setStatusMessage(RESERVATION_PERMISSION_MESSAGE);
       return;
     }
 
@@ -2536,7 +2827,7 @@ export function ClubApp() {
   async function createReservation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!supabase || !user) {
+    if (!supabase || !user || isGuest || !canCreateReservation) {
       return;
     }
 
@@ -3144,6 +3435,202 @@ export function ClubApp() {
     setStatusMessage("Üye güncellendi.");
   }
 
+  async function createTournament(draft: TournamentDraft) {
+    if (!supabase || !user || !isAdmin(profile)) {
+      return false;
+    }
+
+    const name = normalizeFullName(draft.name);
+    const preparedCategories = draft.categories.map((category) => ({
+      ...category,
+      name: normalizeFullName(category.name),
+      players: category.players_text
+        .split("\n")
+        .map((player) => normalizeFullName(player))
+        .filter(Boolean),
+    }));
+
+    if (!name) {
+      setStatusMessage("Turnuva adı girilmeli.");
+      return false;
+    }
+
+    if (!draft.court_ids.length) {
+      setStatusMessage("Turnuva için en az bir kort seçilmeli.");
+      return false;
+    }
+
+    if (
+      draft.group_stage_end_date < draft.group_stage_start_date ||
+      draft.finals_start_date <= draft.group_stage_end_date ||
+      draft.finals_end_date < draft.finals_start_date
+    ) {
+      setStatusMessage("Turnuva tarih aralıkları sıralı olmalı.");
+      return false;
+    }
+
+    const invalidCategory = preparedCategories.find(
+      (category) =>
+        !category.name ||
+        category.group_count < 1 ||
+        category.group_size < 2 ||
+        !category.players.length ||
+        category.players.length > category.group_count * category.group_size,
+    );
+
+    if (invalidCategory) {
+      setStatusMessage(
+        `${invalidCategory.name || "Kategori"} oyuncu sayısı grup kapasitesine uygun değil.`,
+      );
+      return false;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+    let createdTournamentId: string | null = null;
+
+    try {
+      const tournamentResult = await supabase
+        .from("tournaments")
+        .insert({
+          created_by: user.id,
+          finals_end_date: draft.finals_end_date,
+          finals_start_date: draft.finals_start_date,
+          group_stage_end_date: draft.group_stage_end_date,
+          group_stage_start_date: draft.group_stage_start_date,
+          is_active: draft.is_active,
+          name,
+        })
+        .select("*")
+        .single();
+
+      if (tournamentResult.error || !tournamentResult.data) {
+        throw new Error(
+          tournamentResult.error?.message ?? "Turnuva oluşturulamadı.",
+        );
+      }
+
+      createdTournamentId = (tournamentResult.data as Tournament).id;
+
+      const courtResult = await supabase.from("tournament_courts").insert(
+        draft.court_ids.map((courtId) => ({
+          court_id: courtId,
+          tournament_id: createdTournamentId,
+        })),
+      );
+
+      if (courtResult.error) {
+        throw new Error(courtResult.error.message);
+      }
+
+      for (const [categoryIndex, categoryDraft] of preparedCategories.entries()) {
+        const categoryResult = await supabase
+          .from("tournament_categories")
+          .insert({
+            display_order: categoryIndex + 1,
+            group_count: categoryDraft.group_count,
+            group_size: categoryDraft.group_size,
+            name: categoryDraft.name,
+            tournament_id: createdTournamentId,
+          })
+          .select("*")
+          .single();
+
+        if (categoryResult.error || !categoryResult.data) {
+          throw new Error(
+            categoryResult.error?.message ?? "Kategori oluşturulamadı.",
+          );
+        }
+
+        const category = categoryResult.data as TournamentCategory;
+        const groupNames = buildTournamentGroupNames(categoryDraft.group_count);
+        const groupResult = await supabase
+          .from("tournament_groups")
+          .insert(
+            groupNames.map((groupName, groupIndex) => ({
+              category_id: category.id,
+              display_order: groupIndex + 1,
+              name: groupName,
+            })),
+          )
+          .select("*");
+
+        if (groupResult.error || !groupResult.data) {
+          throw new Error(
+            groupResult.error?.message ?? "Turnuva grupları oluşturulamadı.",
+          );
+        }
+
+        const groups = (groupResult.data as TournamentGroup[]).sort(
+          (first, second) => first.display_order - second.display_order,
+        );
+        const participantResult = await supabase
+          .from("tournament_participants")
+          .insert(
+            categoryDraft.players.map((player, playerIndex) => {
+              const groupIndex = Math.min(
+                Math.floor(playerIndex / categoryDraft.group_size),
+                groups.length - 1,
+              );
+
+              return {
+                category_id: category.id,
+                display_name: player,
+                display_order: playerIndex + 1,
+                group_id: groups[groupIndex]?.id ?? null,
+              };
+            }),
+          );
+
+        if (participantResult.error) {
+          throw new Error(participantResult.error.message);
+        }
+      }
+
+      await loadTournamentData();
+      setSelectedTournamentId(createdTournamentId);
+      setActiveTab("tournaments");
+      setStatusMessage(`${name} turnuvası oluşturuldu.`);
+      return true;
+    } catch (error) {
+      if (createdTournamentId) {
+        await supabase.from("tournaments").delete().eq("id", createdTournamentId);
+      }
+
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : "Turnuva oluşturulurken bir hata oluştu.",
+      );
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function toggleTournament(tournamentId: string, isActive: boolean) {
+    if (!supabase || !isAdmin(profile)) {
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+    const { error } = await supabase
+      .from("tournaments")
+      .update({ is_active: isActive })
+      .eq("id", tournamentId);
+
+    if (error) {
+      setStatusMessage(error.message);
+      setIsSaving(false);
+      return;
+    }
+
+    await loadTournamentData();
+    setIsSaving(false);
+    setStatusMessage(isActive ? "Turnuva aktif edildi." : "Turnuva pasif edildi.");
+  }
+
   function moveCalendar(direction: -1 | 1) {
     setSelectedDate((current) => {
       const nextDate =
@@ -3170,6 +3657,11 @@ export function ClubApp() {
   }
 
   function refreshCalendar() {
+    if (isGuest) {
+      void loadGuestData();
+      return;
+    }
+
     if (!user) {
       return;
     }
@@ -3191,6 +3683,7 @@ export function ClubApp() {
         className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] px-4 py-6 text-[#17211c] sm:px-8`}
       >
         <LandingShell
+          onContinueAsGuest={continueAsGuest}
           onToggleTheme={toggleTheme}
           statusMessage="Supabase bilgileri henüz .env.local dosyasına eklenmemiş."
           theme={theme}
@@ -3203,12 +3696,13 @@ export function ClubApp() {
     );
   }
 
-  if (!user) {
+  if (!user && !isGuest) {
     return (
       <main
         className={`${themeClassName} min-h-screen w-full overflow-x-hidden bg-[#f7f6f1] px-4 py-6 text-[#17211c] sm:px-8`}
       >
         <LandingShell
+          onContinueAsGuest={continueAsGuest}
           onToggleTheme={toggleTheme}
           statusMessage={statusMessage}
           theme={theme}
@@ -3220,7 +3714,11 @@ export function ClubApp() {
     );
   }
 
-  const visibleActiveTab = mustCompleteProfile ? "profile" : activeTab;
+  const visibleActiveTab = mustCompleteProfile
+    ? "profile"
+    : isGuest && activeTab !== "calendar" && activeTab !== "tournaments"
+      ? "calendar"
+      : activeTab;
 
   return (
     <main
@@ -3237,10 +3735,14 @@ export function ClubApp() {
               </h1>
               <div className="mt-0.5 max-w-28 truncate text-[11px] text-[#546257] min-[420px]:max-w-40 sm:mt-1 sm:max-w-none sm:text-sm">
                 <span className="font-medium text-[#17211c]">
-                  {getDisplayName(profile, user)}
+                  {isGuest ? "Misafir" : getDisplayName(profile, user)}
                 </span>
                 <span className="hidden sm:inline">
-                  {profile?.is_club_member ? " · Kulüp üyesi" : " · App üyesi"}
+                  {isGuest
+                    ? " · Salt okunur"
+                    : profile?.is_club_member
+                      ? " · Kulüp üyesi"
+                      : " · App üyesi"}
                 </span>
               </div>
             </div>
@@ -3251,10 +3753,10 @@ export function ClubApp() {
               <ThemeToggle onToggle={toggleTheme} theme={theme} />
               <PageRefreshButton />
               <button
-                aria-label="Çıkış yap"
+                aria-label={isGuest ? "Giriş ekranına dön" : "Çıkış yap"}
                 className="grid size-9 place-items-center rounded-md border border-[#cfc8b8] bg-white text-[#17211c] hover:bg-[#eee9dd] sm:size-10"
                 onClick={signOut}
-                title="Çıkış yap"
+                title={isGuest ? "Giriş ekranına dön" : "Çıkış yap"}
                 type="button"
               >
                 <LogOut size={16} />
@@ -3279,6 +3781,17 @@ export function ClubApp() {
 
       <div className="mx-auto grid w-full max-w-7xl gap-4 px-2.5 py-3 sm:px-6 sm:py-4 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-6 lg:py-6">
         <aside className="hidden w-full lg:sticky lg:top-6 lg:block lg:self-start">
+          <TournamentShortcutButtons
+            isManager={isAdmin(profile)}
+            onOpen={(tournamentId) => {
+              setSelectedTournamentId(tournamentId);
+              setActiveTab("tournaments");
+            }}
+            selectedTournamentId={
+              visibleActiveTab === "tournaments" ? selectedTournamentId : null
+            }
+            tournaments={tournamentShortcuts}
+          />
           <nav className="grid grid-cols-3 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
             <NavButton
               icon={<CalendarDays size={22} />}
@@ -3286,26 +3799,38 @@ export function ClubApp() {
               label="Takvim"
               onClick={() => setActiveTab("calendar")}
             />
-            <div className="hidden lg:block lg:w-full">
+            {canViewTournaments ? (
               <NavButton
-                icon={<Clock3 size={22} />}
-                isActive={visibleActiveTab === "reservations"}
-                label="Rezervasyonlar"
-                onClick={() => setActiveTab("reservations")}
+                icon={<Trophy size={20} />}
+                isActive={visibleActiveTab === "tournaments"}
+                label="Turnuvalar"
+                onClick={() => setActiveTab("tournaments")}
               />
-            </div>
-            <NavButton
-              icon={<MessageSquare size={22} />}
-              isActive={visibleActiveTab === "messages"}
-              label="Mesajlar"
-              onClick={() => setActiveTab("messages")}
-            />
-            <NavButton
-              icon={<UserIcon size={22} />}
-              isActive={visibleActiveTab === "profile"}
-              label="Profil"
-              onClick={() => setActiveTab("profile")}
-            />
+            ) : null}
+            {!isGuest ? (
+              <>
+                <div className="hidden lg:block lg:w-full">
+                  <NavButton
+                    icon={<Clock3 size={22} />}
+                    isActive={visibleActiveTab === "reservations"}
+                    label="Rezervasyonlar"
+                    onClick={() => setActiveTab("reservations")}
+                  />
+                </div>
+                <NavButton
+                  icon={<MessageSquare size={22} />}
+                  isActive={visibleActiveTab === "messages"}
+                  label="Mesajlar"
+                  onClick={() => setActiveTab("messages")}
+                />
+                <NavButton
+                  icon={<UserIcon size={22} />}
+                  isActive={visibleActiveTab === "profile"}
+                  label="Profil"
+                  onClick={() => setActiveTab("profile")}
+                />
+              </>
+            ) : null}
             {isAdmin(profile) ? (
               <div className="hidden lg:block lg:w-full">
                 <NavButton
@@ -3320,56 +3845,103 @@ export function ClubApp() {
         </aside>
 
         <section className="mx-auto w-full min-w-0 max-w-5xl">
-          <nav className="mb-3 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.25fr)_44px_44px] gap-1.5 lg:hidden">
-            <button
-              className={`h-11 min-w-0 rounded-md px-2 text-xs font-semibold min-[380px]:text-sm ${
-                visibleActiveTab === "calendar"
-                  ? "bg-[#237000] text-white"
-                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+          <div className="mb-3 lg:hidden">
+            <TournamentShortcutButtons
+              isManager={isAdmin(profile)}
+              onOpen={(tournamentId) => {
+                setSelectedTournamentId(tournamentId);
+                setActiveTab("tournaments");
+              }}
+              selectedTournamentId={
+                visibleActiveTab === "tournaments" ? selectedTournamentId : null
+              }
+              tournaments={tournamentShortcuts}
+            />
+          </div>
+          {isGuest ? (
+            <nav
+              className={`mb-3 grid gap-1.5 lg:hidden ${
+                canViewTournaments ? "grid-cols-2" : "grid-cols-1"
               }`}
-              onClick={() => setActiveTab("calendar")}
-              type="button"
             >
-              Takvim
-            </button>
-            <button
-              className={`h-11 min-w-0 truncate rounded-md px-1.5 text-[11px] font-semibold min-[360px]:text-xs ${
-                visibleActiveTab === "reservations"
-                  ? "bg-[#237000] text-white"
-                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-              }`}
-              onClick={() => setActiveTab("reservations")}
-              type="button"
-            >
-              Rezervasyonlar
-            </button>
-            <button
-              aria-label="Mesajlar"
-              className={`grid size-11 place-items-center rounded-md ${
-                visibleActiveTab === "messages"
-                  ? "bg-[#237000] text-white"
-                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-              }`}
-              onClick={() => setActiveTab("messages")}
-              title="Mesajlar"
-              type="button"
-            >
-              <MessageSquare size={20} />
-            </button>
-            <button
-              aria-label="Profil"
-              className={`grid size-11 place-items-center rounded-md ${
-                visibleActiveTab === "profile"
-                  ? "bg-[#237000] text-white"
-                  : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
-              }`}
-              onClick={() => setActiveTab("profile")}
-              title="Profil"
-              type="button"
-            >
-              <UserIcon size={20} />
-            </button>
-          </nav>
+              <button
+                className={`h-11 min-w-0 rounded-md px-3 text-sm font-semibold ${
+                  visibleActiveTab === "calendar"
+                    ? "bg-[#237000] text-white"
+                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                }`}
+                onClick={() => setActiveTab("calendar")}
+                type="button"
+              >
+                Takvim
+              </button>
+              {canViewTournaments ? (
+                <button
+                  className={`inline-flex h-11 min-w-0 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold ${
+                    visibleActiveTab === "tournaments"
+                      ? "bg-[#237000] text-white"
+                      : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                  }`}
+                  onClick={() => setActiveTab("tournaments")}
+                  type="button"
+                >
+                  <Trophy size={18} />
+                  Turnuvalar
+                </button>
+              ) : null}
+            </nav>
+          ) : (
+            <nav className="mb-3 grid grid-cols-[minmax(0,0.85fr)_minmax(0,1.25fr)_44px_44px] gap-1.5 lg:hidden">
+              <button
+                className={`h-11 min-w-0 rounded-md px-2 text-xs font-semibold min-[380px]:text-sm ${
+                  visibleActiveTab === "calendar"
+                    ? "bg-[#237000] text-white"
+                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                }`}
+                onClick={() => setActiveTab("calendar")}
+                type="button"
+              >
+                Takvim
+              </button>
+              <button
+                className={`h-11 min-w-0 truncate rounded-md px-1.5 text-[11px] font-semibold min-[360px]:text-xs ${
+                  visibleActiveTab === "reservations"
+                    ? "bg-[#237000] text-white"
+                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                }`}
+                onClick={() => setActiveTab("reservations")}
+                type="button"
+              >
+                Rezervasyonlar
+              </button>
+              <button
+                aria-label="Mesajlar"
+                className={`grid size-11 place-items-center rounded-md ${
+                  visibleActiveTab === "messages"
+                    ? "bg-[#237000] text-white"
+                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                }`}
+                onClick={() => setActiveTab("messages")}
+                title="Mesajlar"
+                type="button"
+              >
+                <MessageSquare size={20} />
+              </button>
+              <button
+                aria-label="Profil"
+                className={`grid size-11 place-items-center rounded-md ${
+                  visibleActiveTab === "profile"
+                    ? "bg-[#237000] text-white"
+                    : "border border-[#ddd7c8] bg-[#fffdf8] text-[#546257]"
+                }`}
+                onClick={() => setActiveTab("profile")}
+                title="Profil"
+                type="button"
+              >
+                <UserIcon size={20} />
+              </button>
+            </nav>
+          )}
           {notificationToast ? (
             <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-[#9ec596] bg-[#f0f8ef] px-4 py-3 text-sm text-[#1f6500]">
               <div className="min-w-0">
@@ -3402,6 +3974,20 @@ export function ClubApp() {
             </div>
           ) : null}
 
+          {!isLoading && visibleActiveTab === "tournaments" ? (
+            <TournamentPanel
+              canManage={isAdmin(profile)}
+              courts={courts}
+              currentTime={currentTime}
+              isSaving={isSaving}
+              onCreateTournament={createTournament}
+              onSelectedTournamentChange={setSelectedTournamentId}
+              onToggleTournament={toggleTournament}
+              selectedTournamentId={selectedTournamentId}
+              tournaments={tournaments}
+            />
+          ) : null}
+
           {!isLoading && visibleActiveTab === "calendar" ? (
             <CalendarPanel
               activeCourts={activeCourts}
@@ -3417,16 +4003,27 @@ export function ClubApp() {
               }
               onCreateReservation={openReservationForm}
               onRefresh={refreshCalendar}
+              reservationDisabledReason={
+                isGuest
+                  ? GUEST_RESERVATION_MESSAGE
+                  : !canCreateReservation
+                    ? RESERVATION_PERMISSION_MESSAGE
+                    : undefined
+              }
               reservations={visibleReservations}
               selectedDate={selectedDate}
               setCalendarView={setCalendarView}
               setSelectedDate={setSelectedDate}
               settings={settings}
+              showReservationDetails={!isGuest}
               timeSlots={timeSlots}
             />
           ) : null}
 
-          {!isLoading && visibleActiveTab === "reservations" ? (
+          {!isLoading &&
+          !isGuest &&
+          user &&
+          visibleActiveTab === "reservations" ? (
             <ReservationsPanel
               canManageAll={isAdmin(profile)}
               currentTime={currentTime}
@@ -3439,7 +4036,7 @@ export function ClubApp() {
             />
           ) : null}
 
-          {!isLoading && visibleActiveTab === "messages" ? (
+          {!isLoading && !isGuest && user && visibleActiveTab === "messages" ? (
             <MessagesPanel
               currentTime={currentTime}
               notifications={userNotifications}
@@ -3502,7 +4099,7 @@ export function ClubApp() {
         />
       ) : null}
 
-      {isReservationOpen ? (
+      {isReservationOpen && !isGuest && user ? (
         <ReservationDialog
           activeCourts={activeCourts}
           bookingWindowDays={effectiveBookingWindowDays}
@@ -3520,7 +4117,7 @@ export function ClubApp() {
         />
       ) : null}
 
-      {editingReservation ? (
+      {editingReservation && !isGuest && user ? (
         <ReservationEditDialog
           activeCourts={activeCourts}
           bookingWindowDays={ADMIN_EDIT_BOOKING_WINDOW_DAYS}
@@ -3547,6 +4144,7 @@ export function ClubApp() {
 
 function LandingShell({
   isAuthDisabled = false,
+  onContinueAsGuest,
   onToggleTheme,
   onSignIn,
   showPageRefresh = false,
@@ -3555,6 +4153,7 @@ function LandingShell({
   theme,
 }: {
   isAuthDisabled?: boolean;
+  onContinueAsGuest: () => void;
   onToggleTheme: () => void;
   onSignIn: (provider: OAuthProvider) => void;
   showPageRefresh?: boolean;
@@ -3604,6 +4203,15 @@ function LandingShell({
             </span>
             Google ile bağlan
           </button>
+          <button
+            className="inline-flex h-12 items-center justify-center gap-3 rounded-md border border-[#9ec596] bg-[#f0f8ef] px-4 text-sm font-semibold text-[#237000] hover:bg-[#e3f1df] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isAuthActionDisabled}
+            onClick={onContinueAsGuest}
+            type="button"
+          >
+            <Eye size={19} />
+            Misafir olarak devam et
+          </button>
         </div>
 
         {statusMessage ? (
@@ -3643,11 +4251,13 @@ function CalendarPanel({
   onCreateReservation,
   onEditReservation,
   onRefresh,
+  reservationDisabledReason,
   reservations,
   selectedDate,
   setCalendarView,
   setSelectedDate,
   settings,
+  showReservationDetails,
   timeSlots,
 }: {
   activeCourts: Court[];
@@ -3661,11 +4271,13 @@ function CalendarPanel({
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
   onEditReservation?: (reservation: Reservation) => void;
   onRefresh: () => void;
+  reservationDisabledReason?: string;
   reservations: Reservation[];
   selectedDate: Date;
   setCalendarView: (view: CalendarView) => void;
   setSelectedDate: (date: Date) => void;
   settings: ClubSettings;
+  showReservationDetails: boolean;
   timeSlots: string[];
 }) {
   const [isBookingInfoOpen, setIsBookingInfoOpen] = useState(false);
@@ -3682,13 +4294,18 @@ function CalendarPanel({
         <div className="grid gap-2">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <button
-              className="inline-flex h-11 min-w-0 items-center justify-center rounded-md bg-[#237000] px-3 text-sm font-semibold text-white hover:bg-[#1f6500] disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!canCreateReservation}
+              aria-disabled={!canCreateReservation}
+              className={`inline-flex h-11 min-w-0 items-center justify-center rounded-md bg-[#237000] px-3 text-sm font-semibold text-white ${
+                canCreateReservation
+                  ? "hover:bg-[#1f6500]"
+                  : "cursor-help opacity-60"
+              }`}
               onClick={() => onCreateReservation()}
               title={
                 canCreateReservation
                   ? "Yeni rezervasyon"
-                  : "Rezervasyon yetkisi için admin onayı bekleniyor"
+                  : reservationDisabledReason ??
+                    "Rezervasyon yetkisi için admin onayı bekleniyor"
               }
               type="button"
             >
@@ -3736,7 +4353,8 @@ function CalendarPanel({
                         ? `Hesabınızla ${formatBookingWindowText(
                             bookingWindowDays,
                           )} rezervasyon yapabilirsiniz.`
-                        : "Rezervasyon yapmak için admin onayı bekleniyor; onay verilene kadar takvimi görüntüleyebilirsiniz."}
+                        : reservationDisabledReason ??
+                          "Rezervasyon yapmak için admin onayı bekleniyor; onay verilene kadar takvimi görüntüleyebilirsiniz."}
                     </p>
                     <p className="mt-2">
                       Rezervasyonlar {slotDurationText} sürer ve saatler{" "}
@@ -3747,6 +4365,16 @@ function CalendarPanel({
                       Aynı anda en fazla {settings.max_active_reservations} aktif
                       rezervasyonunuz olabilir. İptal sınırı başlangıçtan{" "}
                       {cancellationDeadlineText} öncesidir.
+                    </p>
+                    <p className="mt-3 border-t border-[#e6dfd2] pt-3">
+                      Bilgi almak için{" "}
+                      <a
+                        className="font-semibold text-[#237000] underline underline-offset-2"
+                        href="tel:+905323751175"
+                      >
+                        0532 375 11 75
+                      </a>{" "}
+                      numaralı telefonu arayabilirsiniz.
                     </p>
                   </section>
                 </div>
@@ -3835,6 +4463,7 @@ function CalendarPanel({
           onCreateReservation={onCreateReservation}
           reservations={reservations}
           selectedDate={selectedDate}
+          showReservationDetails={showReservationDetails}
           timeSlots={timeSlots}
         />
       ) : null}
@@ -3877,6 +4506,7 @@ function DayCalendar({
   onCreateReservation,
   reservations,
   selectedDate,
+  showReservationDetails,
   timeSlots,
 }: {
   bookingWindowDays: number;
@@ -3888,6 +4518,7 @@ function DayCalendar({
   onCreateReservation: (courtId?: string, date?: Date, slot?: string) => void;
   reservations: Reservation[];
   selectedDate: Date;
+  showReservationDetails: boolean;
   timeSlots: string[];
 }) {
   const compactCourtGrid = courts.length <= 3;
@@ -3944,7 +4575,9 @@ function DayCalendar({
                   "min-h-12 min-w-0 overflow-hidden border-r border-t border-[#eee7db] p-0.5 text-center transition min-[380px]:p-1 sm:min-h-20 sm:p-2";
 
                 if (reservation) {
-                  const reservationLines = getReservationDisplayLines(reservation);
+                  const reservationLines = showReservationDetails
+                    ? getReservationDisplayLines(reservation)
+                    : ["Dolu"];
                   const isLesson = isLessonReservation(reservation);
                   const reservedCellClassName = `${cellClassName} flex flex-col items-center justify-center ${
                     slotIsPast
@@ -7064,6 +7697,64 @@ function ReservationEditDialog({
           </div>
         </form>
       </section>
+    </div>
+  );
+}
+
+function TournamentShortcutButtons({
+  isManager,
+  onOpen,
+  selectedTournamentId,
+  tournaments,
+}: {
+  isManager: boolean;
+  onOpen: (tournamentId: string) => void;
+  selectedTournamentId: string | null;
+  tournaments: TournamentWithDetails[];
+}) {
+  if (!tournaments.length) {
+    if (!isManager) {
+      return null;
+    }
+
+    return (
+      <button
+        className="mb-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-md border border-dashed border-[#9ec596] bg-[#f0f8ef] px-3 text-sm font-semibold text-[#237000]"
+        onClick={() => onOpen("")}
+        type="button"
+      >
+        <Trophy size={18} />
+        Yeni turnuva oluştur
+      </button>
+    );
+  }
+
+  return (
+    <div className="mb-3 grid gap-2">
+      {tournaments.map((tournament) => (
+        <button
+          className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-md border px-3 text-left text-sm font-semibold ${
+            selectedTournamentId === tournament.id
+              ? "border-[#237000] bg-[#237000] text-white"
+              : tournament.is_active
+                ? "border-[#9ec596] bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
+                : "border-[#cfc8b8] bg-[#fffdf8] text-[#546257] hover:bg-[#eee9dd]"
+          }`}
+          key={tournament.id}
+          onClick={() => onOpen(tournament.id)}
+          type="button"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <Trophy className="shrink-0" size={18} />
+            <span className="truncate">{tournament.name}</span>
+          </span>
+          {!tournament.is_active && isManager ? (
+            <span className="shrink-0 rounded bg-[#f1eee5] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[#68756b]">
+              Pasif
+            </span>
+          ) : null}
+        </button>
+      ))}
     </div>
   );
 }
