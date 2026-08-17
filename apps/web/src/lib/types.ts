@@ -6,6 +6,17 @@ export type NotificationScheduleType = "instant" | "scheduled" | "recurring";
 export type AppNotificationStatus = "active" | "canceled";
 export type TournamentMatchPhase = "group" | "final";
 export type TournamentMatchStatus = "scheduled" | "completed" | "canceled";
+export type TournamentDecidingSetType = "regular" | "match_tiebreak";
+export type TournamentScoreSetType = "regular" | "match_tiebreak";
+
+export type TournamentScoreSet = {
+  player1_score: number;
+  player1_tiebreak: number | null;
+  player2_score: number;
+  player2_tiebreak: number | null;
+  set_number: number;
+  type: TournamentScoreSetType;
+};
 
 export type Profile = {
   id: string;
@@ -94,6 +105,11 @@ export type Tournament = {
   name: string;
   color: string;
   match_duration_minutes: number;
+  best_of_sets: number;
+  set_games_to_win: number;
+  set_tiebreak_points: number;
+  deciding_set_type: TournamentDecidingSetType;
+  deciding_match_tiebreak_points: number;
   group_stage_start_date: string;
   group_stage_end_date: string;
   finals_start_date: string;
@@ -177,6 +193,10 @@ export type TournamentMatch = {
   player2_entry_id: string;
   round_label: string | null;
   status: TournamentMatchStatus;
+  score_entered: boolean;
+  score_sets: TournamentScoreSet[];
+  is_walkover: boolean;
+  winner_entry_id: string | null;
   source_key: string | null;
   created_at: string;
   updated_at: string;

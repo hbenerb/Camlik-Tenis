@@ -63,6 +63,11 @@ import {
   normalizeTime,
   parseDateInput,
 } from "@/lib/time";
+import {
+  setsNeededToWin,
+  tournamentSetType,
+  validateTournamentScore,
+} from "@/lib/tournament-scoring";
 import type {
   AppRole,
   AppNotification,
@@ -84,6 +89,7 @@ import type {
   TournamentMatch,
   TournamentParticipant,
   TournamentPlayer,
+  TournamentScoreSet,
   TournamentWithDetails,
 } from "@/lib/types";
 
@@ -187,6 +193,16 @@ type TournamentMatchEditFormState = {
   player2_name: string;
   start_time: string;
   status: TournamentMatch["status"];
+  score_entered: boolean;
+  is_walkover: boolean;
+  winner_entry_id: string;
+  score_sets: TournamentScoreSetFormState[];
+};
+type TournamentScoreSetFormState = {
+  player1_score: string;
+  player1_tiebreak: string;
+  player2_score: string;
+  player2_tiebreak: string;
 };
 type CalendarTournamentMatch = TournamentMatch & {
   tournament_category_name: string;
@@ -350,7 +366,7 @@ const skillLevelLabels: Record<SkillLevel, string> = {
 
 const skillLevels = Object.keys(skillLevelLabels) as SkillLevel[];
 
-const ADMIN_EDIT_BOOKING_WINDOW_DAYS = 365;
+const ADMIN_CALENDAR_WINDOW_DAYS = 365;
 const GUEST_CALENDAR_WINDOW_DAYS = 365;
 const DAY_CALENDAR_COURT_COUNT = 2;
 const GUEST_SESSION_STORAGE_KEY = "camlik-tenis-guest-session";
@@ -446,6 +462,89 @@ function getTournamentDraftStructureError(
   }
 
   return null;
+}
+
+function getTournamentScoringRulesError(
+  draft: ReturnType<typeof prepareTournamentDraft>,
+) {
+  if (![1, 3, 5].includes(draft.best_of_sets)) {
+    return "Maç set sayısı 1, 3 veya 5 olmalı.";
+  }
+
+  if (
+    !Number.isInteger(draft.set_games_to_win) ||
+    draft.set_games_to_win < 1 ||
+    draft.set_games_to_win > 12
+  ) {
+    return "Normal set oyun sayısı 1 ile 12 arasında olmalı.";
+  }
+
+  if (
+    !Number.isInteger(draft.set_tiebreak_points) ||
+    draft.set_tiebreak_points < 1 ||
+    draft.set_tiebreak_points > 30
+  ) {
+    return "Set tie-break hedefi 1 ile 30 puan arasında olmalı.";
+  }
+
+  if (
+    !Number.isInteger(draft.deciding_match_tiebreak_points) ||
+    draft.deciding_match_tiebreak_points < 1 ||
+    draft.deciding_match_tiebreak_points > 30
+  ) {
+    return "Maç tie-break hedefi 1 ile 30 puan arasında olmalı.";
+  }
+
+  return null;
+}
+
+function emptyTournamentScoreSetForm(): TournamentScoreSetFormState {
+  return {
+    player1_score: "",
+    player1_tiebreak: "",
+    player2_score: "",
+    player2_tiebreak: "",
+  };
+}
+
+function tournamentScoreSetToForm(
+  scoreSet: TournamentScoreSet,
+): TournamentScoreSetFormState {
+  return {
+    player1_score: String(scoreSet.player1_score),
+    player1_tiebreak:
+      scoreSet.player1_tiebreak === null
+        ? ""
+        : String(scoreSet.player1_tiebreak),
+    player2_score: String(scoreSet.player2_score),
+    player2_tiebreak:
+      scoreSet.player2_tiebreak === null
+        ? ""
+        : String(scoreSet.player2_tiebreak),
+  };
+}
+
+function initialTournamentScoreSetForms(
+  tournament: Tournament,
+  match?: TournamentMatch,
+) {
+  if (match?.score_sets.length) {
+    return match.score_sets.map(tournamentScoreSetToForm);
+  }
+
+  return Array.from(
+    { length: setsNeededToWin(tournament.best_of_sets) },
+    emptyTournamentScoreSetForm,
+  );
+}
+
+function parseScoreValue(value: string) {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
 }
 
 function notificationPromptStorageKey(userId: string) {
@@ -1480,6 +1579,10 @@ export function ClubApp() {
       player2_name: "",
       start_time: "09:00",
       status: "scheduled",
+      score_entered: false,
+      is_walkover: false,
+      winner_entry_id: "",
+      score_sets: [],
     });
   const [profileForm, setProfileForm] = useState({
     full_name: "",
@@ -1579,7 +1682,7 @@ export function ClubApp() {
   const effectiveBookingWindowDays = isGuest
     ? GUEST_CALENDAR_WINDOW_DAYS
     : canManageReservations
-      ? ADMIN_EDIT_BOOKING_WINDOW_DAYS
+      ? ADMIN_CALENDAR_WINDOW_DAYS
       : bookingWindowDays;
 
   const visibleReservations = useMemo(() => {
@@ -3193,11 +3296,6 @@ export function ClubApp() {
     const customInfo =
       getReservationCustomInfo(reservation) || customLessonTrainerName;
 
-    if (startsAt < currentTime) {
-      setStatusMessage("Geçmiş rezervasyonlar düzenlenemez.");
-      return;
-    }
-
     setReservationEditForm({
       court_id: reservation.court_id,
       custom_info: customInfo,
@@ -3495,19 +3593,6 @@ export function ClubApp() {
       return;
     }
 
-    if (
-      reservationEditForm.status === "confirmed" &&
-      !isBookableStart(
-        reservationEditForm.date,
-        reservationEditForm.start_time,
-        ADMIN_EDIT_BOOKING_WINDOW_DAYS,
-        currentTime,
-      )
-    ) {
-      setStatusMessage("Bu tarih ve saat için rezervasyon yapılamaz.");
-      return;
-    }
-
     const customInfo = normalizeFullName(reservationEditForm.custom_info);
     const isLessonReservationForm = isLessonForm(reservationEditForm);
 
@@ -3583,11 +3668,6 @@ export function ClubApp() {
 
   async function deleteReservation(reservation: Reservation) {
     if (!supabase || !user || !isAdmin(profile)) {
-      return;
-    }
-
-    if (!isFutureReservation(reservation, currentTime)) {
-      setStatusMessage("Geçmiş rezervasyonlar silinemez.");
       return;
     }
 
@@ -4046,6 +4126,13 @@ export function ClubApp() {
       return false;
     }
 
+    const scoringRulesError = getTournamentScoringRulesError(preparedDraft);
+
+    if (scoringRulesError) {
+      setStatusMessage(scoringRulesError);
+      return false;
+    }
+
     const structureError = getTournamentDraftStructureError(preparedDraft);
 
     if (structureError) {
@@ -4062,7 +4149,11 @@ export function ClubApp() {
         .from("tournaments")
         .insert({
           color: preparedDraft.color,
+          best_of_sets: preparedDraft.best_of_sets,
           created_by: user.id,
+          deciding_match_tiebreak_points:
+            preparedDraft.deciding_match_tiebreak_points,
+          deciding_set_type: preparedDraft.deciding_set_type,
           finals_end_date: preparedDraft.finals_end_date,
           finals_start_date: preparedDraft.finals_start_date,
           group_stage_end_date: preparedDraft.group_stage_end_date,
@@ -4070,6 +4161,8 @@ export function ClubApp() {
           is_active: preparedDraft.is_active,
           match_duration_minutes: preparedDraft.match_duration_minutes,
           name,
+          set_games_to_win: preparedDraft.set_games_to_win,
+          set_tiebreak_points: preparedDraft.set_tiebreak_points,
         })
         .select("*")
         .single();
@@ -4293,6 +4386,13 @@ export function ClubApp() {
       return null;
     }
 
+    const scoringRulesError = getTournamentScoringRulesError(preparedDraft);
+
+    if (scoringRulesError) {
+      setStatusMessage(scoringRulesError);
+      return null;
+    }
+
     const structureError = getTournamentDraftStructureError(preparedDraft);
 
     if (structureError) {
@@ -4374,17 +4474,44 @@ export function ClubApp() {
           Tournament,
           | "finals_end_date"
           | "finals_start_date"
+          | "best_of_sets"
           | "color"
+          | "deciding_match_tiebreak_points"
+          | "deciding_set_type"
           | "group_stage_end_date"
           | "group_stage_start_date"
           | "is_active"
           | "match_duration_minutes"
           | "name"
+          | "set_games_to_win"
+          | "set_tiebreak_points"
         >
       > = {};
 
       if (tournament.color !== preparedDraft.color) {
         tournamentUpdates.color = preparedDraft.color;
+      }
+      if (tournament.best_of_sets !== preparedDraft.best_of_sets) {
+        tournamentUpdates.best_of_sets = preparedDraft.best_of_sets;
+      }
+      if (tournament.set_games_to_win !== preparedDraft.set_games_to_win) {
+        tournamentUpdates.set_games_to_win = preparedDraft.set_games_to_win;
+      }
+      if (
+        tournament.set_tiebreak_points !== preparedDraft.set_tiebreak_points
+      ) {
+        tournamentUpdates.set_tiebreak_points =
+          preparedDraft.set_tiebreak_points;
+      }
+      if (tournament.deciding_set_type !== preparedDraft.deciding_set_type) {
+        tournamentUpdates.deciding_set_type = preparedDraft.deciding_set_type;
+      }
+      if (
+        tournament.deciding_match_tiebreak_points !==
+        preparedDraft.deciding_match_tiebreak_points
+      ) {
+        tournamentUpdates.deciding_match_tiebreak_points =
+          preparedDraft.deciding_match_tiebreak_points;
       }
       if (tournament.name !== name) {
         tournamentUpdates.name = name;
@@ -4923,6 +5050,15 @@ export function ClubApp() {
       return;
     }
 
+    const tournament = tournaments.find(
+      (item) => item.id === match.tournament_id,
+    );
+
+    if (!tournament) {
+      setStatusMessage("Turnuva bulunamadı.");
+      return;
+    }
+
     const startsAt = new Date(match.starts_at);
     setEditingTournamentMatch(match);
     setTournamentMatchEditForm({
@@ -4934,6 +5070,10 @@ export function ClubApp() {
       player2_name: match.player2_name,
       start_time: formatTime(startsAt),
       status: match.status,
+      score_entered: match.score_entered,
+      is_walkover: match.is_walkover,
+      winner_entry_id: match.winner_entry_id ?? "",
+      score_sets: initialTournamentScoreSetForms(tournament, match),
     });
   }
 
@@ -4998,6 +5138,81 @@ export function ClubApp() {
     }
 
     const endsAt = addMinutes(startsAt, tournament.match_duration_minutes);
+    const scoreSets: TournamentScoreSet[] = [];
+    let winnerEntryId: string | null = null;
+    let isWalkover = false;
+    let nextStatus = tournamentMatchEditForm.status;
+
+    if (tournamentMatchEditForm.score_entered) {
+      if (endsAt > currentTime) {
+        setStatusMessage("Puan yalnızca oynanma saati tamamlanan maça eklenebilir.");
+        return;
+      }
+
+      nextStatus = "completed";
+      isWalkover = tournamentMatchEditForm.is_walkover;
+
+      if (isWalkover) {
+        if (
+          tournamentMatchEditForm.winner_entry_id !== player1Entry.id &&
+          tournamentMatchEditForm.winner_entry_id !== player2Entry.id
+        ) {
+          setStatusMessage("Hükmen kazanan oyuncu veya takım seçilmeli.");
+          return;
+        }
+
+        winnerEntryId = tournamentMatchEditForm.winner_entry_id;
+      } else {
+        for (const [setIndex, scoreSetForm] of tournamentMatchEditForm.score_sets.entries()) {
+          const player1Score = parseScoreValue(scoreSetForm.player1_score);
+          const player2Score = parseScoreValue(scoreSetForm.player2_score);
+
+          if (player1Score === null || player2Score === null) {
+            setStatusMessage(`${setIndex + 1}. set skorları eksik veya geçersiz.`);
+            return;
+          }
+
+          const player1Tiebreak = parseScoreValue(
+            scoreSetForm.player1_tiebreak,
+          );
+          const player2Tiebreak = parseScoreValue(
+            scoreSetForm.player2_tiebreak,
+          );
+
+          if (
+            (player1Tiebreak === null) !== (player2Tiebreak === null)
+          ) {
+            setStatusMessage(
+              `${setIndex + 1}. set için iki tie-break puanı da girilmeli.`,
+            );
+            return;
+          }
+
+          scoreSets.push({
+            player1_score: player1Score,
+            player1_tiebreak: player1Tiebreak,
+            player2_score: player2Score,
+            player2_tiebreak: player2Tiebreak,
+            set_number: setIndex + 1,
+            type: tournamentSetType(tournament, setIndex),
+          });
+        }
+
+        const scoreValidation = validateTournamentScore(tournament, scoreSets);
+
+        if (scoreValidation.error || !scoreValidation.winnerSide) {
+          setStatusMessage(
+            scoreValidation.error ?? "Maç kazananı skorlarla belirlenemedi.",
+          );
+          return;
+        }
+
+        winnerEntryId =
+          scoreValidation.winnerSide === 1
+            ? player1Entry.id
+            : player2Entry.id;
+      }
+    }
 
     setIsSaving(true);
     setStatusMessage(null);
@@ -5013,7 +5228,11 @@ export function ClubApp() {
         player2_name: player2Name,
         player2_entry_id: player2Entry.id,
         starts_at: startsAt.toISOString(),
-        status: tournamentMatchEditForm.status,
+        status: nextStatus,
+        score_entered: tournamentMatchEditForm.score_entered,
+        score_sets: scoreSets,
+        is_walkover: isWalkover,
+        winner_entry_id: winnerEntryId,
       })
       .eq("id", editingTournamentMatch.id)
       .eq("tournament_id", editingTournamentMatch.tournament_id);
@@ -5028,6 +5247,37 @@ export function ClubApp() {
     setEditingTournamentMatch(null);
     setIsSaving(false);
     setStatusMessage("Turnuva maçı güncellendi.");
+  }
+
+  async function deleteTournamentMatch(match: TournamentMatch) {
+    if (!supabase || !isAdmin(profile)) {
+      return;
+    }
+
+    setIsSaving(true);
+    setStatusMessage(null);
+    const { error } = await supabase
+      .from("tournament_matches")
+      .update({
+        is_walkover: false,
+        score_entered: false,
+        score_sets: [],
+        status: "canceled",
+        winner_entry_id: null,
+      })
+      .eq("id", match.id)
+      .eq("tournament_id", match.tournament_id);
+
+    setIsSaving(false);
+
+    if (error) {
+      setStatusMessage(error.message);
+      return;
+    }
+
+    setEditingTournamentMatch(null);
+    setStatusMessage("Turnuva maçı silindi.");
+    await loadTournamentData();
   }
 
   function moveCalendar(direction: -1 | 1) {
@@ -5522,11 +5772,9 @@ export function ClubApp() {
       {editingReservation && !isGuest && user ? (
         <ReservationEditDialog
           activeCourts={activeCourts}
-          bookingWindowDays={ADMIN_EDIT_BOOKING_WINDOW_DAYS}
           canMarkLesson={
             canMarkLesson || Boolean(parseReservationLessonNote(editingReservation.note))
           }
-          currentTime={currentTime}
           form={reservationEditForm}
           isSaving={isSaving}
           onClose={() => setEditingReservation(null)}
@@ -5544,10 +5792,14 @@ export function ClubApp() {
       {editingTournamentMatch && isAdmin(profile) ? (
         <TournamentMatchEditDialog
           courts={courts}
+          currentTime={currentTime}
           form={tournamentMatchEditForm}
           isSaving={isSaving}
           match={editingTournamentMatch}
           onClose={() => setEditingTournamentMatch(null)}
+          onDelete={() => {
+            void deleteTournamentMatch(editingTournamentMatch);
+          }}
           onSubmit={updateTournamentMatch}
           setForm={setTournamentMatchEditForm}
           tournaments={tournaments}
@@ -6178,7 +6430,7 @@ function DayCalendar({
                     </div>
                   );
 
-                  if (onEditReservation && !slotIsPast) {
+                  if (onEditReservation) {
                     cellContent = (
                       <button
                         className={`${reservedCellClassName} cursor-pointer`}
@@ -9556,9 +9808,7 @@ function ReservationDialog({
 
 function ReservationEditDialog({
   activeCourts,
-  bookingWindowDays,
   canMarkLesson,
-  currentTime,
   form,
   isSaving,
   onClose,
@@ -9570,9 +9820,7 @@ function ReservationEditDialog({
   timeSlots,
 }: {
   activeCourts: Court[];
-  bookingWindowDays: number;
   canMarkLesson: boolean;
-  currentTime: Date;
   form: ReservationEditFormState;
   isSaving: boolean;
   onClose: () => void;
@@ -9585,14 +9833,6 @@ function ReservationEditDialog({
 }) {
   const selectedStart = buildLocalDateTime(form.date, form.start_time);
   const selectedEnd = addSlotDuration(selectedStart, settings);
-  const selectedSlotBookable =
-    form.status === "canceled" ||
-    isBookableStart(
-      form.date,
-      form.start_time,
-      bookingWindowDays,
-      currentTime,
-    );
   const canUseLesson = canUseLessonForSelectedOwner(
     form,
     ownerOptions,
@@ -9604,15 +9844,6 @@ function ReservationEditDialog({
     setForm({
       ...form,
       date: dateValue,
-      start_time:
-        firstBookableSlot(
-          dateValue,
-          timeSlots,
-          bookingWindowDays,
-          currentTime,
-        ) ??
-        timeSlots[0] ??
-        form.start_time,
     });
   }
 
@@ -9770,27 +10001,11 @@ function ReservationEditDialog({
                 required
                 value={form.start_time}
               >
-                {timeSlots.map((slot) => {
-                  const optionBookable = isBookableStart(
-                    form.date,
-                    slot,
-                    bookingWindowDays,
-                    currentTime,
-                  );
-
-                  return (
-                    <option
-                      disabled={form.status === "confirmed" && !optionBookable}
-                      key={slot}
-                      value={slot}
-                    >
-                      {slot}
-                      {optionBookable || form.status === "canceled"
-                        ? ""
-                        : " - uygun değil"}
-                    </option>
-                  );
-                })}
+                {timeSlots.map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
               </select>
             </Field>
           </div>
@@ -9798,17 +10013,12 @@ function ReservationEditDialog({
           <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5 text-xs text-[#546257] sm:text-sm">
             Seçilen aralık: {formatDateTitle(parseDateInput(form.date))},{" "}
             {formatTime(selectedStart)} - {formatTime(selectedEnd)}
-            {!selectedSlotBookable ? (
-              <span className="mt-2 block font-medium text-[#a0543b]">
-                Onaylı rezervasyon için bu saat kullanılamaz.
-              </span>
-            ) : null}
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2">
             <button
               className="primary-button"
-              disabled={isSaving || !selectedSlotBookable}
+              disabled={isSaving}
               type="submit"
             >
               Değişiklikleri kaydet
@@ -9830,19 +10040,23 @@ function ReservationEditDialog({
 
 function TournamentMatchEditDialog({
   courts,
+  currentTime,
   form,
   isSaving,
   match,
   onClose,
+  onDelete,
   onSubmit,
   setForm,
   tournaments,
 }: {
   courts: Court[];
+  currentTime: Date;
   form: TournamentMatchEditFormState;
   isSaving: boolean;
   match: TournamentMatch;
   onClose: () => void;
+  onDelete: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   setForm: (form: TournamentMatchEditFormState) => void;
   tournaments: TournamentWithDetails[];
@@ -9852,6 +10066,7 @@ function TournamentMatchEditDialog({
   if (!tournament) {
     return null;
   }
+  const scoringTournament = tournament;
 
   const allowedCourtIds = new Set(
     tournament.courts.map((tournamentCourt) => tournamentCourt.court_id),
@@ -9866,14 +10081,34 @@ function TournamentMatchEditDialog({
       tournament.participants.map((participant) => participant.display_name),
     ),
   ).sort((first, second) => first.localeCompare(second, "tr"));
-  const matchEndTime =
+  const availableParticipants = tournament.participants.filter(
+    (participant) =>
+      participant.category_id === form.category_id &&
+      (!form.group_id || participant.group_id === form.group_id),
+  );
+  const firstEntry = availableParticipants.find(
+    (participant) =>
+      normalizeFullName(participant.display_name) ===
+      normalizeFullName(form.player1_name),
+  );
+  const secondEntry = availableParticipants.find(
+    (participant) =>
+      normalizeFullName(participant.display_name) ===
+      normalizeFullName(form.player2_name),
+  );
+  const selectedMatchEnd =
     form.date && form.start_time
-      ? formatTime(
-          addMinutes(
-            buildLocalDateTime(form.date, form.start_time),
-            tournament.match_duration_minutes,
-          ),
+      ? addMinutes(
+          buildLocalDateTime(form.date, form.start_time),
+          tournament.match_duration_minutes,
         )
+      : null;
+  const canEnterScore = Boolean(
+    selectedMatchEnd && selectedMatchEnd <= currentTime,
+  );
+  const matchEndTime =
+    selectedMatchEnd
+      ? formatTime(selectedMatchEnd)
       : "—";
 
   function changeCategory(categoryId: string) {
@@ -9884,6 +10119,22 @@ function TournamentMatchEditDialog({
       ...form,
       category_id: categoryId,
       group_id: firstGroup?.id ?? "",
+      score_entered: false,
+      is_walkover: false,
+      winner_entry_id: "",
+      score_sets: initialTournamentScoreSetForms(scoringTournament),
+    });
+  }
+
+  function updateScoreSet(
+    setIndex: number,
+    fields: Partial<TournamentScoreSetFormState>,
+  ) {
+    setForm({
+      ...form,
+      score_sets: form.score_sets.map((scoreSet, index) =>
+        index === setIndex ? { ...scoreSet, ...fields } : scoreSet,
+      ),
     });
   }
 
@@ -9990,6 +10241,7 @@ function TournamentMatchEditDialog({
             <Field label="Durum">
               <select
                 className="input"
+                disabled={form.score_entered}
                 onChange={(event) =>
                   setForm({
                     ...form,
@@ -10037,9 +10289,241 @@ function TournamentMatchEditDialog({
             </Field>
           </div>
 
-          <button className="primary-button" disabled={isSaving} type="submit">
-            {isSaving ? "Kaydediliyor" : "Maçı kaydet"}
-          </button>
+          <section className="rounded-md border border-[#ddd7c8] bg-[#f6f1e7] p-3 sm:p-4">
+            <label className="flex items-start gap-3">
+              <input
+                checked={form.score_entered}
+                className="mt-0.5 size-4 accent-[#237000]"
+                disabled={!canEnterScore && !form.score_entered}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    score_entered: event.target.checked,
+                    is_walkover: false,
+                    score_sets: event.target.checked
+                      ? form.score_sets.length
+                        ? form.score_sets
+                        : initialTournamentScoreSetForms(scoringTournament)
+                      : [],
+                    status: event.target.checked ? "completed" : "scheduled",
+                    winner_entry_id: "",
+                  })
+                }
+                type="checkbox"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-[#34443a]">
+                  Puan ekle
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-[#68756b]">
+                  {canEnterScore
+                    ? `${tournament.best_of_sets} set üzerinden; ${setsNeededToWin(tournament.best_of_sets)} set alan kazanır.`
+                    : "Puan girişi maçın bitiş saati geçtikten sonra açılır."}
+                </span>
+              </span>
+            </label>
+
+            {form.score_entered ? (
+              <div className="mt-4 grid gap-4 border-t border-[#ddd7c8] pt-4">
+                <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                  <input
+                    checked={form.is_walkover}
+                    className="size-4 accent-[#a0543b]"
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        is_walkover: event.target.checked,
+                        score_sets: event.target.checked
+                          ? []
+                          : initialTournamentScoreSetForms(scoringTournament),
+                        winner_entry_id: "",
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  Hükmen sonuç
+                </label>
+
+                {form.is_walkover ? (
+                  <Field label="Hükmen kazanan">
+                    <select
+                      className="input"
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          winner_entry_id: event.target.value,
+                        })
+                      }
+                      required
+                      value={form.winner_entry_id}
+                    >
+                      <option value="">Kazananı seçin</option>
+                      {firstEntry ? (
+                        <option value={firstEntry.id}>{form.player1_name}</option>
+                      ) : null}
+                      {secondEntry ? (
+                        <option value={secondEntry.id}>{form.player2_name}</option>
+                      ) : null}
+                    </select>
+                  </Field>
+                ) : (
+                  <div className="grid gap-3">
+                    {form.score_sets.map((scoreSet, setIndex) => {
+                      const setType = tournamentSetType(
+                        scoringTournament,
+                        setIndex,
+                      );
+                      const player1Score = parseScoreValue(
+                        scoreSet.player1_score,
+                      );
+                      const player2Score = parseScoreValue(
+                        scoreSet.player2_score,
+                      );
+                      const isSetTiebreak =
+                        setType === "regular" &&
+                        Math.max(player1Score ?? -1, player2Score ?? -1) ===
+                          tournament.set_games_to_win + 1 &&
+                        Math.min(player1Score ?? -1, player2Score ?? -1) ===
+                          tournament.set_games_to_win;
+
+                      return (
+                        <div
+                          className="rounded-md border border-[#ddd7c8] bg-white p-3"
+                          key={setIndex}
+                        >
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-sm font-bold">
+                              {setIndex + 1}. set
+                            </p>
+                            <span className="text-xs font-semibold text-[#68756b]">
+                              {setType === "match_tiebreak"
+                                ? `${tournament.deciding_match_tiebreak_points} puanlık maç tie-breaki`
+                                : `${tournament.set_games_to_win} oyunluk normal set`}
+                            </span>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <Field label={form.player1_name || "1. oyuncu / takım"}>
+                              <input
+                                className="input"
+                                min={0}
+                                onChange={(event) =>
+                                  updateScoreSet(setIndex, {
+                                    player1_score: event.target.value,
+                                  })
+                                }
+                                required
+                                type="number"
+                                value={scoreSet.player1_score}
+                              />
+                            </Field>
+                            <Field label={form.player2_name || "2. oyuncu / takım"}>
+                              <input
+                                className="input"
+                                min={0}
+                                onChange={(event) =>
+                                  updateScoreSet(setIndex, {
+                                    player2_score: event.target.value,
+                                  })
+                                }
+                                required
+                                type="number"
+                                value={scoreSet.player2_score}
+                              />
+                            </Field>
+                          </div>
+                          {isSetTiebreak ? (
+                            <div className="mt-3 grid gap-3 border-t border-[#eee7db] pt-3 sm:grid-cols-2">
+                              <Field label={`${form.player1_name || "1. oyuncu"} tie-break`}>
+                                <input
+                                  className="input"
+                                  min={0}
+                                  onChange={(event) =>
+                                    updateScoreSet(setIndex, {
+                                      player1_tiebreak: event.target.value,
+                                    })
+                                  }
+                                  required
+                                  type="number"
+                                  value={scoreSet.player1_tiebreak}
+                                />
+                              </Field>
+                              <Field label={`${form.player2_name || "2. oyuncu"} tie-break`}>
+                                <input
+                                  className="input"
+                                  min={0}
+                                  onChange={(event) =>
+                                    updateScoreSet(setIndex, {
+                                      player2_tiebreak: event.target.value,
+                                    })
+                                  }
+                                  required
+                                  type="number"
+                                  value={scoreSet.player2_tiebreak}
+                                />
+                              </Field>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+
+                    <div className="flex flex-wrap gap-2">
+                      {form.score_sets.length < tournament.best_of_sets ? (
+                        <button
+                          className="secondary-button"
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              score_sets: [
+                                ...form.score_sets,
+                                emptyTournamentScoreSetForm(),
+                              ],
+                            })
+                          }
+                          type="button"
+                        >
+                          Set ekle
+                        </button>
+                      ) : null}
+                      {form.score_sets.length >
+                      setsNeededToWin(tournament.best_of_sets) ? (
+                        <button
+                          className="secondary-button"
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              score_sets: form.score_sets.slice(0, -1),
+                            })
+                          }
+                          type="button"
+                        >
+                          Son seti çıkar
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs leading-5 text-[#68756b]">
+                  Normal sonuçta kazanan 3, kaybeden 1 puan; hükmen sonuçta kazanan 3, kaybeden 0 puan alır.
+                </p>
+              </div>
+            ) : null}
+          </section>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button className="primary-button" disabled={isSaving} type="submit">
+              {isSaving ? "Kaydediliyor" : "Maçı kaydet"}
+            </button>
+            <button
+              className="secondary-button border-[#a0543b] text-[#a0543b]"
+              disabled={isSaving}
+              onClick={onDelete}
+              type="button"
+            >
+              Maçı sil
+            </button>
+          </div>
         </form>
       </section>
     </div>

@@ -23,7 +23,12 @@ import {
 import { useId, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
+import {
+  formatTournamentMatchScore,
+  tournamentEntryPoints,
+} from "@/lib/tournament-scoring";
 import type { Court, TournamentMatch, TournamentWithDetails } from "@/lib/types";
+import type { TournamentDecidingSetType } from "@/lib/types";
 
 type TournamentScheduleScope = "all" | "day" | "week";
 type TournamentDetailTab = "schedule" | "players";
@@ -86,6 +91,11 @@ export type TournamentDraft = {
   name: string;
   color: string;
   match_duration_minutes: number;
+  best_of_sets: number;
+  set_games_to_win: number;
+  set_tiebreak_points: number;
+  deciding_set_type: TournamentDecidingSetType;
+  deciding_match_tiebreak_points: number;
   group_stage_start_date: string;
   group_stage_end_date: string;
   finals_start_date: string;
@@ -140,6 +150,11 @@ function newTournamentDraft(courts: Court[]): TournamentDraft {
     name: "",
     color: DEFAULT_TOURNAMENT_COLOR,
     match_duration_minutes: 60,
+    best_of_sets: 3,
+    set_games_to_win: 6,
+    set_tiebreak_points: 7,
+    deciding_set_type: "match_tiebreak",
+    deciding_match_tiebreak_points: 10,
     group_stage_start_date: dateInputValue(today),
     group_stage_end_date: dateInputValue(groupEnd),
     finals_start_date: dateInputValue(finalsStart),
@@ -158,6 +173,12 @@ function tournamentDraftFromDetails(
     name: tournament.name,
     color: tournament.color || DEFAULT_TOURNAMENT_COLOR,
     match_duration_minutes: tournament.match_duration_minutes,
+    best_of_sets: tournament.best_of_sets,
+    set_games_to_win: tournament.set_games_to_win,
+    set_tiebreak_points: tournament.set_tiebreak_points,
+    deciding_set_type: tournament.deciding_set_type,
+    deciding_match_tiebreak_points:
+      tournament.deciding_match_tiebreak_points,
     group_stage_start_date: tournament.group_stage_start_date,
     group_stage_end_date: tournament.group_stage_end_date,
     finals_start_date: tournament.finals_start_date,
@@ -338,6 +359,41 @@ export function TournamentDetailPanel({
       ),
     [selectedTournament],
   );
+  const participantStandingsById = useMemo(() => {
+    if (!selectedTournament) {
+      return new Map<string, { points: number; scoredMatches: number }>();
+    }
+
+    const standings = new Map(
+      selectedTournament.participants.map((participant) => [
+        participant.id,
+        { points: 0, scoredMatches: 0 },
+      ]),
+    );
+
+    for (const match of selectedTournament.matches) {
+      if (
+        match.phase !== "group" ||
+        match.status !== "completed" ||
+        !match.score_entered
+      ) {
+        continue;
+      }
+
+      for (const entryId of [match.player1_entry_id, match.player2_entry_id]) {
+        const standing = standings.get(entryId);
+
+        if (!standing) {
+          continue;
+        }
+
+        standing.scoredMatches += 1;
+        standing.points += tournamentEntryPoints([match], entryId);
+      }
+    }
+
+    return standings;
+  }, [selectedTournament]);
 
   const participantOptions = useMemo(() => {
     if (!selectedTournament) {
@@ -832,6 +888,7 @@ export function TournamentDetailPanel({
                                   : null;
                                 const isPast =
                                   new Date(match.ends_at) < currentTime;
+                                const scoreText = formatTournamentMatchScore(match);
                                 const matchContent = (
                                   <>
                                     {onEditMatch ? (
@@ -856,6 +913,11 @@ export function TournamentDetailPanel({
                                     <p className="truncate text-[9px] font-medium leading-tight opacity-85">
                                       {match.courts?.name ?? "Kort belirlenecek"}
                                     </p>
+                                    {scoreText ? (
+                                      <p className="truncate border-t border-current/25 pt-1 text-[9px] font-bold leading-tight">
+                                        {scoreText}
+                                      </p>
+                                    ) : null}
                                   </>
                                 );
                                 const matchClassName = `relative grid w-full min-w-0 gap-1 rounded border p-2 text-left shadow-sm transition ${
@@ -931,6 +993,7 @@ export function TournamentDetailPanel({
                           (firstEntry?.player_ids.length ?? 0) > 1 ||
                           (secondEntry?.player_ids.length ?? 0) > 1;
                         const isPast = new Date(match.ends_at) < currentTime;
+                        const scoreText = formatTournamentMatchScore(match);
                         const rowClassName = `grid w-full grid-cols-[64px_minmax(0,1fr)] items-center gap-3 px-3 py-3 text-left transition sm:grid-cols-[78px_minmax(0,1fr)] sm:gap-4 sm:px-4 ${
                           isPast ? "opacity-45" : ""
                         } ${
@@ -982,6 +1045,11 @@ export function TournamentDetailPanel({
                                   ) : null}
                                 </span>
                               </div>
+                              {scoreText ? (
+                                <p className="mt-1 truncate text-xs font-bold text-[#34443a]">
+                                  {scoreText}
+                                </p>
+                              ) : null}
                             </div>
                           </>
                         );
@@ -1070,7 +1138,7 @@ export function TournamentDetailPanel({
                         )
                         .map((participant) => (
                           <li
-                            className="flex flex-wrap gap-1.5 rounded bg-[#f6f1e7] px-3 py-2"
+                            className="flex flex-wrap items-center gap-1.5 rounded bg-[#f6f1e7] px-3 py-2"
                             key={participant.id}
                           >
                             {participant.player_ids.map((playerId) => {
@@ -1096,6 +1164,19 @@ export function TournamentDetailPanel({
                                 </button>
                               ) : null;
                             })}
+                            {(participantStandingsById.get(participant.id)
+                              ?.scoredMatches ?? 0) > 0 ? (
+                              <span
+                                className="ml-auto shrink-0 rounded-full px-2 py-1 text-xs font-bold"
+                                style={{
+                                  backgroundColor: `${tournamentColor}18`,
+                                  color: tournamentColor,
+                                }}
+                              >
+                                {participantStandingsById.get(participant.id)
+                                  ?.points ?? 0} puan
+                              </span>
+                            ) : null}
                           </li>
                         ))}
                     </ul>
@@ -1384,6 +1465,103 @@ export function TournamentAdminPanel({
                 ))}
               </select>
             </label>
+            <div className="grid gap-4 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-4 md:col-span-2 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <p className="font-semibold text-[#34443a]">Maç ve tie-break sistemi</p>
+                <p className="mt-1 text-xs text-[#68756b]">
+                  Skor girişi bu kurallara göre doğrulanır ve grup puanları otomatik hesaplanır.
+                </p>
+              </div>
+              <label className="grid gap-2 text-sm font-medium text-[#34443a]">
+                Kaç set üzerinden
+                <select
+                  className="input"
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      best_of_sets: Number(event.target.value),
+                    }))
+                  }
+                  value={draft.best_of_sets}
+                >
+                  <option value={1}>1 set · 1 alan kazanır</option>
+                  <option value={3}>3 set · 2 alan kazanır</option>
+                  <option value={5}>5 set · 3 alan kazanır</option>
+                </select>
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-[#34443a]">
+                Normal sette oyun sayısı
+                <input
+                  className="input"
+                  max={12}
+                  min={1}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      set_games_to_win: Number(event.target.value),
+                    }))
+                  }
+                  required
+                  type="number"
+                  value={draft.set_games_to_win}
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-[#34443a]">
+                Set tie-breaki kaç puan
+                <input
+                  className="input"
+                  max={30}
+                  min={1}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      set_tiebreak_points: Number(event.target.value),
+                    }))
+                  }
+                  required
+                  type="number"
+                  value={draft.set_tiebreak_points}
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-[#34443a]">
+                Son set türü
+                <select
+                  className="input"
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      deciding_set_type: event.target
+                        .value as TournamentDecidingSetType,
+                    }))
+                  }
+                  value={draft.deciding_set_type}
+                >
+                  <option value="regular">Normal set</option>
+                  <option value="match_tiebreak">Maç tie-breaki</option>
+                </select>
+              </label>
+              {draft.deciding_set_type === "match_tiebreak" ? (
+                <label className="grid gap-2 text-sm font-medium text-[#34443a]">
+                  Maç tie-breaki kaç puan
+                  <input
+                    className="input"
+                    max={30}
+                    min={1}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        deciding_match_tiebreak_points: Number(
+                          event.target.value,
+                        ),
+                      }))
+                    }
+                    required
+                    type="number"
+                    value={draft.deciding_match_tiebreak_points}
+                  />
+                </label>
+              ) : null}
+            </div>
             <TournamentDateField
               label="Grup maçları başlangıç"
               onChange={(value) =>
