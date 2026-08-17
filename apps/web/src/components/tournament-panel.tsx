@@ -15,6 +15,7 @@ import {
   ChevronRight,
   CirclePlus,
   ListFilter,
+  Pencil,
   Search,
   Trophy,
   X,
@@ -22,13 +23,20 @@ import {
 import { useId, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
-import type { Court, TournamentWithDetails } from "@/lib/types";
+import type { Court, TournamentMatch, TournamentWithDetails } from "@/lib/types";
 
 type TournamentScheduleScope = "all" | "day" | "week";
 type TournamentDetailTab = "schedule" | "players";
 type TournamentAdminMode = "create" | "edit";
 const tournamentDurationOptions = [30, 45, 60, 75, 90, 105, 120, 150, 180];
 export const DEFAULT_TOURNAMENT_COLOR = "#237000";
+const tournamentWeekdayFormatter = new Intl.DateTimeFormat("tr-TR", {
+  weekday: "short",
+});
+const tournamentShortDateFormatter = new Intl.DateTimeFormat("tr-TR", {
+  day: "numeric",
+  month: "short",
+});
 
 export function getTournamentTextColor(color: string) {
   const match = /^#([0-9a-f]{6})$/i.exec(color);
@@ -270,11 +278,13 @@ function defaultTournamentDate(
 export function TournamentDetailPanel({
   currentTime,
   onClose,
+  onEditMatch,
   selectedTournamentId,
   tournaments,
 }: {
   currentTime: Date;
   onClose: () => void;
+  onEditMatch?: (match: TournamentMatch) => void;
   selectedTournamentId: string | null;
   tournaments: TournamentWithDetails[];
 }) {
@@ -303,6 +313,31 @@ export function TournamentDetailPanel({
   const defaultAnchorTimestamp = selectedTournament
     ? defaultTournamentDate(selectedTournament, currentTime).getTime()
     : startOfDay(currentTime).getTime();
+  const categoriesById = useMemo(
+    () =>
+      new Map(
+        selectedTournament?.categories.map((category) => [category.id, category]) ??
+          [],
+      ),
+    [selectedTournament],
+  );
+  const groupsById = useMemo(
+    () =>
+      new Map(
+        selectedTournament?.groups.map((group) => [group.id, group]) ?? [],
+      ),
+    [selectedTournament],
+  );
+  const participantsById = useMemo(
+    () =>
+      new Map(
+        selectedTournament?.participants.map((participant) => [
+          participant.id,
+          participant,
+        ]) ?? [],
+      ),
+    [selectedTournament],
+  );
 
   const participantOptions = useMemo(() => {
     if (!selectedTournament) {
@@ -402,6 +437,35 @@ export function TournamentDetailPanel({
     }
 
     return [...grouped.entries()];
+  }, [visibleMatches]);
+
+  const weekDays = useMemo(() => {
+    const weekStart = startOfWeek(anchorDate, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  }, [anchorDate]);
+  const weekTimeSlots = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          visibleMatches.map((match) =>
+            format(new Date(match.starts_at), "HH:mm"),
+          ),
+        ),
+      ).sort((first, second) => first.localeCompare(second)),
+    [visibleMatches],
+  );
+  const weekMatchesBySlot = useMemo(() => {
+    const grouped = new Map<string, TournamentMatch[]>();
+
+    for (const match of visibleMatches) {
+      const startsAt = new Date(match.starts_at);
+      const key = `${dateInputValue(startsAt)}-${format(startsAt, "HH:mm")}`;
+      const slotMatches = grouped.get(key) ?? [];
+      slotMatches.push(match);
+      grouped.set(key, slotMatches);
+    }
+
+    return grouped;
   }, [visibleMatches]);
 
   if (!selectedTournament) {
@@ -708,93 +772,242 @@ export function TournamentDetailPanel({
           </p>
 
           {matchesByDay.length ? (
-            <div className="mt-4 space-y-4">
-              {matchesByDay.map(([date, matches]) => (
-                <div
-                  className="overflow-hidden rounded-md border border-[#ddd7c8]"
-                  key={date}
-                >
+            <>
+              {scope === "week" && weekTimeSlots.length ? (
+                <div className="mt-4 hidden overflow-hidden rounded-md border border-[#ddd7c8] bg-white xl:block">
                   <div
-                    className="sticky top-0 z-10 px-4 py-2.5"
-                    style={tournamentAccentStyle}
+                    className="grid min-w-0"
+                    style={{
+                      gridTemplateColumns:
+                        "72px repeat(7, minmax(0, 1fr))",
+                    }}
                   >
-                    <h4 className="font-semibold capitalize">
-                      {formatMatchDay(localDate(date))}
-                    </h4>
-                  </div>
-                  <div className="divide-y divide-[#eee7db] bg-white">
-                    {matches.map((match) => {
-                      const category = selectedTournament.categories.find(
-                        (item) => item.id === match.category_id,
-                      );
-                      const group = selectedTournament.groups.find(
-                        (item) => item.id === match.group_id,
-                      );
-                      const firstEntry = selectedTournament.participants.find(
-                        (participant) =>
-                          participant.id === match.player1_entry_id,
-                      );
-                      const secondEntry = selectedTournament.participants.find(
-                        (participant) =>
-                          participant.id === match.player2_entry_id,
-                      );
-                      const isDoublesMatch =
-                        (firstEntry?.player_ids.length ?? 0) > 1 ||
-                        (secondEntry?.player_ids.length ?? 0) > 1;
-                      const isPast = new Date(match.ends_at) < currentTime;
+                    <div
+                      className="grid min-h-14 place-items-center border-b border-r border-current px-2 text-xs font-bold uppercase"
+                      style={tournamentAccentStyle}
+                    >
+                      Saat
+                    </div>
+                    {weekDays.map((day) => (
+                      <div
+                        className="grid min-h-14 place-items-center border-b border-r border-current px-1.5 py-2 text-center last:border-r-0"
+                        key={day.toISOString()}
+                        style={tournamentAccentStyle}
+                      >
+                        <p className="text-xs font-bold capitalize leading-tight">
+                          {tournamentWeekdayFormatter.format(day)}
+                        </p>
+                        <p className="mt-0.5 text-[11px] font-medium leading-tight opacity-85">
+                          {tournamentShortDateFormatter.format(day)}
+                        </p>
+                      </div>
+                    ))}
 
-                      return (
-                        <article
-                          className={`grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 px-3 py-3 transition sm:grid-cols-[78px_minmax(0,1fr)] sm:gap-4 sm:px-4 ${
-                            isPast ? "opacity-45" : ""
-                          }`}
-                          key={match.id}
+                    {weekTimeSlots.map((time) => (
+                      <div className="contents" key={time}>
+                        <div
+                          className="grid min-h-24 place-items-start border-b border-r border-[#eee7db] px-2 py-3 text-center text-lg font-bold tabular-nums"
+                          style={{
+                            backgroundColor: `${tournamentColor}14`,
+                            color: tournamentColor,
+                          }}
                         >
-                          <time
-                            className={`text-xl font-bold tabular-nums sm:text-2xl ${
-                              isPast ? "text-[#68756b]" : ""
-                            }`}
-                            style={isPast ? undefined : { color: tournamentColor }}
-                          >
-                            {format(new Date(match.starts_at), "HH:mm")}
-                          </time>
-                          <div className="min-w-0">
-                            {isDoublesMatch ? (
-                              <div
-                                aria-label={`${match.player1_name} ve ${match.player2_name}`}
-                                className="grid gap-0.5 text-[12px] font-semibold leading-tight min-[380px]:text-[13px] sm:text-base"
-                                title={`${match.player1_name} vs ${match.player2_name}`}
-                              >
-                                <p className="truncate">{match.player1_name}</p>
-                                <p className="truncate">{match.player2_name}</p>
-                              </div>
-                            ) : (
-                              <p className="truncate text-sm font-semibold sm:text-base">
-                                {match.player1_name}
-                                <span className="px-2 text-xs font-normal text-[#8b8f86]">
-                                  vs
-                                </span>
-                                {match.player2_name}
-                              </p>
-                            )}
-                            <div className="mt-1 flex min-w-0 items-center justify-between gap-3 text-xs text-[#68756b]">
-                              <p className="truncate">
-                                {category?.name ?? "Kategori"}
-                                {group ? ` · Grup ${group.name}` : ""}
-                                {match.phase === "final" ? " · Final" : ""}
-                              </p>
-                              <p className="shrink-0 font-medium">
-                                {match.courts?.name ?? "Kort belirlenecek"}
-                              </p>
+                          {time}
+                        </div>
+                        {weekDays.map((day) => {
+                          const key = `${dateInputValue(day)}-${time}`;
+                          const slotMatches = weekMatchesBySlot.get(key) ?? [];
+
+                          return (
+                            <div
+                              className="grid min-h-24 min-w-0 content-start gap-1.5 border-b border-r border-[#eee7db] p-1.5 last:border-r-0"
+                              key={key}
+                            >
+                              {slotMatches.map((match) => {
+                                const category = categoriesById.get(
+                                  match.category_id,
+                                );
+                                const group = match.group_id
+                                  ? groupsById.get(match.group_id)
+                                  : null;
+                                const isPast =
+                                  new Date(match.ends_at) < currentTime;
+                                const matchContent = (
+                                  <>
+                                    {onEditMatch ? (
+                                      <Pencil
+                                        aria-hidden="true"
+                                        className="absolute right-1.5 top-1.5 opacity-75"
+                                        size={12}
+                                      />
+                                    ) : null}
+                                    <div className="grid gap-0.5 pr-3 text-[11px] font-semibold leading-tight">
+                                      <p className="break-words">
+                                        {match.player1_name}
+                                      </p>
+                                      <p className="break-words border-t border-current/25 pt-0.5">
+                                        {match.player2_name}
+                                      </p>
+                                    </div>
+                                    <p className="truncate text-[9px] font-medium leading-tight opacity-85">
+                                      {category?.name ?? "Kategori"}
+                                      {group ? ` · Grup ${group.name}` : " · Final"}
+                                    </p>
+                                    <p className="truncate text-[9px] font-medium leading-tight opacity-85">
+                                      {match.courts?.name ?? "Kort belirlenecek"}
+                                    </p>
+                                  </>
+                                );
+                                const matchClassName = `relative grid w-full min-w-0 gap-1 rounded border p-2 text-left shadow-sm transition ${
+                                  isPast ? "opacity-45" : ""
+                                }`;
+                                const matchTitle = `${match.player1_name} - ${match.player2_name} · ${category?.name ?? "Kategori"}${
+                                  group ? ` · Grup ${group.name}` : " · Final"
+                                }`;
+
+                                return onEditMatch ? (
+                                  <button
+                                    aria-label={`${matchTitle} maçını düzenle`}
+                                    className={`${matchClassName} cursor-pointer hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2`}
+                                    key={match.id}
+                                    onClick={() => onEditMatch(match)}
+                                    style={tournamentAccentStyle}
+                                    title="Maçı düzenle"
+                                    type="button"
+                                  >
+                                    {matchContent}
+                                  </button>
+                                ) : (
+                                  <article
+                                    aria-label={matchTitle}
+                                    className={matchClassName}
+                                    key={match.id}
+                                    style={tournamentAccentStyle}
+                                  >
+                                    {matchContent}
+                                  </article>
+                                );
+                              })}
                             </div>
-                          </div>
-                        </article>
-                      );
-                    })}
+                          );
+                        })}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
-            </div>
+              ) : null}
+
+              <div
+                className={`mt-4 space-y-4 ${
+                  scope === "week" ? "xl:hidden" : ""
+                }`}
+              >
+                {matchesByDay.map(([date, matches]) => (
+                  <div
+                    className="overflow-hidden rounded-md border border-[#ddd7c8]"
+                    key={date}
+                  >
+                    <div
+                      className="sticky top-0 z-10 px-4 py-2.5"
+                      style={tournamentAccentStyle}
+                    >
+                      <h4 className="font-semibold capitalize">
+                        {formatMatchDay(localDate(date))}
+                      </h4>
+                    </div>
+                    <div className="divide-y divide-[#eee7db] bg-white">
+                      {matches.map((match) => {
+                        const category = categoriesById.get(match.category_id);
+                        const group = match.group_id
+                          ? groupsById.get(match.group_id)
+                          : null;
+                        const firstEntry = participantsById.get(
+                          match.player1_entry_id,
+                        );
+                        const secondEntry = participantsById.get(
+                          match.player2_entry_id,
+                        );
+                        const isDoublesMatch =
+                          (firstEntry?.player_ids.length ?? 0) > 1 ||
+                          (secondEntry?.player_ids.length ?? 0) > 1;
+                        const isPast = new Date(match.ends_at) < currentTime;
+                        const rowClassName = `grid w-full grid-cols-[64px_minmax(0,1fr)] items-center gap-3 px-3 py-3 text-left transition sm:grid-cols-[78px_minmax(0,1fr)] sm:gap-4 sm:px-4 ${
+                          isPast ? "opacity-45" : ""
+                        } ${
+                          onEditMatch
+                            ? "cursor-pointer hover:bg-[#f7f1e5] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+                            : ""
+                        }`;
+                        const rowContent = (
+                          <>
+                            <time
+                              className={`text-xl font-bold tabular-nums sm:text-2xl ${
+                                isPast ? "text-[#68756b]" : ""
+                              }`}
+                              style={
+                                isPast ? undefined : { color: tournamentColor }
+                              }
+                            >
+                              {format(new Date(match.starts_at), "HH:mm")}
+                            </time>
+                            <div className="min-w-0">
+                              {isDoublesMatch ? (
+                                <div
+                                  aria-label={`${match.player1_name} ve ${match.player2_name}`}
+                                  className="grid gap-0.5 text-[12px] font-semibold leading-tight min-[380px]:text-[13px] sm:text-base"
+                                  title={`${match.player1_name} vs ${match.player2_name}`}
+                                >
+                                  <p className="truncate">{match.player1_name}</p>
+                                  <p className="truncate">{match.player2_name}</p>
+                                </div>
+                              ) : (
+                                <p className="truncate text-sm font-semibold sm:text-base">
+                                  {match.player1_name}
+                                  <span className="px-2 text-xs font-normal text-[#8b8f86]">
+                                    vs
+                                  </span>
+                                  {match.player2_name}
+                                </p>
+                              )}
+                              <div className="mt-1 flex min-w-0 items-center justify-between gap-3 text-xs text-[#68756b]">
+                                <p className="truncate">
+                                  {category?.name ?? "Kategori"}
+                                  {group ? ` · Grup ${group.name}` : ""}
+                                  {match.phase === "final" ? " · Final" : ""}
+                                </p>
+                                <span className="flex shrink-0 items-center gap-1.5 font-medium">
+                                  {match.courts?.name ?? "Kort belirlenecek"}
+                                  {onEditMatch ? (
+                                    <Pencil aria-hidden="true" size={13} />
+                                  ) : null}
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        );
+
+                        return onEditMatch ? (
+                          <button
+                            aria-label={`${match.player1_name} - ${match.player2_name} maçını düzenle`}
+                            className={rowClassName}
+                            key={match.id}
+                            onClick={() => onEditMatch(match)}
+                            title="Maçı düzenle"
+                            type="button"
+                          >
+                            {rowContent}
+                          </button>
+                        ) : (
+                          <article className={rowClassName} key={match.id}>
+                            {rowContent}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="mt-4 rounded-md border border-dashed border-[#cfc8b8] p-8 text-center">
               <Trophy className="mx-auto text-[#8b8f86]" size={26} />

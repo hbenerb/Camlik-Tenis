@@ -5244,7 +5244,11 @@ export function ClubApp() {
           </aside>
         ) : null}
 
-        <section className="mx-auto w-full min-w-0 max-w-5xl">
+        <section
+          className={`mx-auto w-full min-w-0 ${
+            isTournamentView ? "max-w-7xl" : "max-w-5xl"
+          }`}
+        >
           {!isTournamentView ? (
             <>
               <div className="mb-3 lg:hidden">
@@ -5366,6 +5370,9 @@ export function ClubApp() {
                 setSelectedTournamentId(null);
                 setActiveTab("calendar");
               }}
+              onEditMatch={
+                isAdmin(profile) ? openTournamentMatchEditor : undefined
+              }
               selectedTournamentId={selectedTournamentId}
               tournaments={tournaments}
             />
