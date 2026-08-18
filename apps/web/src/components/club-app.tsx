@@ -40,6 +40,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { downloadReportWorkbook } from "@/lib/report-workbook";
+import type {
+  ReportWorkbookEntry,
+  ReportWorkbookRange,
+} from "@/lib/report-workbook";
 import {
   DEFAULT_TOURNAMENT_COLOR,
   getTournamentTextColor,
@@ -105,12 +110,7 @@ type DayAvailability = "past" | "bookable" | "future";
 type MatchType = "singles" | "doubles" | "lesson" | "tournament";
 type MatchReservationType = "singles" | "doubles";
 type AdminTab = "settings" | "members" | "reports" | "tournaments";
-type AdminReportRange =
-  | "this_month"
-  | "last_month"
-  | "last_3_months"
-  | "this_year"
-  | "custom";
+type AdminReportRange = ReportWorkbookRange;
 type AdminReportSortField =
   | "date"
   | "weekday"
@@ -121,6 +121,7 @@ type AdminReportSortField =
 type SortDirection = "asc" | "desc";
 type AdminReportDetailRow = {
   court: string;
+  createdBy: string;
   date: string;
   email: string;
   info: string;
@@ -317,6 +318,8 @@ const adminTabLabels: Record<AdminTab, string> = {
 };
 
 const reportRangeLabels: Record<AdminReportRange, string> = {
+  this_week: "Bu hafta",
+  last_week: "Geçen hafta",
   this_month: "Bu ay",
   last_month: "Geçen ay",
   last_3_months: "Son 3 ay",
@@ -1111,6 +1114,16 @@ function getReportDateRange(
     };
   }
 
+  if (range === "this_week" || range === "last_week") {
+    const weekDate = range === "last_week" ? addWeeks(currentTime, -1) : currentTime;
+    const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 });
+
+    return {
+      end: endOfLocalDay(addDays(weekStart, 6)),
+      start: startOfDay(weekStart),
+    };
+  }
+
   if (range === "last_month") {
     const lastMonth = addMonths(currentTime, -1);
     return {
@@ -1134,7 +1147,7 @@ function getReportDateRange(
   }
 
   return {
-    end: endOfLocalDay(currentTime),
+    end: endOfLocalMonth(currentTime),
     start: startOfLocalMonth(currentTime),
   };
 }
@@ -1173,6 +1186,38 @@ function getReservationReportTypeLabel(reservation: Reservation) {
   }
 
   return "Özel/Diğer";
+}
+
+function getReservationReportPlayerLines(reservation: Reservation) {
+  const lesson = parseReservationLessonNote(reservation.note);
+  if (lesson) {
+    return [
+      `Eğitmen: ${displayPlayerName(lesson.trainer_name)}`,
+      `Öğrenci: ${displayPlayerName(lesson.student_name)}`,
+    ];
+  }
+
+  const match = parseReservationMatchNote(reservation.note);
+  if (!match) {
+    return [getLegacyReservationOwner(reservation)];
+  }
+
+  if (match.match_type === "singles") {
+    return [
+      `${displayPlayerName(match.team1_player1_name)} - ${displayPlayerName(
+        match.team2_player1_name,
+      )}`,
+    ];
+  }
+
+  return [
+    `${displayPlayerName(match.team1_player1_name)} / ${displayPlayerName(
+      match.team1_player2_name,
+    )}`,
+    `${displayPlayerName(match.team2_player1_name)} / ${displayPlayerName(
+      match.team2_player2_name,
+    )}`,
+  ];
 }
 
 function getReservationDurationHours(
@@ -8044,11 +8089,13 @@ function AdminPanel({
 
       {adminTab === "reports" ? (
         <AdminReportsPanel
+          courts={courts}
           currentProfile={currentProfile}
           currentTime={currentTime}
           members={members}
           reservations={reservations}
           settings={settingsDraft}
+          tournaments={tournaments}
         />
       ) : null}
 
@@ -8220,17 +8267,21 @@ function MemberCheckbox({
 }
 
 function AdminReportsPanel({
+  courts,
   currentProfile,
   currentTime,
   members,
   reservations,
   settings,
+  tournaments,
 }: {
+  courts: Court[];
   currentProfile: Profile;
   currentTime: Date;
   members: Profile[];
   reservations: Reservation[];
   settings: ClubSettings;
+  tournaments: TournamentWithDetails[];
 }) {
   const memberOptions = useMemo(
     () => uniqueProfiles([currentProfile, ...members]),
@@ -8243,6 +8294,7 @@ function AdminReportsPanel({
     useState<AdminReportSortField>("date");
   const [detailSortDirection, setDetailSortDirection] =
     useState<SortDirection>("asc");
+  const [isDownloading, setIsDownloading] = useState(false);
   const [customStartDate, setCustomStartDate] = useState(() =>
     dateInputValue(startOfLocalMonth(new Date())),
   );
@@ -8290,28 +8342,141 @@ function AdminReportsPanel({
     reservations,
     selectedMemberId,
   ]);
-  const reportTotals = reportReservations.reduce(
-    (totals, reservation) => {
-      const reservationType = getReservationReportType(reservation);
-      totals.total += 1;
-      totals.hours += getReservationDurationHours(
-        reservation,
-        settings.reservation_slot_minutes,
-      );
+  const reportTournamentMatches = useMemo(() => {
+    if (!isDateRangeValid) {
+      return [];
+    }
 
-      if (reservationType === "lesson") {
+    const selectedMemberName = normalizeFullName(
+      selectedMember?.full_name ?? "",
+    ).toLocaleLowerCase("tr-TR");
+
+    return tournaments.flatMap((tournament) =>
+      tournament.matches
+        .filter((match) => {
+          const startsAt = new Date(match.starts_at);
+          const players = normalizeFullName(
+            `${match.player1_name} ${match.player2_name}`,
+          ).toLocaleLowerCase("tr-TR");
+
+          return (
+            match.status !== "canceled" &&
+            startsAt >= reportDateRange.start &&
+            startsAt <= reportDateRange.end &&
+            (selectedMemberId === "all" ||
+              (selectedMemberName.length > 0 &&
+                players.includes(selectedMemberName)))
+          );
+        })
+        .map((match) => ({
+          categoryName:
+            tournament.categories.find(
+              (category) => category.id === match.category_id,
+            )?.name ?? "Kategori",
+          groupName:
+            tournament.groups.find((group) => group.id === match.group_id)
+              ?.name ?? null,
+          match,
+          tournament,
+        })),
+    );
+  }, [
+    isDateRangeValid,
+    reportDateRange.end,
+    reportDateRange.start,
+    selectedMember?.full_name,
+    selectedMemberId,
+    tournaments,
+  ]);
+  const reportEntries = useMemo<ReportWorkbookEntry[]>(() => {
+    const reservationEntries = reportReservations.map((reservation) => {
+      const owner = memberMap.get(reservation.user_id);
+      const ownerName =
+        owner?.full_name ??
+        reservation.profiles?.full_name ??
+        reservation.profiles?.email ??
+        "Bilinmiyor";
+
+      return {
+        courtId: reservation.court_id,
+        courtName: reservation.courts?.name ?? "Kort",
+        createdBy: ownerName,
+        details: getReservationReportTypeLabel(reservation),
+        endsAt: reservation.ends_at,
+        id: reservation.id,
+        playerLines: getReservationReportPlayerLines(reservation),
+        startsAt: reservation.starts_at,
+        type: getReservationReportType(reservation),
+        typeLabel: getReservationReportTypeLabel(reservation),
+      } satisfies ReportWorkbookEntry;
+    });
+    const tournamentEntries = reportTournamentMatches.map(
+      ({ categoryName, groupName, match, tournament }) => {
+        const creator = tournament.created_by
+          ? memberMap.get(tournament.created_by)
+          : null;
+        const details = [
+          "Turnuva",
+          tournament.name,
+          categoryName,
+          groupName,
+          match.round_label,
+        ].filter(Boolean);
+
+        return {
+          courtId: match.court_id ?? "tournament-court-unassigned",
+          courtName: match.courts?.name ?? "Kort belirlenmedi",
+          createdBy:
+            creator?.full_name ?? creator?.email ?? "Turnuva yöneticisi",
+          details: details.join(" · "),
+          endsAt: match.ends_at,
+          id: match.id,
+          playerLines: [match.player1_name, match.player2_name],
+          startsAt: match.starts_at,
+          type: "tournament",
+          typeLabel: "Turnuva",
+        } satisfies ReportWorkbookEntry;
+      },
+    );
+
+    return [...reservationEntries, ...tournamentEntries].sort(
+      (first, second) =>
+        new Date(first.startsAt).getTime() - new Date(second.startsAt).getTime(),
+    );
+  }, [memberMap, reportReservations, reportTournamentMatches]);
+  const reportTotals = reportEntries.reduce(
+    (totals, entry) => {
+      const durationMs =
+        new Date(entry.endsAt).getTime() - new Date(entry.startsAt).getTime();
+      totals.total += 1;
+      totals.hours +=
+        durationMs > 0
+          ? durationMs / (60 * 60 * 1000)
+          : settings.reservation_slot_minutes / 60;
+
+      if (entry.type === "lesson") {
         totals.lessons += 1;
-      } else if (reservationType === "singles") {
+      } else if (entry.type === "singles") {
         totals.singles += 1;
-      } else if (reservationType === "doubles") {
+      } else if (entry.type === "doubles") {
         totals.doubles += 1;
+      } else if (entry.type === "tournament") {
+        totals.tournaments += 1;
       } else {
         totals.other += 1;
       }
 
       return totals;
     },
-    { doubles: 0, hours: 0, lessons: 0, other: 0, singles: 0, total: 0 },
+    {
+      doubles: 0,
+      hours: 0,
+      lessons: 0,
+      other: 0,
+      singles: 0,
+      total: 0,
+      tournaments: 0,
+    },
   );
   const summaryRows = useMemo<AdminReportSummaryRow[]>(
     () =>
@@ -8371,29 +8536,66 @@ function AdminReportsPanel({
         }),
     [memberOptions, reportReservations, settings.reservation_slot_minutes],
   );
-  const detailRows: AdminReportDetailRow[] = reportReservations.map((reservation) => {
-    const startsAt = new Date(reservation.starts_at);
-    const endsAt = new Date(reservation.ends_at);
-    const owner = memberMap.get(reservation.user_id);
-
-    return {
-      court: reservation.courts?.name ?? "Kort",
-      date: format(startsAt, "dd.MM.yyyy"),
-      email: owner?.email ?? reservation.profiles?.email ?? "",
-      info: getReservationDisplayLines(reservation).join(" / "),
-      memberName:
+  const detailRows: AdminReportDetailRow[] = [
+    ...reportReservations.map((reservation) => {
+      const startsAt = new Date(reservation.starts_at);
+      const endsAt = new Date(reservation.ends_at);
+      const owner = memberMap.get(reservation.user_id);
+      const ownerName =
         owner?.full_name ??
         reservation.profiles?.full_name ??
         reservation.profiles?.email ??
-        "İsim yok",
-      sortDate: startsAt.getTime(),
-      sortTime: timeSortValue(startsAt),
-      sortWeekday: weekdaySortOrder(startsAt),
-      time: `${formatTime(startsAt)} - ${formatTime(endsAt)}`,
-      type: getReservationReportTypeLabel(reservation),
-      weekday: formatWeekdayLong(startsAt),
-    };
-  }).sort((first, second) => {
+        "İsim yok";
+
+      return {
+        court: reservation.courts?.name ?? "Kort",
+        createdBy: ownerName,
+        date: format(startsAt, "dd.MM.yyyy"),
+        email: owner?.email ?? reservation.profiles?.email ?? "",
+        info: getReservationReportPlayerLines(reservation).join(" / "),
+        memberName: ownerName,
+        sortDate: startsAt.getTime(),
+        sortTime: timeSortValue(startsAt),
+        sortWeekday: weekdaySortOrder(startsAt),
+        time: `${formatTime(startsAt)} - ${formatTime(endsAt)}`,
+        type: getReservationReportTypeLabel(reservation),
+        weekday: formatWeekdayLong(startsAt),
+      };
+    }),
+    ...reportTournamentMatches.map(
+      ({ categoryName, groupName, match, tournament }) => {
+        const startsAt = new Date(match.starts_at);
+        const endsAt = new Date(match.ends_at);
+        const creator = tournament.created_by
+          ? memberMap.get(tournament.created_by)
+          : null;
+
+        return {
+          court: match.courts?.name ?? "Kort belirlenmedi",
+          createdBy:
+            creator?.full_name ?? creator?.email ?? "Turnuva yöneticisi",
+          date: format(startsAt, "dd.MM.yyyy"),
+          email: "",
+          info: [
+            `${match.player1_name} - ${match.player2_name}`,
+            tournament.name,
+            categoryName,
+            groupName,
+            match.round_label,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          memberName: "Turnuva maçı",
+          sortDate: startsAt.getTime(),
+          sortTime: timeSortValue(startsAt),
+          sortWeekday: weekdaySortOrder(startsAt),
+          time: `${formatTime(startsAt)} - ${formatTime(endsAt)}`,
+          type: "Turnuva",
+          weekday: formatWeekdayLong(startsAt),
+        };
+      },
+    ),
+  ].sort((first, second) => {
     let comparison = 0;
 
     if (detailSortField === "date") {
@@ -8423,55 +8625,39 @@ function AdminReportsPanel({
     return detailSortDirection === "asc" ? comparison : -comparison;
   });
   const isSingleMemberReport = selectedMemberId !== "all";
-  const hasReportRows = isSingleMemberReport
-    ? detailRows.length > 0
-    : summaryRows.some((row) => row.total > 0);
+  const hasReportRows = detailRows.length > 0;
 
   async function downloadReport() {
-    if (!isDateRangeValid || !hasReportRows) {
+    if (!isDateRangeValid || !hasReportRows || isDownloading) {
       return;
     }
 
-    const XLSX = await import("xlsx");
-    const workbook = XLSX.utils.book_new();
-    const detailExcelRows = detailRows.map((row) => ({
-      "Ad Soyad": row.memberName,
-      "E-posta": row.email,
-      Tarih: row.date,
-      Gün: row.weekday,
-      Saat: row.time,
-      Kort: row.court,
-      Tür: row.type,
-      "Rezervasyon Bilgisi": row.info,
-    }));
+    setIsDownloading(true);
 
-    if (!isSingleMemberReport) {
-      const summaryExcelRows = summaryRows.map((row) => ({
-        "Ad Soyad": row.memberName,
-        "E-posta": row.email,
-        "Toplam Rezervasyon": row.total,
-        Ders: row.lessons,
-        Tekler: row.singles,
-        Çiftler: row.doubles,
-        "Özel/Diğer": row.other,
-        "Toplam Saat": row.hours,
-      }));
-      XLSX.utils.book_append_sheet(
-        workbook,
-        XLSX.utils.json_to_sheet(summaryExcelRows),
-        "Özet",
-      );
+    try {
+      await downloadReportWorkbook({
+        courts: courts
+          .slice()
+          .sort((first, second) => first.display_order - second.display_order)
+          .map((court) => ({ id: court.id, name: court.name })),
+        detailRows,
+        endDate: reportDateRange.end,
+        entries: reportEntries,
+        range: reportRange,
+        selectedMemberName:
+          selectedMember?.full_name ?? selectedMember?.email ?? null,
+        slotMinutes: settings.reservation_slot_minutes,
+        startDate: reportDateRange.start,
+        summaryRows: isSingleMemberReport
+          ? summaryRows.filter(
+              (row) => row.email === (selectedMember?.email ?? ""),
+            )
+          : summaryRows,
+        timeSlots: buildTimeSlots(settings),
+      });
+    } finally {
+      setIsDownloading(false);
     }
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(detailExcelRows),
-      "Detay",
-    );
-    XLSX.writeFile(
-      workbook,
-      `camlik-tenis-rapor-${dateInputValue(currentTime)}.xlsx`,
-    );
   }
 
   return (
@@ -8480,19 +8666,19 @@ function AdminReportsPanel({
         <div>
           <h2 className="text-lg font-semibold">Raporlar</h2>
           <p className="mt-1 text-sm text-[#68756b]">
-            Onaylı rezervasyonları üye ve dönem bazında inceleyin.
+            Rezervasyonları, dersleri ve turnuva maçlarını gün gün inceleyin.
           </p>
         </div>
         <button
           className="primary-button inline-flex w-full items-center gap-2 sm:w-auto"
-          disabled={!isDateRangeValid || !hasReportRows}
+          disabled={!isDateRangeValid || !hasReportRows || isDownloading}
           onClick={() => {
             void downloadReport();
           }}
           type="button"
         >
           <FileSpreadsheet size={16} />
-          Excel çıkar
+          {isDownloading ? "Hazırlanıyor..." : "Excel çıkar"}
         </button>
       </div>
 
@@ -8601,7 +8787,10 @@ function AdminReportsPanel({
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <ReportMetric label="Toplam" value={reportTotals.total} />
-        <ReportMetric label="Ders" value={reportTotals.lessons} />
+        <ReportMetric
+          label="Ders / Turnuva"
+          value={`${reportTotals.lessons} / ${reportTotals.tournaments}`}
+        />
         <ReportMetric
           label="Tekler / Çiftler"
           value={`${reportTotals.singles} / ${reportTotals.doubles}`}
@@ -8619,7 +8808,7 @@ function AdminReportsPanel({
           </div>
           <ReportDetailCards rows={detailRows} showMember={false} />
           <div className="hidden overflow-x-auto md:block">
-            <table className="min-w-[820px] w-full border-collapse text-sm">
+            <table className="min-w-[960px] w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
                   <th className="py-3 pr-3 font-medium">Tarih</th>
@@ -8627,7 +8816,8 @@ function AdminReportsPanel({
                   <th className="py-3 pr-3 font-medium">Saat</th>
                   <th className="py-3 pr-3 font-medium">Kort</th>
                   <th className="py-3 pr-3 font-medium">Tür</th>
-                  <th className="py-3 pr-3 font-medium">Rezervasyon bilgisi</th>
+                  <th className="py-3 pr-3 font-medium">Oyuncular / Bilgi</th>
+                  <th className="py-3 pr-3 font-medium">Kaydı yapan</th>
                 </tr>
               </thead>
               <tbody>
@@ -8642,6 +8832,9 @@ function AdminReportsPanel({
                     <td className="py-3 pr-3">{row.court}</td>
                     <td className="py-3 pr-3">{row.type}</td>
                     <td className="py-3 pr-3">{row.info}</td>
+                    <td className="py-3 pr-3 text-xs text-[#68756b]">
+                      {row.createdBy}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -8650,7 +8843,7 @@ function AdminReportsPanel({
           {detailRows.length === 0 ? (
             <EmptyState
               title="Kayıt yok"
-              text="Bu filtrelerle onaylı rezervasyon bulunmuyor."
+              text="Bu filtrelerle rezervasyon, ders veya turnuva maçı bulunmuyor."
             />
           ) : null}
         </div>
@@ -8697,7 +8890,7 @@ function AdminReportsPanel({
             </div>
             <ReportDetailCards rows={detailRows} showMember />
             <div className="hidden overflow-x-auto md:block">
-            <table className="min-w-[980px] w-full border-collapse text-sm">
+            <table className="min-w-[1120px] w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[#e6dfd2] text-left text-[#68756b]">
                   <th className="py-3 pr-3 font-medium">Üye</th>
@@ -8706,7 +8899,8 @@ function AdminReportsPanel({
                   <th className="py-3 pr-3 font-medium">Saat</th>
                   <th className="py-3 pr-3 font-medium">Kort</th>
                   <th className="py-3 pr-3 font-medium">Tür</th>
-                  <th className="py-3 pr-3 font-medium">Rezervasyon bilgisi</th>
+                  <th className="py-3 pr-3 font-medium">Oyuncular / Bilgi</th>
+                  <th className="py-3 pr-3 font-medium">Kaydı yapan</th>
                 </tr>
               </thead>
               <tbody>
@@ -8725,6 +8919,9 @@ function AdminReportsPanel({
                     <td className="py-3 pr-3">{row.court}</td>
                     <td className="py-3 pr-3">{row.type}</td>
                     <td className="py-3 pr-3">{row.info}</td>
+                    <td className="py-3 pr-3 text-xs text-[#68756b]">
+                      {row.createdBy}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -8733,7 +8930,7 @@ function AdminReportsPanel({
             {detailRows.length === 0 ? (
               <EmptyState
                 title="Kayıt yok"
-                text="Bu filtrelerle onaylı rezervasyon bulunmuyor."
+                text="Bu filtrelerle rezervasyon, ders veya turnuva maçı bulunmuyor."
               />
             ) : null}
           </div>
@@ -8803,6 +9000,9 @@ function ReportDetailCards({
             </span>
           </div>
           <p className="mt-2 break-words text-sm leading-5">{row.info}</p>
+          <p className="mt-1 text-[11px] italic text-[#68756b]">
+            Kaydı yapan: {row.createdBy}
+          </p>
         </article>
       ))}
     </div>
