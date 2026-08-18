@@ -377,6 +377,7 @@ const THEME_STORAGE_KEY = "camlik-tenis-theme";
 const NOTIFICATION_PROMPT_STORAGE_PREFIX = "camlik-tenis-notification-prompt";
 const EMPTY_PLAYER_LABEL = "-";
 const DEFAULT_NOTIFICATION_TITLE = "Çamlık Tenis";
+const GENERAL_NOTIFICATION_MESSAGE_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 function normalizeFullName(value: string) {
   return value.trim().replace(/\s+/g, " ");
@@ -1391,6 +1392,23 @@ function isNotificationVisibleToUser(
   return !notification.target_user_id || notification.target_user_id === userId;
 }
 
+function isNotificationVisibleInMessages(
+  notification: AppNotification,
+  currentTime: Date,
+) {
+  const sentAt = getNotificationLastSentAt(notification, currentTime);
+
+  if (!sentAt) {
+    return false;
+  }
+
+  return (
+    Boolean(notification.target_user_id) ||
+    currentTime.getTime() - sentAt.getTime() <
+      GENERAL_NOTIFICATION_MESSAGE_RETENTION_MS
+  );
+}
+
 function sortUserNotifications(
   notifications: AppNotification[],
   userId: string,
@@ -1401,7 +1419,7 @@ function sortUserNotifications(
       (notification) =>
         notification.status === "active" &&
         isNotificationVisibleToUser(notification, userId) &&
-        Boolean(getNotificationLastSentAt(notification, currentTime)),
+        isNotificationVisibleInMessages(notification, currentTime),
     )
     .sort((first, second) => {
       const firstSentAt = getNotificationLastSentAt(first, currentTime);
