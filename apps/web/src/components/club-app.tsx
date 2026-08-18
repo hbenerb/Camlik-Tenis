@@ -1012,6 +1012,22 @@ function formatCalendarNavDate(date: Date) {
   }).format(date);
 }
 
+function formatTournamentShortcutDateRange(startValue: string, endValue: string) {
+  const startDate = parseDateInput(startValue);
+  const endDate = parseDateInput(endValue);
+  const startLabel = new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "short",
+  }).format(startDate);
+  const endLabel = new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(endDate);
+
+  return `${startLabel} – ${endLabel}`;
+}
+
 function visibleDayAvailability(
   day: Date,
   bookingWindowDays: number,
@@ -10542,10 +10558,14 @@ function TournamentShortcutButtons({
   }
 
   return (
-    <div className="mb-3 grid gap-2">
+    <div className="mb-3 grid gap-2 border-b border-[#ddd7c8] pb-3 lg:border-b-0 lg:pb-0">
       {tournaments.map((tournament) => {
         const tournamentColor =
           tournament.color || DEFAULT_TOURNAMENT_COLOR;
+        const tournamentDateRange = formatTournamentShortcutDateRange(
+          tournament.group_stage_start_date,
+          tournament.finals_end_date,
+        );
 
         return (
           <button
@@ -10562,9 +10582,20 @@ function TournamentShortcutButtons({
             }}
             type="button"
           >
-            <span className="flex min-w-0 items-center gap-2">
+            <span className="hidden min-w-0 items-center gap-2 lg:flex">
               <Trophy className="shrink-0" size={18} />
               <span className="truncate">{tournament.name}</span>
+            </span>
+            <span className="flex min-w-0 items-center gap-3 lg:hidden">
+              <Trophy className="shrink-0" size={20} />
+              <span className="min-w-0">
+                <span className="block truncate text-base font-bold leading-tight">
+                  {tournament.name}
+                </span>
+                <span className="mt-2 block truncate text-xs font-medium opacity-90">
+                  {tournamentDateRange} · {tournament.players.length} katılımcı
+                </span>
+              </span>
             </span>
             {!tournament.is_active && isManager ? (
               <span className="shrink-0 rounded bg-[#f1eee5] px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-[#68756b]">
