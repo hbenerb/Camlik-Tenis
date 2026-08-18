@@ -32,6 +32,21 @@ export function tournamentSetType(
     : "regular";
 }
 
+export function isRegularSetTiebreakScore(
+  gamesToWin: number,
+  player1Score: number | null,
+  player2Score: number | null,
+) {
+  if (player1Score === null || player2Score === null) {
+    return false;
+  }
+
+  return (
+    Math.max(player1Score, player2Score) === gamesToWin + 1 &&
+    Math.min(player1Score, player2Score) === gamesToWin
+  );
+}
+
 function scoreWinner(
   player1Score: number,
   player2Score: number,
@@ -63,10 +78,15 @@ function validateRegularSet(
   const lowestGames = Math.min(player1Score, player2Score);
   const isStandardWin =
     highestGames === gamesToWin && highestGames - lowestGames >= 2;
-  const isTiebreakWin =
-    highestGames === gamesToWin + 1 && lowestGames === gamesToWin;
+  const isExtendedWin =
+    highestGames === gamesToWin + 1 && lowestGames === gamesToWin - 1;
+  const isTiebreakWin = isRegularSetTiebreakScore(
+    gamesToWin,
+    player1Score,
+    player2Score,
+  );
 
-  if (!isStandardWin && !isTiebreakWin) {
+  if (!isStandardWin && !isExtendedWin && !isTiebreakWin) {
     return `${setNumber}. set skoru ${gamesToWin} oyunluk set sistemine uygun değil.`;
   }
 

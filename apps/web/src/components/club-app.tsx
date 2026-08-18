@@ -68,6 +68,7 @@ import {
   parseDateInput,
 } from "@/lib/time";
 import {
+  isRegularSetTiebreakScore,
   setsNeededToWin,
   tournamentSetType,
   validateTournamentScore,
@@ -10606,10 +10607,11 @@ function TournamentMatchEditDialog({
                       );
                       const isSetTiebreak =
                         setType === "regular" &&
-                        Math.max(player1Score ?? -1, player2Score ?? -1) ===
-                          tournament.set_games_to_win + 1 &&
-                        Math.min(player1Score ?? -1, player2Score ?? -1) ===
-                          tournament.set_games_to_win;
+                        isRegularSetTiebreakScore(
+                          tournament.set_games_to_win,
+                          player1Score,
+                          player2Score,
+                        );
 
                       return (
                         <div
