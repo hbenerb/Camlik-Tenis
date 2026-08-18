@@ -10570,7 +10570,7 @@ function TournamentShortcutButtons({
         return (
           <button
             aria-pressed={selectedTournamentId === tournament.id}
-            className={`flex min-h-28 w-full items-center justify-between gap-3 rounded-md border px-4 py-3 text-left font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] ${
+            className={`flex min-h-28 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-md border px-4 py-3 text-left font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] lg:min-h-14 lg:px-3 lg:py-2 ${
               tournament.is_active ? "" : "opacity-70"
             }`}
             key={tournament.id}
@@ -10582,9 +10582,9 @@ function TournamentShortcutButtons({
             }}
             type="button"
           >
-            <span className="hidden min-h-[84px] min-w-0 flex-1 items-center justify-center gap-3 lg:flex">
-              <Trophy className="shrink-0" size={26} />
-              <span className="truncate text-2xl font-bold">
+            <span className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
+              <Trophy className="shrink-0" size={18} />
+              <span className="min-w-0 flex-1 truncate text-base font-bold">
                 {tournament.name}
               </span>
             </span>
