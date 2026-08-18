@@ -10570,7 +10570,7 @@ function TournamentShortcutButtons({
         return (
           <button
             aria-pressed={selectedTournamentId === tournament.id}
-            className={`flex min-h-28 w-full items-center justify-between gap-3 rounded-md border px-3 py-2 text-left text-sm font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] ${
+            className={`flex min-h-28 w-full items-center justify-between gap-3 rounded-md border px-4 py-3 text-left font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] ${
               tournament.is_active ? "" : "opacity-70"
             }`}
             key={tournament.id}
@@ -10582,17 +10582,19 @@ function TournamentShortcutButtons({
             }}
             type="button"
           >
-            <span className="hidden min-w-0 items-center gap-2 lg:flex">
-              <Trophy className="shrink-0" size={18} />
-              <span className="truncate">{tournament.name}</span>
+            <span className="hidden min-h-[84px] min-w-0 flex-1 items-center justify-center gap-3 lg:flex">
+              <Trophy className="shrink-0" size={26} />
+              <span className="truncate text-2xl font-bold">
+                {tournament.name}
+              </span>
             </span>
-            <span className="flex min-w-0 items-center gap-3 lg:hidden">
-              <Trophy className="shrink-0" size={20} />
-              <span className="min-w-0">
-                <span className="block truncate text-base font-bold leading-tight">
+            <span className="flex min-h-[84px] min-w-0 flex-1 items-center gap-4 lg:hidden">
+              <Trophy className="shrink-0" size={28} />
+              <span className="grid min-w-0 gap-2">
+                <span className="block truncate text-xl font-extrabold leading-tight min-[380px]:text-2xl">
                   {tournament.name}
                 </span>
-                <span className="mt-2 block truncate text-xs font-medium opacity-90">
+                <span className="block truncate text-sm font-semibold leading-tight opacity-90 min-[380px]:text-base">
                   {tournamentDateRange} · {tournament.players.length} katılımcı
                 </span>
               </span>
