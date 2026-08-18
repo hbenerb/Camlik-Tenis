@@ -32,7 +32,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sun,
-  Trophy,
   User as UserIcon,
   Users,
   X,
@@ -10570,7 +10569,7 @@ function TournamentShortcutButtons({
         return (
           <button
             aria-pressed={selectedTournamentId === tournament.id}
-            className={`flex min-h-28 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-md border px-4 py-3 text-left font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] lg:min-h-14 lg:px-3 lg:py-2 ${
+            className={`flex min-h-28 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-md border px-3 py-3 text-left font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] lg:min-h-14 lg:py-2 ${
               tournament.is_active ? "" : "opacity-70"
             }`}
             key={tournament.id}
@@ -10582,15 +10581,29 @@ function TournamentShortcutButtons({
             }}
             type="button"
           >
-            <span className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
-              <Trophy className="shrink-0" size={18} />
-              <span className="min-w-0 flex-1 truncate text-base font-bold">
+            <span className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="size-9 shrink-0 object-contain"
+                height={36}
+                src="/icons/tournament-trophy.png"
+                width={36}
+              />
+              <span className="min-w-0 flex-1 truncate text-sm font-bold">
                 {tournament.name}
               </span>
             </span>
-            <span className="flex min-h-[84px] min-w-0 flex-1 items-center gap-4 lg:hidden">
-              <Trophy className="shrink-0" size={28} />
-              <span className="grid min-w-0 gap-2">
+            <span className="flex min-h-[84px] min-w-0 flex-1 items-center gap-3 lg:hidden">
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="size-16 shrink-0 object-contain"
+                height={64}
+                src="/icons/tournament-trophy.png"
+                width={64}
+              />
+              <span className="flex h-16 min-w-0 flex-1 flex-col justify-between py-0.5">
                 <span className="block truncate text-xl font-extrabold leading-tight min-[380px]:text-2xl">
                   {tournament.name}
                 </span>
