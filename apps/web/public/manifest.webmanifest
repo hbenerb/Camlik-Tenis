@@ -1,6 +1,7 @@
 {
   "name": "Ayvalık Çamlık Tenis Rezervasyon",
   "short_name": "Çamlık Tenis",
+  "id": "/",
   "description": "Ayvalık Çamlık Tenis Kulübü kort rezervasyon uygulaması",
   "lang": "tr",
   "start_url": "/",

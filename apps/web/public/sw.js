@@ -1,4 +1,4 @@
-const CACHE_NAME = "camlik-tenis-v4";
+const CACHE_NAME = "camlik-tenis-v5";
 const SHELL_ASSETS = [
   "/",
   "/manifest.webmanifest",
