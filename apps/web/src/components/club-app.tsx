@@ -40,7 +40,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { PwaInstallButton } from "@/components/pwa-install-button";
 import {
   DEFAULT_TOURNAMENT_COLOR,
   getTournamentTextColor,
@@ -5911,7 +5910,6 @@ function LandingShell({
             <Eye size={19} />
             Misafir olarak devam et
           </button>
-          <PwaInstallButton />
         </div>
 
         {statusMessage ? (
