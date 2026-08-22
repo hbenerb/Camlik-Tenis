@@ -651,7 +651,7 @@ export function TournamentDetailPanel({
             style={detailTab === "players" ? tournamentAccentStyle : undefined}
             type="button"
           >
-            Gruplar
+            Puan Durumu
           </button>
         </div>
       </section>
@@ -1167,10 +1167,10 @@ export function TournamentDetailPanel({
                             {(participantStandingsById.get(participant.id)
                               ?.scoredMatches ?? 0) > 0 ? (
                               <span
-                                className="ml-auto shrink-0 rounded-full px-2 py-1 text-xs font-bold"
+                                className="ml-auto shrink-0 rounded-full px-2.5 py-1 text-sm font-extrabold"
                                 style={{
-                                  backgroundColor: `${tournamentColor}18`,
-                                  color: tournamentColor,
+                                  backgroundColor: "var(--theme-success-bg)",
+                                  color: "var(--theme-success-text)",
                                 }}
                               >
                                 {participantStandingsById.get(participant.id)
