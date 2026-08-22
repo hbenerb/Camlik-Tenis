@@ -814,6 +814,22 @@ function isLessonReservation(reservation: Reservation) {
   return Boolean(parseReservationLessonNote(reservation.note));
 }
 
+function canTrainerManageLessonReservation(
+  profile: Profile | null,
+  userId: string | undefined,
+  reservation: Reservation,
+  currentTime: Date,
+) {
+  return Boolean(
+    profile?.is_trainer &&
+      userId &&
+      reservation.user_id === userId &&
+      isConfirmedReservation(reservation) &&
+      isFutureReservation(reservation, currentTime) &&
+      isLessonReservation(reservation),
+  );
+}
+
 function isConfirmedReservation(reservation: Reservation) {
   return reservation.status === "confirmed";
 }
@@ -1776,6 +1792,14 @@ export function ClubApp() {
     (canManageReservations ||
       (reservationPermissionSchemaReady ? Boolean(profile?.can_book) : true));
   const canMarkLesson = Boolean(profile?.is_trainer) || canManageReservations;
+  const canEditReservation = (reservation: Reservation) =>
+    canManageReservations ||
+    canTrainerManageLessonReservation(
+      profile,
+      user?.id,
+      reservation,
+      currentTime,
+    );
 
   const effectiveBookingWindowDays = isGuest
     ? GUEST_CALENDAR_WINDOW_DAYS
@@ -3379,6 +3403,10 @@ export function ClubApp() {
   }
 
   function openEditReservation(reservation: Reservation) {
+    if (!canEditReservation(reservation)) {
+      return;
+    }
+
     const startsAt = new Date(reservation.starts_at);
     const lesson = parseReservationLessonNote(reservation.note);
     const selectedOwner = reservationOwnerOptions.find(
@@ -3687,14 +3715,36 @@ export function ClubApp() {
   async function updateReservation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!supabase || !user || !editingReservation || !isAdmin(profile)) {
+    if (!supabase || !user || !editingReservation) {
+      return;
+    }
+
+    const isAdminEdit = isAdmin(profile);
+    const isTrainerLessonEdit = canTrainerManageLessonReservation(
+      profile,
+      user.id,
+      editingReservation,
+      currentTime,
+    );
+
+    if (!isAdminEdit && !isTrainerLessonEdit) {
+      return;
+    }
+
+    if (isTrainerLessonEdit && !isLessonForm(reservationEditForm)) {
+      setStatusMessage("Eğitmenler yalnızca kendi derslerini düzenleyebilir.");
       return;
     }
 
     const customInfo = normalizeFullName(reservationEditForm.custom_info);
     const isLessonReservationForm = isLessonForm(reservationEditForm);
 
-    if (reservationEditForm.is_custom && !isLessonReservationForm && !customInfo) {
+    if (
+      isAdminEdit &&
+      reservationEditForm.is_custom &&
+      !isLessonReservationForm &&
+      !customInfo
+    ) {
       setStatusMessage("Özel rezervasyon bilgisi girilmeli.");
       return;
     }
@@ -3721,15 +3771,18 @@ export function ClubApp() {
     setIsSaving(true);
     setStatusMessage(null);
 
+    const effectiveOwnerId = isAdminEdit
+      ? reservationEditForm.user_id || editingReservation.user_id
+      : editingReservation.user_id;
     const selectedOwner =
-      reservationOwnerOptions.find(
-        (owner) =>
-          owner.id ===
-          (reservationEditForm.user_id || editingReservation.user_id),
-      ) ?? profile;
-    const trainerName =
-      isLessonReservationForm &&
-      normalizePlayerName(reservationEditForm.team1_player1_name)
+      reservationOwnerOptions.find((owner) => owner.id === effectiveOwnerId) ??
+      profile;
+    const originalLesson = parseReservationLessonNote(editingReservation.note);
+    const trainerName = isTrainerLessonEdit
+      ? normalizePlayerName(originalLesson?.trainer_name) ||
+        getDisplayName(profile, user)
+      : isLessonReservationForm &&
+          normalizePlayerName(reservationEditForm.team1_player1_name)
         ? normalizePlayerName(reservationEditForm.team1_player1_name)
         : selectedOwner && profileOptionLabel(selectedOwner) !== "İsim yok"
           ? profileOptionLabel(selectedOwner)
@@ -3737,18 +3790,20 @@ export function ClubApp() {
     const reservationNote = isLessonReservationForm
       ? buildReservationLessonNote(reservationEditForm, trainerName)
       : reservationEditForm.is_custom
-      ? customInfo
-      : buildReservationMatchNote(reservationEditForm);
+        ? customInfo
+        : buildReservationMatchNote(reservationEditForm);
 
     const { error } = await supabase
       .from("reservations")
       .update({
         court_id: reservationEditForm.court_id,
-        user_id: reservationEditForm.user_id || editingReservation.user_id,
+        user_id: effectiveOwnerId,
         starts_at: startsAt.toISOString(),
         ends_at: endsAt.toISOString(),
         note: reservationNote,
-        status: reservationEditForm.status,
+        status: isAdminEdit
+          ? reservationEditForm.status
+          : editingReservation.status,
       })
       .eq("id", editingReservation.id);
 
@@ -3765,7 +3820,7 @@ export function ClubApp() {
   }
 
   async function deleteReservation(reservation: Reservation) {
-    if (!supabase || !user || !isAdmin(profile)) {
+    if (!supabase || !user || !canEditReservation(reservation)) {
       return;
     }
 
@@ -5728,13 +5783,12 @@ export function ClubApp() {
               bookingWindowDays={effectiveBookingWindowDays}
               calendarView={calendarView}
               canCreateReservation={canCreateReservation}
+              canEditReservation={canEditReservation}
               canViewPastDays={canManageReservations}
               courts={courts}
               currentTime={currentTime}
               moveCalendar={moveCalendar}
-              onEditReservation={
-                isAdmin(profile) ? openEditReservation : undefined
-              }
+              onEditReservation={openEditReservation}
               onEditTournamentMatch={
                 isAdmin(profile) ? openTournamentMatchEditor : undefined
               }
@@ -5765,6 +5819,7 @@ export function ClubApp() {
             <ReservationsPanel
               canManageAll={isAdmin(profile)}
               canCreateReservation={canCreateReservation}
+              canEditReservation={canEditReservation}
               currentTime={currentTime}
               onEdit={openEditReservation}
               onCancel={cancelReservation}
@@ -5868,6 +5923,7 @@ export function ClubApp() {
       {editingReservation && !isGuest && user ? (
         <ReservationEditDialog
           activeCourts={activeCourts}
+          canManageAll={canManageReservations}
           canMarkLesson={
             canMarkLesson || Boolean(parseReservationLessonNote(editingReservation.note))
           }
@@ -6007,6 +6063,7 @@ function CalendarPanel({
   bookingWindowDays,
   calendarView,
   canCreateReservation,
+  canEditReservation,
   canViewPastDays,
   courts,
   currentTime,
@@ -6029,6 +6086,7 @@ function CalendarPanel({
   bookingWindowDays: number;
   calendarView: CalendarView;
   canCreateReservation: boolean;
+  canEditReservation: (reservation: Reservation) => boolean;
   canViewPastDays: boolean;
   courts: Court[];
   currentTime: Date;
@@ -6215,6 +6273,7 @@ function CalendarPanel({
         <DayCalendar
           bookingWindowDays={bookingWindowDays}
           canCreateReservation={canCreateReservation}
+          canEditReservation={canEditReservation}
           courts={activeCourts}
           courtWindowStart={dayCourtWindowStart}
           currentTime={currentTime}
@@ -6265,6 +6324,7 @@ function CalendarPanel({
 function DayCalendar({
   bookingWindowDays,
   canCreateReservation,
+  canEditReservation,
   courtWindowStart,
   courts,
   currentTime,
@@ -6281,6 +6341,7 @@ function DayCalendar({
 }: {
   bookingWindowDays: number;
   canCreateReservation: boolean;
+  canEditReservation: (reservation: Reservation) => boolean;
   courtWindowStart: number;
   courts: Court[];
   currentTime: Date;
@@ -6504,7 +6565,10 @@ function DayCalendar({
                     </div>
                   );
 
-                  if (onEditReservation) {
+                  if (
+                    onEditReservation &&
+                    canEditReservation(reservation)
+                  ) {
                     cellContent = (
                       <button
                         className={`${reservedCellClassName} cursor-pointer`}
@@ -6842,6 +6906,7 @@ function MonthCalendar({
 function ReservationsPanel({
   canManageAll,
   canCreateReservation,
+  canEditReservation,
   currentTime,
   onCancel,
   onCreateReservation,
@@ -6853,6 +6918,7 @@ function ReservationsPanel({
 }: {
   canManageAll: boolean;
   canCreateReservation: boolean;
+  canEditReservation: (reservation: Reservation) => boolean;
   currentTime: Date;
   onCancel: (reservation: Reservation) => void;
   onCreateReservation: () => void;
@@ -6924,7 +6990,8 @@ function ReservationsPanel({
         const isMine = reservation.user_id === userId;
         const isFuture = isFutureReservation(reservation, currentTime);
         const canCancel = isMine && isFuture && reservation.status === "confirmed";
-        const canManageReservation = canManageAll && isFuture;
+        const canManageReservation =
+          isFuture && canEditReservation(reservation);
 
         return (
           <div
@@ -10053,6 +10120,7 @@ function ReservationDialog({
 
 function ReservationEditDialog({
   activeCourts,
+  canManageAll,
   canMarkLesson,
   form,
   isSaving,
@@ -10065,6 +10133,7 @@ function ReservationEditDialog({
   timeSlots,
 }: {
   activeCourts: Court[];
+  canManageAll: boolean;
   canMarkLesson: boolean;
   form: ReservationEditFormState;
   isSaving: boolean;
@@ -10116,7 +10185,9 @@ function ReservationEditDialog({
       <section className="max-h-[92vh] w-full overflow-y-auto rounded-t-lg bg-[#fffdf8] p-4 shadow-xl sm:max-w-xl sm:rounded-lg">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <p className="text-sm text-[#68756b]">Admin düzenleme</p>
+            <p className="text-sm text-[#68756b]">
+              {canManageAll ? "Admin düzenleme" : "Eğitmen düzenleme"}
+            </p>
             <h2 className="text-xl font-semibold">Rezervasyonu düzenle</h2>
           </div>
           <button
@@ -10131,75 +10202,94 @@ function ReservationEditDialog({
 
         <form className="grid gap-3" onSubmit={onSubmit}>
           <div className="grid gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-semibold text-[#34443a]">
-                Rezervasyon Bilgisi
-              </span>
-              <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
-                Özel
-                <input
-                  checked={form.is_custom}
-                  className="size-4"
-                  onChange={(event) =>
-                    setForm({ ...form, is_custom: event.target.checked })
-                  }
-                  type="checkbox"
-                />
-              </label>
-            </div>
-            {form.is_custom ? (
+            {canManageAll ? (
               <>
-                <ReservationModeToggle
-                  canUseLesson={canUseLesson}
-                  form={form}
-                  setForm={setForm}
-                />
-                {isLessonForm(form) ? (
-                  <LessonSetupFields
-                    canEditTrainer
-                    form={form}
-                    listId="reservation-edit-student-options"
-                    ownerOptions={ownerOptions}
-                    setForm={setForm}
-                  />
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-[#34443a]">
+                    Rezervasyon Bilgisi
+                  </span>
+                  <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                    Özel
+                    <input
+                      checked={form.is_custom}
+                      className="size-4"
+                      onChange={(event) =>
+                        setForm({ ...form, is_custom: event.target.checked })
+                      }
+                      type="checkbox"
+                    />
+                  </label>
+                </div>
+                {form.is_custom ? (
+                  <>
+                    <ReservationModeToggle
+                      canUseLesson={canUseLesson}
+                      form={form}
+                      setForm={setForm}
+                    />
+                    {isLessonForm(form) ? (
+                      <LessonSetupFields
+                        canEditTrainer
+                        form={form}
+                        listId="reservation-edit-student-options"
+                        ownerOptions={ownerOptions}
+                        setForm={setForm}
+                      />
+                    ) : (
+                      <input
+                        className="input input-compact"
+                        onChange={(event) =>
+                          setForm({ ...form, custom_info: event.target.value })
+                        }
+                        placeholder="Örn. Turnuva, antrenman, misafir"
+                        required
+                        value={form.custom_info}
+                      />
+                    )}
+                  </>
                 ) : (
-                  <input
-                    className="input input-compact"
-                    onChange={(event) =>
-                      setForm({ ...form, custom_info: event.target.value })
-                    }
-                    placeholder="Örn. Turnuva, antrenman, misafir"
-                    required
-                    value={form.custom_info}
-                  />
+                  <>
+                    {!isLessonForm(form) ? (
+                      <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
+                        <span className="text-xs font-semibold text-[#34443a]">
+                          Bağlı üye
+                        </span>
+                        <select
+                          className="input input-compact"
+                          onChange={(event) =>
+                            handleOwnerChange(event.target.value)
+                          }
+                          required
+                          value={form.user_id}
+                        >
+                          {ownerOptions.map((owner) => (
+                            <option key={owner.id} value={owner.id}>
+                              {profileOptionLabel(owner)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
+                    <MatchSetupFields
+                      canEditTrainer
+                      canUseLesson={canUseLesson}
+                      form={form}
+                      listId="reservation-edit-player-options"
+                      ownerOptions={ownerOptions}
+                      setForm={setForm}
+                    />
+                  </>
                 )}
               </>
             ) : (
               <>
-                {!isLessonForm(form) ? (
-                  <div className="grid grid-cols-[82px_minmax(0,1fr)] items-center gap-2">
-                  <span className="text-xs font-semibold text-[#34443a]">
-                    Bağlı üye
-                  </span>
-                  <select
-                    className="input input-compact"
-                    onChange={(event) => handleOwnerChange(event.target.value)}
-                    required
-                    value={form.user_id}
-                  >
-                    {ownerOptions.map((owner) => (
-                      <option key={owner.id} value={owner.id}>
-                        {profileOptionLabel(owner)}
-                      </option>
-                    ))}
-                  </select>
-                  </div>
-                ) : null}
-                <MatchSetupFields
-                  canEditTrainer
-                  canUseLesson={canUseLesson}
+                <span className="text-sm font-semibold text-[#34443a]">
+                  Ders bilgisi
+                </span>
+                <LessonSetupFields
+                  canEditTrainer={false}
                   form={form}
-                  listId="reservation-edit-player-options"
+                  listId="trainer-reservation-edit-student-options"
                   ownerOptions={ownerOptions}
                   setForm={setForm}
                 />
