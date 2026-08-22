@@ -361,13 +361,16 @@ export function TournamentDetailPanel({
   );
   const participantStandingsById = useMemo(() => {
     if (!selectedTournament) {
-      return new Map<string, { points: number; scoredMatches: number }>();
+      return new Map<
+        string,
+        { points: number; scoredMatches: number; setsWon: number; setsLost: number }
+      >();
     }
 
     const standings = new Map(
       selectedTournament.participants.map((participant) => [
         participant.id,
-        { points: 0, scoredMatches: 0 },
+        { points: 0, scoredMatches: 0, setsWon: 0, setsLost: 0 },
       ]),
     );
 
@@ -389,6 +392,23 @@ export function TournamentDetailPanel({
 
         standing.scoredMatches += 1;
         standing.points += tournamentEntryPoints([match], entryId);
+      }
+
+      const firstStanding = standings.get(match.player1_entry_id);
+      const secondStanding = standings.get(match.player2_entry_id);
+
+      if (!firstStanding || !secondStanding) {
+        continue;
+      }
+
+      for (const scoreSet of match.score_sets) {
+        if (scoreSet.player1_score > scoreSet.player2_score) {
+          firstStanding.setsWon += 1;
+          secondStanding.setsLost += 1;
+        } else if (scoreSet.player2_score > scoreSet.player1_score) {
+          secondStanding.setsWon += 1;
+          firstStanding.setsLost += 1;
+        }
       }
     }
 
@@ -594,6 +614,8 @@ export function TournamentDetailPanel({
   const tournamentColor =
     selectedTournament.color || DEFAULT_TOURNAMENT_COLOR;
   const tournamentTextColor = getTournamentTextColor(tournamentColor);
+  const tournamentCardScoreColor =
+    tournamentTextColor === "#ffffff" ? "#b8efc9" : "#237000";
   const tournamentAccentStyle = {
     backgroundColor: tournamentColor,
     color: tournamentTextColor,
@@ -889,6 +911,12 @@ export function TournamentDetailPanel({
                                 const isPast =
                                   new Date(match.ends_at) < currentTime;
                                 const scoreText = formatTournamentMatchScore(match);
+                                const player1Won =
+                                  match.score_entered &&
+                                  match.winner_entry_id === match.player1_entry_id;
+                                const player2Won =
+                                  match.score_entered &&
+                                  match.winner_entry_id === match.player2_entry_id;
                                 const matchContent = (
                                   <>
                                     {onEditMatch ? (
@@ -899,30 +927,58 @@ export function TournamentDetailPanel({
                                       />
                                     ) : null}
                                     <div className="grid gap-0.5 pr-3 text-[11px] font-semibold leading-tight">
-                                      <p className="break-words">
+                                      <p
+                                        className={`break-words ${
+                                          isPast && !player1Won ? "opacity-45" : ""
+                                        }`}
+                                        style={
+                                          player1Won
+                                            ? { color: tournamentCardScoreColor }
+                                            : undefined
+                                        }
+                                      >
                                         {match.player1_name}
                                       </p>
-                                      <p className="break-words border-t border-current/25 pt-0.5">
+                                      <p
+                                        className={`break-words border-t border-current/25 pt-0.5 ${
+                                          isPast && !player2Won ? "opacity-45" : ""
+                                        }`}
+                                        style={
+                                          player2Won
+                                            ? { color: tournamentCardScoreColor }
+                                            : undefined
+                                        }
+                                      >
                                         {match.player2_name}
                                       </p>
                                     </div>
-                                    <p className="truncate text-[9px] font-medium leading-tight opacity-85">
+                                    <p
+                                      className={`truncate text-[9px] font-medium leading-tight ${
+                                        isPast ? "opacity-45" : "opacity-85"
+                                      }`}
+                                    >
                                       {category?.name ?? "Kategori"}
                                       {group ? ` · Grup ${group.name}` : " · Final"}
                                     </p>
-                                    <p className="truncate text-[9px] font-medium leading-tight opacity-85">
+                                    <p
+                                      className={`truncate text-[9px] font-medium leading-tight ${
+                                        isPast ? "opacity-45" : "opacity-85"
+                                      }`}
+                                    >
                                       {match.courts?.name ?? "Kort belirlenecek"}
                                     </p>
                                     {scoreText ? (
-                                      <p className="truncate border-t border-current/25 pt-1 text-[9px] font-bold leading-tight">
+                                      <p
+                                        className="truncate border-t border-current/25 pt-1 text-xs font-extrabold leading-tight"
+                                        style={{ color: tournamentCardScoreColor }}
+                                      >
                                         {scoreText}
                                       </p>
                                     ) : null}
                                   </>
                                 );
-                                const matchClassName = `relative grid w-full min-w-0 gap-1 rounded border p-2 text-left shadow-sm transition ${
-                                  isPast ? "opacity-45" : ""
-                                }`;
+                                const matchClassName =
+                                  "relative grid w-full min-w-0 gap-1 rounded border p-2 text-left shadow-sm transition";
                                 const matchTitle = `${match.player1_name} - ${match.player2_name} · ${category?.name ?? "Kategori"}${
                                   group ? ` · Grup ${group.name}` : " · Final"
                                 }`;
@@ -994,9 +1050,13 @@ export function TournamentDetailPanel({
                           (secondEntry?.player_ids.length ?? 0) > 1;
                         const isPast = new Date(match.ends_at) < currentTime;
                         const scoreText = formatTournamentMatchScore(match);
+                        const player1Won =
+                          match.score_entered &&
+                          match.winner_entry_id === match.player1_entry_id;
+                        const player2Won =
+                          match.score_entered &&
+                          match.winner_entry_id === match.player2_entry_id;
                         const rowClassName = `grid w-full grid-cols-[64px_minmax(0,1fr)] items-center gap-3 px-3 py-3 text-left transition sm:grid-cols-[78px_minmax(0,1fr)] sm:gap-4 sm:px-4 ${
-                          isPast ? "opacity-45" : ""
-                        } ${
                           onEditMatch
                             ? "cursor-pointer hover:bg-[#f7f1e5] focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
                             : ""
@@ -1020,19 +1080,67 @@ export function TournamentDetailPanel({
                                   className="grid gap-0.5 text-[12px] font-semibold leading-tight min-[380px]:text-[13px] sm:text-base"
                                   title={`${match.player1_name} vs ${match.player2_name}`}
                                 >
-                                  <p className="truncate">{match.player1_name}</p>
-                                  <p className="truncate">{match.player2_name}</p>
+                                  <p
+                                    className={`truncate ${
+                                      isPast && !player1Won ? "opacity-45" : ""
+                                    }`}
+                                    style={
+                                      player1Won
+                                        ? { color: "var(--theme-success-text)" }
+                                        : undefined
+                                    }
+                                  >
+                                    {match.player1_name}
+                                  </p>
+                                  <p
+                                    className={`truncate ${
+                                      isPast && !player2Won ? "opacity-45" : ""
+                                    }`}
+                                    style={
+                                      player2Won
+                                        ? { color: "var(--theme-success-text)" }
+                                        : undefined
+                                    }
+                                  >
+                                    {match.player2_name}
+                                  </p>
                                 </div>
                               ) : (
                                 <p className="truncate text-sm font-semibold sm:text-base">
-                                  {match.player1_name}
+                                  <span
+                                    className={
+                                      isPast && !player1Won ? "opacity-45" : ""
+                                    }
+                                    style={
+                                      player1Won
+                                        ? { color: "var(--theme-success-text)" }
+                                        : undefined
+                                    }
+                                  >
+                                    {match.player1_name}
+                                  </span>
                                   <span className="px-2 text-xs font-normal text-[#8b8f86]">
                                     vs
                                   </span>
-                                  {match.player2_name}
+                                  <span
+                                    className={
+                                      isPast && !player2Won ? "opacity-45" : ""
+                                    }
+                                    style={
+                                      player2Won
+                                        ? { color: "var(--theme-success-text)" }
+                                        : undefined
+                                    }
+                                  >
+                                    {match.player2_name}
+                                  </span>
                                 </p>
                               )}
-                              <div className="mt-1 flex min-w-0 items-center justify-between gap-3 text-xs text-[#68756b]">
+                              <div
+                                className={`mt-1 flex min-w-0 items-center justify-between gap-3 text-xs text-[#68756b] ${
+                                  isPast ? "opacity-45" : ""
+                                }`}
+                              >
                                 <p className="truncate">
                                   {category?.name ?? "Kategori"}
                                   {group ? ` · Grup ${group.name}` : ""}
@@ -1046,7 +1154,10 @@ export function TournamentDetailPanel({
                                 </span>
                               </div>
                               {scoreText ? (
-                                <p className="mt-1 truncate text-xs font-bold text-[#34443a]">
+                                <p
+                                  className="mt-1 truncate text-sm font-extrabold"
+                                  style={{ color: "var(--theme-success-text)" }}
+                                >
                                   {scoreText}
                                 </p>
                               ) : null}
@@ -1132,10 +1243,41 @@ export function TournamentDetailPanel({
                     <ul className="mt-3 space-y-2 text-sm">
                       {selectedTournament.participants
                         .filter((participant) => participant.group_id === group.id)
-                        .sort(
-                          (first, second) =>
-                            first.display_order - second.display_order,
-                        )
+                        .sort((first, second) => {
+                          const firstStanding = participantStandingsById.get(
+                            first.id,
+                          );
+                          const secondStanding = participantStandingsById.get(
+                            second.id,
+                          );
+                          const pointsDifference =
+                            (secondStanding?.points ?? 0) -
+                            (firstStanding?.points ?? 0);
+
+                          if (pointsDifference !== 0) {
+                            return pointsDifference;
+                          }
+
+                          const firstSetDifference =
+                            (firstStanding?.setsWon ?? 0) -
+                            (firstStanding?.setsLost ?? 0);
+                          const secondSetDifference =
+                            (secondStanding?.setsWon ?? 0) -
+                            (secondStanding?.setsLost ?? 0);
+
+                          if (secondSetDifference !== firstSetDifference) {
+                            return secondSetDifference - firstSetDifference;
+                          }
+
+                          const setsWonDifference =
+                            (secondStanding?.setsWon ?? 0) -
+                            (firstStanding?.setsWon ?? 0);
+
+                          return (
+                            setsWonDifference ||
+                            first.display_order - second.display_order
+                          );
+                        })
                         .map((participant) => (
                           <li
                             className="flex flex-wrap items-center gap-1.5 rounded bg-[#f6f1e7] px-3 py-2"
