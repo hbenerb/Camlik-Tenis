@@ -224,6 +224,26 @@ html.theme-light-root body {
     0 1px 2px rgb(13 46 24 / 22%);
 }
 
+.tournament-shortcut-button {
+  box-shadow:
+    0 5px 0 var(--tournament-button-depth),
+    0 9px 12px rgb(0 0 0 / 18%);
+}
+
+.tournament-shortcut-button:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 0 var(--tournament-button-depth),
+    0 10px 14px rgb(0 0 0 / 22%);
+}
+
+.tournament-shortcut-button:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 2px 0 var(--tournament-button-depth),
+    0 5px 8px rgb(0 0 0 / 18%);
+}
+
 .orange-close-button {
   background: #f3b340 !important;
   color: #111111 !important;

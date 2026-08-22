@@ -37,7 +37,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { downloadReportWorkbook } from "@/lib/report-workbook";
@@ -1030,6 +1030,25 @@ function formatTournamentShortcutDateRange(startValue: string, endValue: string)
   }).format(endDate);
 
   return `${startLabel} – ${endLabel}`;
+}
+
+function darkenHexColor(color: string, amount = 0.22) {
+  const match = /^#([0-9a-f]{6})$/i.exec(color);
+
+  if (!match) {
+    return "#7f1d1d";
+  }
+
+  const value = Number.parseInt(match[1], 16);
+  const darkenChannel = (channel: number) =>
+    Math.max(0, Math.round(channel * (1 - amount)));
+  const red = darkenChannel((value >> 16) & 255);
+  const green = darkenChannel((value >> 8) & 255);
+  const blue = darkenChannel(value & 255);
+
+  return `#${[red, green, blue]
+    .map((channel) => channel.toString(16).padStart(2, "0"))
+    .join("")}`;
 }
 
 function visibleDayAvailability(
@@ -10777,6 +10796,7 @@ function TournamentShortcutButtons({
       {tournaments.map((tournament) => {
         const tournamentColor =
           tournament.color || DEFAULT_TOURNAMENT_COLOR;
+        const tournamentButtonDepthColor = darkenHexColor(tournamentColor);
         const tournamentDateRange = formatTournamentShortcutDateRange(
           tournament.group_stage_start_date,
           tournament.finals_end_date,
@@ -10785,7 +10805,7 @@ function TournamentShortcutButtons({
         return (
           <button
             aria-pressed={selectedTournamentId === tournament.id}
-            className={`flex min-h-28 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-md border px-3 py-3 text-left font-semibold shadow-[0_4px_8px_rgba(0,0,0,0.2)] transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-[0_5px_10px_rgba(0,0,0,0.24)] active:translate-y-0 active:shadow-[0_2px_5px_rgba(0,0,0,0.18)] lg:min-h-14 lg:py-2 ${
+            className={`tournament-shortcut-button flex min-h-28 w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-lg border px-3 py-3 text-left font-semibold transition hover:opacity-90 lg:min-h-14 lg:py-2 ${
               tournament.is_active ? "" : "opacity-70"
             }`}
             key={tournament.id}
@@ -10794,7 +10814,8 @@ function TournamentShortcutButtons({
               backgroundColor: tournamentColor,
               borderColor: tournamentColor,
               color: getTournamentTextColor(tournamentColor),
-            }}
+              "--tournament-button-depth": tournamentButtonDepthColor,
+            } as CSSProperties}
             type="button"
           >
             <span className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
