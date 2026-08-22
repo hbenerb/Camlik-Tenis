@@ -615,7 +615,7 @@ export function TournamentDetailPanel({
     selectedTournament.color || DEFAULT_TOURNAMENT_COLOR;
   const tournamentTextColor = getTournamentTextColor(tournamentColor);
   const tournamentCardScoreColor =
-    tournamentTextColor === "#ffffff" ? "#b8efc9" : "#237000";
+    tournamentTextColor === "#ffffff" ? "#4ade80" : "#15803d";
   const tournamentAccentStyle = {
     backgroundColor: tournamentColor,
     color: tournamentTextColor,
@@ -969,10 +969,9 @@ export function TournamentDetailPanel({
                                     </p>
                                     {scoreText ? (
                                       <p
-                                        className="truncate border-t border-current/25 pt-1 text-xs font-extrabold leading-tight"
-                                        style={{ color: tournamentCardScoreColor }}
+                                        className="tournament-score-badge mt-0.5 inline-flex w-fit max-w-full rounded-md px-2 py-1 text-xs font-extrabold leading-tight"
                                       >
-                                        {scoreText}
+                                        <span className="truncate">{scoreText}</span>
                                       </p>
                                     ) : null}
                                   </>
@@ -1082,25 +1081,19 @@ export function TournamentDetailPanel({
                                 >
                                   <p
                                     className={`truncate ${
+                                      player1Won ? "tournament-winner-name" : ""
+                                    } ${
                                       isPast && !player1Won ? "opacity-45" : ""
                                     }`}
-                                    style={
-                                      player1Won
-                                        ? { color: "var(--theme-success-text)" }
-                                        : undefined
-                                    }
                                   >
                                     {match.player1_name}
                                   </p>
                                   <p
                                     className={`truncate ${
+                                      player2Won ? "tournament-winner-name" : ""
+                                    } ${
                                       isPast && !player2Won ? "opacity-45" : ""
                                     }`}
-                                    style={
-                                      player2Won
-                                        ? { color: "var(--theme-success-text)" }
-                                        : undefined
-                                    }
                                   >
                                     {match.player2_name}
                                   </p>
@@ -1108,14 +1101,11 @@ export function TournamentDetailPanel({
                               ) : (
                                 <p className="truncate text-sm font-semibold sm:text-base">
                                   <span
-                                    className={
+                                    className={`${
+                                      player1Won ? "tournament-winner-name" : ""
+                                    } ${
                                       isPast && !player1Won ? "opacity-45" : ""
-                                    }
-                                    style={
-                                      player1Won
-                                        ? { color: "var(--theme-success-text)" }
-                                        : undefined
-                                    }
+                                    }`}
                                   >
                                     {match.player1_name}
                                   </span>
@@ -1123,14 +1113,11 @@ export function TournamentDetailPanel({
                                     vs
                                   </span>
                                   <span
-                                    className={
+                                    className={`${
+                                      player2Won ? "tournament-winner-name" : ""
+                                    } ${
                                       isPast && !player2Won ? "opacity-45" : ""
-                                    }
-                                    style={
-                                      player2Won
-                                        ? { color: "var(--theme-success-text)" }
-                                        : undefined
-                                    }
+                                    }`}
                                   >
                                     {match.player2_name}
                                   </span>
@@ -1155,10 +1142,9 @@ export function TournamentDetailPanel({
                               </div>
                               {scoreText ? (
                                 <p
-                                  className="mt-1 truncate text-sm font-extrabold"
-                                  style={{ color: "var(--theme-success-text)" }}
+                                  className="tournament-score-badge mt-1 inline-flex w-fit max-w-full rounded-md px-2.5 py-1 text-sm font-extrabold"
                                 >
-                                  {scoreText}
+                                  <span className="truncate">{scoreText}</span>
                                 </p>
                               ) : null}
                             </div>
