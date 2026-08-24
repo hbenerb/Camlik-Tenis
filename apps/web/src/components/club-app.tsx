@@ -1792,6 +1792,8 @@ export function ClubApp() {
     (canManageReservations ||
       (reservationPermissionSchemaReady ? Boolean(profile?.can_book) : true));
   const canMarkLesson = Boolean(profile?.is_trainer) || canManageReservations;
+  const canViewCalendarReservationDetails =
+    canManageReservations || Boolean(profile?.is_club_member);
   const canEditReservation = (reservation: Reservation) =>
     canManageReservations ||
     canTrainerManageLessonReservation(
@@ -5806,7 +5808,7 @@ export function ClubApp() {
               setCalendarView={setCalendarView}
               setSelectedDate={setSelectedDate}
               settings={settings}
-              showReservationDetails={!isGuest}
+              showReservationDetails={canViewCalendarReservationDetails}
               timeSlots={timeSlots}
               tournamentMatches={calendarTournamentMatches}
             />
