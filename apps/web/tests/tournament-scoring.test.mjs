@@ -116,7 +116,7 @@ test("normal, walkover, canceled and unscored results retain their points", () =
   match.score_sets = [];
   assert.equal(tournamentEntryPoints([match], "first"), 3);
   assert.equal(tournamentEntryPoints([match], "second"), 0);
-  assert.equal(formatTournamentMatchScore(match), "Birinci Takım hükmen kazandı");
+  assert.equal(formatTournamentMatchScore(match), "Birinci Takım (WO)");
   match.status = "canceled";
   assert.equal(tournamentEntryPoints([match], "first"), 0);
   match.score_entered = false;

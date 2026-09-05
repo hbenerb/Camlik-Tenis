@@ -5303,15 +5303,6 @@ export function ClubApp() {
     let nextStatus = tournamentMatchEditForm.status;
 
     if (tournamentMatchEditForm.score_entered) {
-      if (tournamentMatchEditForm.is_retired ? startsAt > currentTime : endsAt > currentTime) {
-        if (tournamentMatchEditForm.is_retired) {
-          setStatusMessage("Terk sonucu yalnızca başlamış bir maça eklenebilir.");
-          return;
-        }
-        setStatusMessage("Puan yalnızca oynanma saati tamamlanan maça eklenebilir.");
-        return;
-      }
-
       nextStatus = "completed";
       isWalkover = tournamentMatchEditForm.is_walkover;
       isRetired = tournamentMatchEditForm.is_retired && !isWalkover;
@@ -5323,7 +5314,7 @@ export function ClubApp() {
         ) {
           setStatusMessage(isRetired
             ? "Terk sonucunda kazanan oyuncu veya takım seçilmeli."
-            : "Hükmen kazanan oyuncu veya takım seçilmeli.");
+            : "Walk Over kazanan oyuncu veya takım seçilmeli.");
           return;
         }
 
@@ -5966,7 +5957,6 @@ export function ClubApp() {
       {editingTournamentMatch && isAdmin(profile) ? (
         <TournamentMatchEditDialog
           courts={courts}
-          currentTime={currentTime}
           form={tournamentMatchEditForm}
           isSaving={isSaving}
           match={editingTournamentMatch}
@@ -10397,7 +10387,6 @@ function ReservationEditDialog({
 
 function TournamentMatchEditDialog({
   courts,
-  currentTime,
   form,
   isSaving,
   match,
@@ -10408,7 +10397,6 @@ function TournamentMatchEditDialog({
   tournaments,
 }: {
   courts: Court[];
-  currentTime: Date;
   form: TournamentMatchEditFormState;
   isSaving: boolean;
   match: TournamentMatch;
@@ -10460,13 +10448,6 @@ function TournamentMatchEditDialog({
           tournament.match_duration_minutes,
         )
       : null;
-  const canEnterScore = Boolean(
-    selectedMatchEnd && selectedMatchEnd <= currentTime,
-  );
-  const hasMatchStarted = Boolean(
-    form.date && form.start_time &&
-    buildLocalDateTime(form.date, form.start_time) <= currentTime,
-  );
   const matchEndTime =
     selectedMatchEnd
       ? formatTime(selectedMatchEnd)
@@ -10656,7 +10637,6 @@ function TournamentMatchEditDialog({
               <input
                 checked={form.score_entered}
                 className="mt-0.5 size-4 accent-[#237000]"
-                disabled={!hasMatchStarted && !form.score_entered}
                 onChange={(event) =>
                   setForm({
                     ...form,
@@ -10679,11 +10659,7 @@ function TournamentMatchEditDialog({
                   Puan ekle
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-[#68756b]">
-                  {canEnterScore
-                    ? `${tournament.best_of_sets} set üzerinden; ${setsNeededToWin(tournament.best_of_sets)} set alan kazanır.`
-                    : hasMatchStarted
-                      ? "Maç başladı. Terk sonucu şimdi, normal sonuç bitiş saati geçtikten sonra girilebilir."
-                      : "Puan girişi maç başladıktan sonra açılır."}
+                  {`${tournament.best_of_sets} set üzerinden; ${setsNeededToWin(tournament.best_of_sets)} set alan kazanır. Maç saatini beklemeden sonuç girebilirsiniz.`}
                 </span>
               </span>
             </label>
@@ -10707,7 +10683,7 @@ function TournamentMatchEditDialog({
                     }
                     type="checkbox"
                   />
-                  Hükmen sonuç
+                  Walk Over
                 </label>
 
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
@@ -10738,7 +10714,7 @@ function TournamentMatchEditDialog({
                 ) : null}
 
                 {form.is_walkover || form.is_retired ? (
-                  <Field label={form.is_retired ? "Terk sonucunda kazanan" : "Hükmen kazanan"}>
+                  <Field label={form.is_retired ? "Terk sonucunda kazanan" : "Walk Over kazananı"}>
                     <select
                       className="input"
                       onChange={(event) =>
@@ -10910,7 +10886,7 @@ function TournamentMatchEditDialog({
                 ) : null}
 
                 <p className="text-xs leading-5 text-[#68756b]">
-                  Normal ve terk sonucunda kazanan 3, kaybeden 1 puan; hükmen sonuçta kazanan 3, kaybeden 0 puan alır.
+                  Normal ve terk sonucunda kazanan 3, kaybeden 1 puan; Walk Over sonucunda kazanan 3, kaybeden 0 puan alır.
                 </p>
               </div>
             ) : null}

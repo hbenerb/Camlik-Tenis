@@ -318,7 +318,7 @@ export function formatTournamentMatchScore(match: TournamentMatch) {
       match.winner_entry_id === match.player1_entry_id
         ? match.player1_name
         : match.player2_name;
-    return `${winnerName} hükmen kazandı`;
+    return `${winnerName} (WO)`;
   }
 
   const scoreText = match.score_sets
