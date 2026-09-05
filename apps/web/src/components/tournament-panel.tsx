@@ -24,6 +24,7 @@ import { useId, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
 import {
+  completedTournamentSetWinner,
   formatTournamentMatchScore,
   tournamentEntryPoints,
 } from "@/lib/tournament-scoring";
@@ -402,10 +403,11 @@ export function TournamentDetailPanel({
       }
 
       for (const scoreSet of match.score_sets) {
-        if (scoreSet.player1_score > scoreSet.player2_score) {
+        const winner = completedTournamentSetWinner(selectedTournament, scoreSet);
+        if (winner === 1) {
           firstStanding.setsWon += 1;
           secondStanding.setsLost += 1;
-        } else if (scoreSet.player2_score > scoreSet.player1_score) {
+        } else if (winner === 2) {
           secondStanding.setsWon += 1;
           firstStanding.setsLost += 1;
         }

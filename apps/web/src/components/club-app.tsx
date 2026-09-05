@@ -196,6 +196,7 @@ type TournamentMatchEditFormState = {
   status: TournamentMatch["status"];
   score_entered: boolean;
   is_walkover: boolean;
+  is_retired: boolean;
   winner_entry_id: string;
   score_sets: TournamentScoreSetFormState[];
 };
@@ -1695,6 +1696,7 @@ export function ClubApp() {
       status: "scheduled",
       score_entered: false,
       is_walkover: false,
+      is_retired: false,
       winner_entry_id: "",
       score_sets: [],
     });
@@ -5227,6 +5229,7 @@ export function ClubApp() {
       status: match.status,
       score_entered: match.score_entered,
       is_walkover: match.is_walkover,
+      is_retired: Boolean(match.is_retired),
       winner_entry_id: match.winner_entry_id ?? "",
       score_sets: initialTournamentScoreSetForms(tournament, match),
     });
@@ -5296,28 +5299,37 @@ export function ClubApp() {
     const scoreSets: TournamentScoreSet[] = [];
     let winnerEntryId: string | null = null;
     let isWalkover = false;
+    let isRetired = false;
     let nextStatus = tournamentMatchEditForm.status;
 
     if (tournamentMatchEditForm.score_entered) {
-      if (endsAt > currentTime) {
+      if (tournamentMatchEditForm.is_retired ? startsAt > currentTime : endsAt > currentTime) {
+        if (tournamentMatchEditForm.is_retired) {
+          setStatusMessage("Terk sonucu yalnızca başlamış bir maça eklenebilir.");
+          return;
+        }
         setStatusMessage("Puan yalnızca oynanma saati tamamlanan maça eklenebilir.");
         return;
       }
 
       nextStatus = "completed";
       isWalkover = tournamentMatchEditForm.is_walkover;
+      isRetired = tournamentMatchEditForm.is_retired && !isWalkover;
 
-      if (isWalkover) {
+      if (isWalkover || isRetired) {
         if (
           tournamentMatchEditForm.winner_entry_id !== player1Entry.id &&
           tournamentMatchEditForm.winner_entry_id !== player2Entry.id
         ) {
-          setStatusMessage("Hükmen kazanan oyuncu veya takım seçilmeli.");
+          setStatusMessage(isRetired
+            ? "Terk sonucunda kazanan oyuncu veya takım seçilmeli."
+            : "Hükmen kazanan oyuncu veya takım seçilmeli.");
           return;
         }
 
         winnerEntryId = tournamentMatchEditForm.winner_entry_id;
-      } else {
+      }
+      if (!isWalkover) {
         for (const [setIndex, scoreSetForm] of tournamentMatchEditForm.score_sets.entries()) {
           const player1Score = parseScoreValue(scoreSetForm.player1_score);
           const player2Score = parseScoreValue(scoreSetForm.player2_score);
@@ -5335,7 +5347,9 @@ export function ClubApp() {
           );
 
           if (
-            (player1Tiebreak === null) !== (player2Tiebreak === null)
+            (player1Tiebreak === null) !== (player2Tiebreak === null) ||
+            (scoreSetForm.player1_tiebreak.trim() !== "" && player1Tiebreak === null) ||
+            (scoreSetForm.player2_tiebreak.trim() !== "" && player2Tiebreak === null)
           ) {
             setStatusMessage(
               `${setIndex + 1}. set için iki tie-break puanı da girilmeli.`,
@@ -5353,7 +5367,11 @@ export function ClubApp() {
           });
         }
 
-        const scoreValidation = validateTournamentScore(tournament, scoreSets);
+        const scoreValidation = validateTournamentScore(tournament, scoreSets, {
+          retiredWinnerSide: isRetired
+            ? winnerEntryId === player1Entry.id ? 1 : 2
+            : undefined,
+        });
 
         if (scoreValidation.error || !scoreValidation.winnerSide) {
           setStatusMessage(
@@ -5387,6 +5405,7 @@ export function ClubApp() {
         score_entered: tournamentMatchEditForm.score_entered,
         score_sets: scoreSets,
         is_walkover: isWalkover,
+        is_retired: isRetired,
         winner_entry_id: winnerEntryId,
       })
       .eq("id", editingTournamentMatch.id)
@@ -5415,6 +5434,7 @@ export function ClubApp() {
       .from("tournament_matches")
       .update({
         is_walkover: false,
+        is_retired: false,
         score_entered: false,
         score_sets: [],
         status: "canceled",
@@ -10443,6 +10463,10 @@ function TournamentMatchEditDialog({
   const canEnterScore = Boolean(
     selectedMatchEnd && selectedMatchEnd <= currentTime,
   );
+  const hasMatchStarted = Boolean(
+    form.date && form.start_time &&
+    buildLocalDateTime(form.date, form.start_time) <= currentTime,
+  );
   const matchEndTime =
     selectedMatchEnd
       ? formatTime(selectedMatchEnd)
@@ -10458,6 +10482,7 @@ function TournamentMatchEditDialog({
       group_id: firstGroup?.id ?? "",
       score_entered: false,
       is_walkover: false,
+      is_retired: false,
       winner_entry_id: "",
       score_sets: initialTournamentScoreSetForms(scoringTournament),
     });
@@ -10631,12 +10656,13 @@ function TournamentMatchEditDialog({
               <input
                 checked={form.score_entered}
                 className="mt-0.5 size-4 accent-[#237000]"
-                disabled={!canEnterScore && !form.score_entered}
+                disabled={!hasMatchStarted && !form.score_entered}
                 onChange={(event) =>
                   setForm({
                     ...form,
                     score_entered: event.target.checked,
                     is_walkover: false,
+                    is_retired: false,
                     score_sets: event.target.checked
                       ? form.score_sets.length
                         ? form.score_sets
@@ -10655,7 +10681,9 @@ function TournamentMatchEditDialog({
                 <span className="mt-1 block text-xs leading-5 text-[#68756b]">
                   {canEnterScore
                     ? `${tournament.best_of_sets} set üzerinden; ${setsNeededToWin(tournament.best_of_sets)} set alan kazanır.`
-                    : "Puan girişi maçın bitiş saati geçtikten sonra açılır."}
+                    : hasMatchStarted
+                      ? "Maç başladı. Terk sonucu şimdi, normal sonuç bitiş saati geçtikten sonra girilebilir."
+                      : "Puan girişi maç başladıktan sonra açılır."}
                 </span>
               </span>
             </label>
@@ -10670,6 +10698,7 @@ function TournamentMatchEditDialog({
                       setForm({
                         ...form,
                         is_walkover: event.target.checked,
+                        is_retired: false,
                         score_sets: event.target.checked
                           ? []
                           : initialTournamentScoreSetForms(scoringTournament),
@@ -10681,8 +10710,35 @@ function TournamentMatchEditDialog({
                   Hükmen sonuç
                 </label>
 
-                {form.is_walkover ? (
-                  <Field label="Hükmen kazanan">
+                <label className="inline-flex items-center gap-2 text-sm font-semibold text-[#34443a]">
+                  <input
+                    checked={form.is_retired}
+                    className="size-4 accent-[#a0543b]"
+                    onChange={(event) =>
+                      setForm({
+                        ...form,
+                        is_retired: event.target.checked,
+                        is_walkover: false,
+                        score_sets: form.score_sets.length
+                          ? form.score_sets
+                          : [emptyTournamentScoreSetForm()],
+                        winner_entry_id: "",
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  Terk (Ret)
+                </label>
+
+                {form.is_retired ? (
+                  <p className="text-xs leading-5 text-[#68756b]">
+                    Terk etmeyen oyuncu/takımı kazanan seçin. Yalnızca oynanan setleri,
+                    son set yarım kaldıysa o ana kadarki skorunu girin. Oynanmayan seti çıkarın.
+                  </p>
+                ) : null}
+
+                {form.is_walkover || form.is_retired ? (
+                  <Field label={form.is_retired ? "Terk sonucunda kazanan" : "Hükmen kazanan"}>
                     <select
                       className="input"
                       onChange={(event) =>
@@ -10703,7 +10759,9 @@ function TournamentMatchEditDialog({
                       ) : null}
                     </select>
                   </Field>
-                ) : (
+                ) : null}
+
+                {!form.is_walkover ? (
                   <div className="grid gap-3">
                     {form.score_sets.map((scoreSet, setIndex) => {
                       const setType = tournamentSetType(
@@ -10718,11 +10776,16 @@ function TournamentMatchEditDialog({
                       );
                       const isSetTiebreak =
                         setType === "regular" &&
-                        isRegularSetTiebreakScore(
+                        (isRegularSetTiebreakScore(
                           tournament.set_games_to_win,
                           player1Score,
                           player2Score,
-                        );
+                        ) || (form.is_retired &&
+                          player1Score === tournament.set_games_to_win &&
+                          player2Score === tournament.set_games_to_win));
+                      const isCompletedSetTiebreak = isRegularSetTiebreakScore(
+                        tournament.set_games_to_win, player1Score, player2Score,
+                      );
 
                       return (
                         <div
@@ -10747,6 +10810,8 @@ function TournamentMatchEditDialog({
                                 onChange={(event) =>
                                   updateScoreSet(setIndex, {
                                     player1_score: event.target.value,
+                                    player1_tiebreak: "",
+                                    player2_tiebreak: "",
                                   })
                                 }
                                 required
@@ -10761,6 +10826,8 @@ function TournamentMatchEditDialog({
                                 onChange={(event) =>
                                   updateScoreSet(setIndex, {
                                     player2_score: event.target.value,
+                                    player1_tiebreak: "",
+                                    player2_tiebreak: "",
                                   })
                                 }
                                 required
@@ -10780,7 +10847,7 @@ function TournamentMatchEditDialog({
                                       player1_tiebreak: event.target.value,
                                     })
                                   }
-                                  required
+                                  required={isCompletedSetTiebreak}
                                   type="number"
                                   value={scoreSet.player1_tiebreak}
                                 />
@@ -10794,7 +10861,7 @@ function TournamentMatchEditDialog({
                                       player2_tiebreak: event.target.value,
                                     })
                                   }
-                                  required
+                                  required={isCompletedSetTiebreak}
                                   type="number"
                                   value={scoreSet.player2_tiebreak}
                                 />
@@ -10824,7 +10891,7 @@ function TournamentMatchEditDialog({
                         </button>
                       ) : null}
                       {form.score_sets.length >
-                      setsNeededToWin(tournament.best_of_sets) ? (
+                      (form.is_retired ? 1 : setsNeededToWin(tournament.best_of_sets)) ? (
                         <button
                           className="secondary-button"
                           onClick={() =>
@@ -10840,10 +10907,10 @@ function TournamentMatchEditDialog({
                       ) : null}
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <p className="text-xs leading-5 text-[#68756b]">
-                  Normal sonuçta kazanan 3, kaybeden 1 puan; hükmen sonuçta kazanan 3, kaybeden 0 puan alır.
+                  Normal ve terk sonucunda kazanan 3, kaybeden 1 puan; hükmen sonuçta kazanan 3, kaybeden 0 puan alır.
                 </p>
               </div>
             ) : null}

@@ -67,6 +67,40 @@ function scoreWinner(
   return player1Score > player2Score ? 1 : 2;
 }
 
+function isUnfinishedSet(
+  rules: TournamentScoringRules,
+  scoreSet: TournamentScoreSet,
+) {
+  const { player1_score: first, player2_score: second } = scoreSet;
+  const noTiebreak =
+    scoreSet.player1_tiebreak === null && scoreSet.player2_tiebreak === null;
+
+  if (scoreSet.type === "match_tiebreak") {
+    return noTiebreak && !scoreWinner(
+      first, second, rules.deciding_match_tiebreak_points, true,
+    );
+  }
+
+  const target = rules.set_games_to_win;
+  if (first === target && second === target) {
+    return noTiebreak || (
+      scoreSet.player1_tiebreak !== null &&
+      scoreSet.player2_tiebreak !== null &&
+      !scoreWinner(
+        scoreSet.player1_tiebreak,
+        scoreSet.player2_tiebreak,
+        rules.set_tiebreak_points,
+        true,
+      )
+    );
+  }
+
+  return noTiebreak && (
+    Math.max(first, second) < target ||
+    (Math.max(first, second) === target && Math.min(first, second) === target - 1)
+  );
+}
+
 function validateRegularSet(
   rules: TournamentScoringRules,
   scoreSet: TournamentScoreSet,
@@ -126,12 +160,14 @@ function validateRegularSet(
 export function validateTournamentScore(
   rules: TournamentScoringRules,
   scoreSets: TournamentScoreSet[],
+  options: { retiredWinnerSide?: 1 | 2 } = {},
 ): TournamentScoreValidation {
   const neededSets = setsNeededToWin(rules.best_of_sets);
+  const minimumSets = options.retiredWinnerSide ? 1 : neededSets;
 
-  if (scoreSets.length < neededSets || scoreSets.length > rules.best_of_sets) {
+  if (scoreSets.length < minimumSets || scoreSets.length > rules.best_of_sets) {
     return {
-      error: `Maç sonucu ${neededSets} ile ${rules.best_of_sets} set arasında olmalı.`,
+      error: `Maç sonucu ${minimumSets} ile ${rules.best_of_sets} set arasında olmalı.`,
       winnerSide: null,
     };
   }
@@ -143,6 +179,16 @@ export function validateTournamentScore(
     const expectedType = tournamentSetType(rules, setIndex);
     const setNumber = setIndex + 1;
 
+    const scores = [scoreSet.player1_score, scoreSet.player2_score];
+    const tiebreakScores = [scoreSet.player1_tiebreak, scoreSet.player2_tiebreak];
+    if (
+      scores.some((score) => !Number.isInteger(score) || score < 0) ||
+      tiebreakScores.some((score) => score !== null && (!Number.isInteger(score) || score < 0)) ||
+      (scoreSet.player1_tiebreak === null) !== (scoreSet.player2_tiebreak === null)
+    ) {
+      return { error: `${setNumber}. set skorları eksik veya geçersiz.`, winnerSide: null };
+    }
+
     if (scoreSet.type !== expectedType) {
       return {
         error: `${setNumber}. set türü turnuva sistemine uygun değil.`,
@@ -151,6 +197,15 @@ export function validateTournamentScore(
     }
 
     let setWinner: 1 | 2 | null = null;
+
+    // Only the last recorded set may be unfinished when a player retires.
+    if (
+      options.retiredWinnerSide &&
+      setIndex === scoreSets.length - 1 &&
+      isUnfinishedSet(rules, scoreSet)
+    ) {
+      continue;
+    }
 
     if (expectedType === "match_tiebreak") {
       setWinner = scoreWinner(
@@ -194,6 +249,13 @@ export function validateTournamentScore(
     }
   }
 
+  if (options.retiredWinnerSide) {
+    if (player1Sets === neededSets || player2Sets === neededSets) {
+      return { error: "Tamamlanmış maçta terk seçilemez; normal sonuç olarak kaydedin.", winnerSide: null };
+    }
+    return { error: null, winnerSide: options.retiredWinnerSide };
+  }
+
   if (player1Sets !== neededSets && player2Sets !== neededSets) {
     return {
       error: `Kazanan oyuncu/takım ${neededSets} set kazanmış olmalı.`,
@@ -205,6 +267,24 @@ export function validateTournamentScore(
     error: null,
     winnerSide: player1Sets > player2Sets ? 1 : 2,
   };
+}
+
+export function completedTournamentSetWinner(
+  rules: TournamentScoringRules,
+  scoreSet: TournamentScoreSet,
+): 1 | 2 | null {
+  if (scoreSet.type === "match_tiebreak") {
+    return scoreWinner(
+      scoreSet.player1_score,
+      scoreSet.player2_score,
+      rules.deciding_match_tiebreak_points,
+      true,
+    );
+  }
+
+  return validateRegularSet(rules, scoreSet, scoreSet.set_number) === null
+    ? scoreSet.player1_score > scoreSet.player2_score ? 1 : 2
+    : null;
 }
 
 export function tournamentEntryPoints(
@@ -241,7 +321,7 @@ export function formatTournamentMatchScore(match: TournamentMatch) {
     return `${winnerName} hükmen kazandı`;
   }
 
-  return match.score_sets
+  const scoreText = match.score_sets
     .map((scoreSet) => {
       const baseScore = `${scoreSet.player1_score}-${scoreSet.player2_score}`;
 
@@ -255,4 +335,6 @@ export function formatTournamentMatchScore(match: TournamentMatch) {
       return `${baseScore} (${scoreSet.player1_tiebreak}-${scoreSet.player2_tiebreak})`;
     })
     .join(", ");
+
+  return match.is_retired ? `${scoreText} (Ret)` : scoreText;
 }

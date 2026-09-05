@@ -196,6 +196,7 @@ export type TournamentMatch = {
   score_entered: boolean;
   score_sets: TournamentScoreSet[];
   is_walkover: boolean;
+  is_retired: boolean;
   winner_entry_id: string | null;
   source_key: string | null;
   created_at: string;
