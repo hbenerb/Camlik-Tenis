@@ -60,6 +60,7 @@ export type Reservation = {
   id: string;
   court_id: string;
   user_id: string;
+  trainer_id: string | null;
   starts_at: string;
   ends_at: string;
   status: ReservationStatus;
