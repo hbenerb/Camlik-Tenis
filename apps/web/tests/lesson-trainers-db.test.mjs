@@ -66,6 +66,7 @@ test("lesson trainer migration and database authorization", async (t) => {
   await db.exec(await migration("20260822165809_allow_trainers_manage_own_lessons"));
   await db.exec(await migration("20260906091240_registered_lesson_trainers"));
   await db.exec(await migration("20260907152711_trainers_edit_own_reservations"));
+  await db.exec(await migration("20260907160307_trainers_self_lesson_assignment"));
   const asUser = async (id, action) => {
     await db.exec("set role authenticated");
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id]);
@@ -104,7 +105,7 @@ test("lesson trainer migration and database authorization", async (t) => {
   await t.test("trainer cannot reassign owner, instructor or change lesson kind", async () => {
     for (const assignment of [`user_id = '${trainer}'`, `trainer_id = '${otherTrainer}'`, `note = '{"kind":"match"}'`,
       "starts_at = now() - interval '2 months'", `status = 'canceled', user_id = '${trainer}'`]) {
-      await assert.rejects(asUser(trainer, () => update(uid(10), assignment)), /değiştirilemez/);
+      await assert.rejects(asUser(trainer, () => update(uid(10), assignment)), /değiştirilemez|yalnızca kendi/);
     }
     assert.equal((await get(uid(10))).user_id, admin);
     assert.equal((await get(uid(10))).status, "confirmed");
@@ -125,6 +126,37 @@ test("lesson trainer migration and database authorization", async (t) => {
     assert.equal(saved.rows[0].trainer_id, trainer);
     assert.equal(JSON.parse(saved.rows[0].note).trainer_name, "Serkan İrden");
   });
+  const insertOwnLesson = (ownerId, trainerId) => db.query(`insert into public.reservations
+    (court_id, user_id, trainer_id, starts_at, ends_at, note)
+    values ($1, $2, $3, now(), now() + interval '1 hour', '{"kind":"lesson","trainer_name":"Fake"}') returning *`,
+  [court, ownerId, trainerId]);
+  await t.test("trainer can create lessons only with their own registered identity", async () => {
+    for (const id of [null, member, otherTrainer, uid(999)]) {
+      await assert.rejects(asUser(trainer, () => insertOwnLesson(trainer, id)), /yalnızca kendi/);
+    }
+    const result = await asUser(trainer, () => insertOwnLesson(trainer, trainer));
+    assert.equal(result.rows[0].trainer_id, trainer);
+    assert.equal(JSON.parse(result.rows[0].note).trainer_name, "Serkan İrden");
+  });
+  await t.test("ordinary and revoked trainers cannot self-assign a lesson", async () => {
+    await assert.rejects(asUser(member, () => insertOwnLesson(member, member)), /yalnızca kendi/);
+    await db.query("update public.profiles set is_trainer = false where id = $1", [trainer]);
+    try {
+      await assert.rejects(asUser(trainer, () => insertOwnLesson(trainer, trainer)), /yalnızca kendi/);
+    } finally {
+      await db.query("update public.profiles set is_trainer = true where id = $1", [trainer]);
+    }
+  });
+  await t.test("admins and super admins may still choose any registered instructor", async () => {
+    for (const role of ['admin', 'super_admin']) {
+      await db.query("update public.profiles set app_role = $1 where id = $2", [role, admin]);
+      const result = await asUser(admin, () => insertOwnLesson(admin, otherTrainer));
+      assert.equal(result.rows[0].trainer_id, otherTrainer);
+      assert.equal(JSON.parse(result.rows[0].note).trainer_name, "Osman Gülay");
+      assert.equal((await asUser(admin, () => update(result.rows[0].id, `trainer_id = '${trainer}'`))).rows[0].trainer_id, trainer);
+    }
+    await db.query("update public.profiles set app_role = 'admin' where id = $1", [admin]);
+  });
   await t.test("assigned trainer can cancel someone else's lesson; cannot restore it", async () => {
     const result = await asUser(trainer, () => update(uid(10), "status = 'canceled'"));
     assert.equal(result.rows[0].status, "canceled");
@@ -141,8 +173,9 @@ test("lesson trainer migration and database authorization", async (t) => {
     const result = await db.query(`select prosecdef,
       has_function_privilege('anon', oid, 'EXECUTE') as anon_execute,
       has_function_privilege('authenticated', oid, 'EXECUTE') as user_execute
-      from pg_proc where proname = 'validate_lesson_trainer'`);
-    assert.deepEqual(result.rows[0], {prosecdef:false, anon_execute:false, user_execute:false});
+      from pg_proc where proname in ('validate_lesson_trainer', 'enforce_self_lesson_assignment')`);
+    assert.equal(result.rows.length, 2);
+    for (const row of result.rows) assert.deepEqual(row, {prosecdef:false, anon_execute:false, user_execute:false});
   });
   await t.test("normal owner cancellation stays available but cannot smuggle changes", async () => {
     await assert.rejects(asUser(member, () => update(uid(13), "status = 'canceled', note = 'changed'")), /yetkiniz/);
@@ -203,13 +236,14 @@ test("lesson trainer migration and database authorization", async (t) => {
     await db.query("update public.profiles set is_trainer = true where id = $1", [trainer]);
   });
 
-  await t.test("changing an own reservation into a lesson still requires a registered instructor", async () => {
-    for (const id of ['null', `'${member}'`]) {
-      await assert.rejects(asUser(trainer, () => update(uid(21), `note = '{"kind":"lesson"}', trainer_id = ${id}`)), /kayıtlı eğitmen/);
+  await t.test("changing an own reservation into a lesson requires the trainer's own identity", async () => {
+    for (const id of ['null', `'${member}'`, `'${otherTrainer}'`, `'${uid(999)}'`]) {
+      await assert.rejects(asUser(trainer, () => update(uid(21), `note = '{"kind":"lesson"}', trainer_id = ${id}`)), /yalnızca kendi/);
     }
-    const result = await asUser(trainer, () => update(uid(21), `note = '{"kind":"lesson","trainer_name":"Fake"}', trainer_id = '${otherTrainer}'`));
-    assert.equal(result.rows[0].trainer_id, otherTrainer);
-    assert.equal(JSON.parse(result.rows[0].note).trainer_name, "Osman Gülay");
+    const result = await asUser(trainer, () => update(uid(21), `note = '{"kind":"lesson","trainer_name":"Fake"}', trainer_id = '${trainer}'`));
+    assert.equal(result.rows[0].trainer_id, trainer);
+    assert.equal(JSON.parse(result.rows[0].note).trainer_name, "Serkan İrden");
+    await assert.rejects(asUser(trainer, () => update(uid(21), `trainer_id = '${otherTrainer}'`)), /yalnızca kendi/);
     assert.equal((await asUser(trainer, () => update(uid(21), `note = '{"kind":"match"}', trainer_id = null`))).rows.length, 1);
   });
 

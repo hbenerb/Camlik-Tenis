@@ -1754,6 +1754,7 @@ export function ClubApp() {
   );
 
   const canManageReservations = isAdmin(profile);
+  const selfLessonTrainerId = !canManageReservations && profile?.is_trainer ? user?.id : undefined;
   const minimumCalendarDate = earliestCalendarDate(profile, currentTime);
   const reservationPermissionSchemaReady = Boolean(
     profile && Object.prototype.hasOwnProperty.call(profile, "can_book"),
@@ -3350,7 +3351,7 @@ export function ClubApp() {
     const requestedCourtId = courtId ?? activeCourts[0]?.id ?? "";
 
     setReservationForm({
-      trainer_id: registeredTrainer(reservationOwnerOptions, reservationForm.trainer_id)?.id ||
+      trainer_id: selfLessonTrainerId || registeredTrainer(reservationOwnerOptions, reservationForm.trainer_id)?.id ||
         (profile?.is_trainer ? profile.id : ""),
       court_id:
         nextMatchType === "tournament"
@@ -3442,7 +3443,7 @@ export function ClubApp() {
 
     const customInfo = normalizeFullName(reservationForm.custom_info);
     const isLessonReservationForm = canMarkLesson && isLessonForm(reservationForm);
-    const lessonTrainer = registeredTrainer(reservationOwnerOptions, reservationForm.trainer_id);
+    const lessonTrainer = registeredTrainer(reservationOwnerOptions, selfLessonTrainerId ?? reservationForm.trainer_id);
     if (isLessonReservationForm && !lessonTrainer) {
       setStatusMessage("Ders için kayıtlı eğitmen listesinden bir eğitmen seçilmeli.");
       return;
@@ -3719,6 +3720,15 @@ export function ClubApp() {
 
     const customInfo = normalizeFullName(reservationEditForm.custom_info);
     const isLessonReservationForm = isLessonForm(reservationEditForm);
+    const keepsExistingTrainer = Boolean(
+      parseReservationLessonNote(editingReservation.note) &&
+      reservationEditForm.trainer_id === editingReservation.trainer_id,
+    );
+    if (isLessonReservationForm && !isAdminEdit &&
+        reservationEditForm.trainer_id !== user.id && !keepsExistingTrainer) {
+      setStatusMessage("Eğitmenler ders için yalnızca kendi hesaplarını seçebilir.");
+      return;
+    }
     const lessonTrainer = registeredTrainer(reservationOwnerOptions, isAdminEdit || isTrainerOwnEdit
       ? reservationEditForm.trainer_id : editingReservation.trainer_id ?? "");
     if (isLessonReservationForm && !lessonTrainer) {
@@ -5893,6 +5903,7 @@ export function ClubApp() {
       {isReservationOpen && !isGuest && user ? (
         <ReservationDialog
           activeCourts={activeCourts}
+          defaultTrainerId={selfLessonTrainerId}
           bookingWindowDays={effectiveBookingWindowDays}
           canMarkLesson={canMarkLesson}
           canChooseOwner={canManageReservations}
@@ -5914,6 +5925,7 @@ export function ClubApp() {
       {editingReservation && !isGuest && user ? (
         <ReservationEditDialog
           activeCourts={activeCourts}
+          defaultTrainerId={selfLessonTrainerId}
           canManageAll={canManageReservations}
           canEditOwn={canTrainerEditOwnReservation(profile, user.id, editingReservation, currentTime)}
           canDelete={canDeleteReservation(editingReservation)}
@@ -9155,6 +9167,7 @@ function AdminFoldout({
 
 function ReservationModeToggle<T extends ReservationFormState>({
   activeCourts = [],
+  defaultTrainerId,
   canUseLesson,
   canUseTournament = false,
   form,
@@ -9162,6 +9175,7 @@ function ReservationModeToggle<T extends ReservationFormState>({
   tournaments = [],
 }: {
   activeCourts?: Court[];
+  defaultTrainerId?: string;
   canUseLesson: boolean;
   canUseTournament?: boolean;
   form: T;
@@ -9253,6 +9267,7 @@ function ReservationModeToggle<T extends ReservationFormState>({
     setForm({
       ...form,
       is_lesson: matchType === "lesson",
+      trainer_id: matchType === "lesson" ? defaultTrainerId ?? form.trainer_id : form.trainer_id,
       match_type: matchType,
       team1_player2_name:
         matchType === "doubles" ? form.team1_player2_name : "",
@@ -9286,6 +9301,7 @@ function ReservationModeToggle<T extends ReservationFormState>({
 
 function MatchSetupFields<T extends ReservationFormState>({
   activeCourts = [],
+  defaultTrainerId,
   canEditTrainer,
   canUseLesson,
   canUseTournament = false,
@@ -9296,6 +9312,7 @@ function MatchSetupFields<T extends ReservationFormState>({
   tournaments = [],
 }: {
   activeCourts?: Court[];
+  defaultTrainerId?: string;
   canEditTrainer: boolean;
   canUseLesson: boolean;
   canUseTournament?: boolean;
@@ -9354,6 +9371,7 @@ function MatchSetupFields<T extends ReservationFormState>({
     <div className="grid min-w-0 gap-2 rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2 min-[380px]:p-2.5">
       <ReservationModeToggle
         activeCourts={activeCourts}
+        defaultTrainerId={defaultTrainerId}
         canUseLesson={canUseLesson}
         canUseTournament={canUseTournament}
         form={form}
@@ -9790,6 +9808,7 @@ function NotificationOptInDialog({
 
 function ReservationDialog({
   activeCourts,
+  defaultTrainerId,
   bookingWindowDays,
   canMarkLesson,
   canChooseOwner,
@@ -9807,6 +9826,7 @@ function ReservationDialog({
   tournaments,
 }: {
   activeCourts: Court[];
+  defaultTrainerId?: string;
   bookingWindowDays: number;
   canMarkLesson: boolean;
   canChooseOwner: boolean;
@@ -9993,6 +10013,7 @@ function ReservationDialog({
             <div className="grid gap-2">
               <MatchSetupFields
                 canEditTrainer={false}
+                defaultTrainerId={defaultTrainerId}
                 canUseLesson={canUseLesson}
                 canUseTournament={canUseTournament}
                 activeCourts={activeCourts}
@@ -10094,6 +10115,7 @@ function ReservationDialog({
 
 function ReservationEditDialog({
   activeCourts,
+  defaultTrainerId,
   canManageAll,
   canEditOwn,
   canDelete,
@@ -10110,6 +10132,7 @@ function ReservationEditDialog({
   timeSlots,
 }: {
   activeCourts: Court[];
+  defaultTrainerId?: string;
   canManageAll: boolean;
   canEditOwn: boolean;
   canDelete: boolean;
@@ -10271,7 +10294,8 @@ function ReservationEditDialog({
                   />
                 ) : (
                   <MatchSetupFields
-                    canEditTrainer
+                    canEditTrainer={false}
+                    defaultTrainerId={defaultTrainerId}
                     canUseLesson={canUseLesson}
                     form={form}
                     listId="trainer-own-reservation-edit-player-options"
