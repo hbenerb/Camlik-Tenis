@@ -41,6 +41,8 @@ import type { CSSProperties, FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  canTrainerEditOwnReservation,
+  canTrainerEditReservation,
   canTrainerManageLessonReservation,
   earliestCalendarDate,
   registeredTrainer,
@@ -1764,6 +1766,9 @@ export function ClubApp() {
   const canViewCalendarReservationDetails =
     canManageReservations || Boolean(profile?.is_club_member);
   const canEditReservation = (reservation: Reservation) =>
+    canManageReservations ||
+    canTrainerEditReservation(profile, user?.id, reservation, currentTime);
+  const canDeleteReservation = (reservation: Reservation) =>
     canManageReservations ||
     canTrainerManageLessonReservation(
       profile,
@@ -3693,6 +3698,9 @@ export function ClubApp() {
     }
 
     const isAdminEdit = isAdmin(profile);
+    const isTrainerOwnEdit = !isAdminEdit && canTrainerEditOwnReservation(
+      profile, user.id, editingReservation, currentTime,
+    );
     const isTrainerLessonEdit = !isAdminEdit && canTrainerManageLessonReservation(
       profile,
       user.id,
@@ -3700,18 +3708,18 @@ export function ClubApp() {
       currentTime,
     );
 
-    if (!isAdminEdit && !isTrainerLessonEdit) {
+    if (!isAdminEdit && !isTrainerOwnEdit && !isTrainerLessonEdit) {
       return;
     }
 
-    if (isTrainerLessonEdit && !isLessonForm(reservationEditForm)) {
-      setStatusMessage("Eğitmenler yalnızca kendi derslerini düzenleyebilir.");
+    if (isTrainerLessonEdit && !isTrainerOwnEdit && !isLessonForm(reservationEditForm)) {
+      setStatusMessage("Başkasına ait rezervasyonda yalnızca size atanmış dersi düzenleyebilirsiniz.");
       return;
     }
 
     const customInfo = normalizeFullName(reservationEditForm.custom_info);
     const isLessonReservationForm = isLessonForm(reservationEditForm);
-    const lessonTrainer = registeredTrainer(reservationOwnerOptions, isAdminEdit
+    const lessonTrainer = registeredTrainer(reservationOwnerOptions, isAdminEdit || isTrainerOwnEdit
       ? reservationEditForm.trainer_id : editingReservation.trainer_id ?? "");
     if (isLessonReservationForm && !lessonTrainer) {
       setStatusMessage("Ders için kayıtlı eğitmen listesinden bir eğitmen seçilmeli.");
@@ -3719,7 +3727,6 @@ export function ClubApp() {
     }
 
     if (
-      isAdminEdit &&
       reservationEditForm.is_custom &&
       !isLessonReservationForm &&
       !customInfo
@@ -3734,7 +3741,7 @@ export function ClubApp() {
     );
     const endsAt = addSlotDuration(startsAt, settings);
     if (!isAdminEdit && minimumCalendarDate && startsAt < minimumCalendarDate) {
-      setStatusMessage("Eğitmenler en fazla bir ay önceki tarihe kadar ders düzenleyebilir.");
+      setStatusMessage("Eğitmenler en fazla bir ay önceki tarihe kadar rezervasyon düzenleyebilir.");
       return;
     }
     const tournamentConflict = findTournamentMatchConflict(
@@ -3793,7 +3800,7 @@ export function ClubApp() {
   }
 
   async function deleteReservation(reservation: Reservation) {
-    if (!supabase || !user || !canEditReservation(reservation)) {
+    if (!supabase || !user || !canDeleteReservation(reservation)) {
       return;
     }
 
@@ -5908,6 +5915,8 @@ export function ClubApp() {
         <ReservationEditDialog
           activeCourts={activeCourts}
           canManageAll={canManageReservations}
+          canEditOwn={canTrainerEditOwnReservation(profile, user.id, editingReservation, currentTime)}
+          canDelete={canDeleteReservation(editingReservation)}
           minimumDate={minimumCalendarDate}
           canMarkLesson={
             canMarkLesson || Boolean(parseReservationLessonNote(editingReservation.note))
@@ -6926,7 +6935,7 @@ function ReservationsPanel({
       (reservation) =>
         isConfirmedReservation(reservation) &&
         (isFutureReservation(reservation, currentTime) ||
-          (reservation.trainer_id === userId && canEditReservation(reservation))),
+          ((reservation.trainer_id === userId || !canManageAll) && canEditReservation(reservation))),
     )
     .sort(
       (a, b) =>
@@ -10086,6 +10095,8 @@ function ReservationDialog({
 function ReservationEditDialog({
   activeCourts,
   canManageAll,
+  canEditOwn,
+  canDelete,
   canMarkLesson,
   minimumDate,
   form,
@@ -10100,6 +10111,8 @@ function ReservationEditDialog({
 }: {
   activeCourts: Court[];
   canManageAll: boolean;
+  canEditOwn: boolean;
+  canDelete: boolean;
   canMarkLesson: boolean;
   minimumDate: Date | null;
   form: ReservationEditFormState;
@@ -10243,6 +10256,30 @@ function ReservationEditDialog({
                   </>
                 )}
               </>
+            ) : canEditOwn ? (
+              <>
+                <span className="text-sm font-semibold text-[#34443a]">
+                  Rezervasyon bilgisi
+                </span>
+                {form.is_custom && !isLessonForm(form) ? (
+                  <input
+                    className="input input-compact"
+                    onChange={(event) => setForm({ ...form, custom_info: event.target.value })}
+                    placeholder="Rezervasyon bilgisi"
+                    required
+                    value={form.custom_info}
+                  />
+                ) : (
+                  <MatchSetupFields
+                    canEditTrainer
+                    canUseLesson={canUseLesson}
+                    form={form}
+                    listId="trainer-own-reservation-edit-player-options"
+                    ownerOptions={ownerOptions}
+                    setForm={setForm}
+                  />
+                )}
+              </>
             ) : (
               <>
                 <span className="text-sm font-semibold text-[#34443a]">
@@ -10313,7 +10350,7 @@ function ReservationEditDialog({
             {formatTime(selectedStart)} - {formatTime(selectedEnd)}
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className={`grid gap-2 ${canDelete ? "sm:grid-cols-2" : ""}`}>
             <button
               className="primary-button"
               disabled={isSaving}
@@ -10321,14 +10358,14 @@ function ReservationEditDialog({
             >
               Değişiklikleri kaydet
             </button>
-            <button
+            {canDelete ? <button
               className="secondary-button border-[#a0543b] text-[#a0543b]"
               disabled={isSaving}
               onClick={onDelete}
               type="button"
             >
               Sil
-            </button>
+            </button> : null}
           </div>
         </form>
       </section>

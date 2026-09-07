@@ -26,6 +26,29 @@ export function canTrainerManageLessonReservation(
   }
 }
 
+export function canTrainerEditOwnReservation(
+  profile: Profile | null,
+  userId: string | undefined,
+  reservation: Reservation,
+  now: Date,
+) {
+  return Boolean(
+    profile?.is_trainer && userId && profile.id === userId &&
+    reservation.user_id === userId && reservation.status === "confirmed" &&
+    new Date(reservation.starts_at) >= startOfDay(addMonths(now, -1)),
+  );
+}
+
+export function canTrainerEditReservation(
+  profile: Profile | null,
+  userId: string | undefined,
+  reservation: Reservation,
+  now: Date,
+) {
+  return canTrainerEditOwnReservation(profile, userId, reservation, now) ||
+    canTrainerManageLessonReservation(profile, userId, reservation, now);
+}
+
 export function registeredTrainer(profiles: Profile[], trainerId: string) {
   return profiles.find((profile) => profile.id === trainerId && profile.is_trainer) ?? null;
 }
