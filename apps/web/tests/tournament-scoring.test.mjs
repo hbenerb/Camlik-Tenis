@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   completedTournamentSetWinner,
+  emptyTournamentScoreSetForm,
   formatTournamentMatchScore,
   tournamentEntryPoints,
+  tournamentScoreSetFormsForResult,
   validateTournamentScore,
 } from "../src/lib/tournament-scoring.ts";
 
@@ -33,6 +35,63 @@ const retirement = (scores, winner = "second") => ({
   player2_name: "İkinci Takım",
   winner_entry_id: winner,
   score_sets: scores,
+});
+
+test("first-set 4-2 retirement records one partial set and awards 3/1 points", () => {
+  const scores = [set(2, 4)];
+  assert.deepEqual(validateTournamentScore(rules, scores, { retiredWinnerSide: 2 }), {
+    error: null, winnerSide: 2,
+  });
+  const match = retirement(scores);
+  assert.equal(formatTournamentMatchScore(match), "2-4 (Ret)");
+  assert.equal(tournamentEntryPoints([match], "second"), 3);
+  assert.equal(tournamentEntryPoints([match], "first"), 1);
+  assert.equal(completedTournamentSetWinner(rules, scores[0]), null);
+  assert.ok(validateTournamentScore(rules, scores).error);
+});
+
+test("Ret removes default unplayed sets without changing the entered first set", () => {
+  const first = { ...emptyTournamentScoreSetForm(), player1_score: "2", player2_score: "4" };
+  const forms = [first, emptyTournamentScoreSetForm(), emptyTournamentScoreSetForm()];
+  assert.deepEqual(tournamentScoreSetFormsForResult(forms, 3, true), [first]);
+  assert.equal(forms.length, 3);
+});
+
+test("selecting Ret before scores starts with one set, including five-set tournaments", () => {
+  for (const bestOf of [1, 3, 5]) {
+    assert.deepEqual(tournamentScoreSetFormsForResult([], bestOf, true), [emptyTournamentScoreSetForm()]);
+    assert.deepEqual(tournamentScoreSetFormsForResult(
+      Array.from({ length: bestOf }, emptyTournamentScoreSetForm), bestOf, true,
+    ), [emptyTournamentScoreSetForm()]);
+  }
+});
+
+test("Ret keeps all entered sets and trims only whitespace-only trailing sets", () => {
+  const first = { ...emptyTournamentScoreSetForm(), player1_score: "6", player2_score: "4" };
+  const second = { ...emptyTournamentScoreSetForm(), player1_score: "1", player2_score: "1" };
+  const blank = { ...emptyTournamentScoreSetForm(), player1_score: " " };
+  assert.deepEqual(tournamentScoreSetFormsForResult([first, second, blank], 3, true), [first, second]);
+});
+
+test("Ret never drops zero scores, half-filled scores, tiebreak input or gaps", () => {
+  for (const entered of [
+    { player1_score: "0", player2_score: "0" },
+    { player1_score: "2" },
+    { player2_score: "4" },
+    { player1_tiebreak: "0" },
+    { player2_tiebreak: "2" },
+  ]) {
+    const forms = [emptyTournamentScoreSetForm(), { ...emptyTournamentScoreSetForm(), ...entered }];
+    assert.deepEqual(tournamentScoreSetFormsForResult([...forms, emptyTournamentScoreSetForm()], 3, true), forms);
+  }
+});
+
+test("turning Ret off restores normal minimum sets without discarding scores", () => {
+  const first = { ...emptyTournamentScoreSetForm(), player1_score: "2", player2_score: "4" };
+  assert.deepEqual(tournamentScoreSetFormsForResult([first], 3, false), [first, emptyTournamentScoreSetForm()]);
+  assert.equal(tournamentScoreSetFormsForResult([first], 5, false).length, 3);
+  const forms = [first, emptyTournamentScoreSetForm(), emptyTournamentScoreSetForm()];
+  assert.deepEqual(tournamentScoreSetFormsForResult(forms, 3, false), forms);
 });
 
 test("4-6, 1-1 (Ret) keeps scores and awards winner 3, retiree 1", () => {

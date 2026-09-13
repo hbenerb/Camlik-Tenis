@@ -75,9 +75,12 @@ import {
   parseDateInput,
 } from "@/lib/time";
 import {
+  emptyTournamentScoreSetForm,
   isRegularSetTiebreakScore,
   setsNeededToWin,
+  tournamentScoreSetFormsForResult,
   tournamentSetType,
+  type TournamentScoreSetFormState,
   validateTournamentScore,
 } from "@/lib/tournament-scoring";
 import type {
@@ -207,12 +210,6 @@ type TournamentMatchEditFormState = {
   is_retired: boolean;
   winner_entry_id: string;
   score_sets: TournamentScoreSetFormState[];
-};
-type TournamentScoreSetFormState = {
-  player1_score: string;
-  player1_tiebreak: string;
-  player2_score: string;
-  player2_tiebreak: string;
 };
 type CalendarTournamentMatch = TournamentMatch & {
   tournament_category_name: string;
@@ -509,15 +506,6 @@ function getTournamentScoringRulesError(
   }
 
   return null;
-}
-
-function emptyTournamentScoreSetForm(): TournamentScoreSetFormState {
-  return {
-    player1_score: "",
-    player1_tiebreak: "",
-    player2_score: "",
-    player2_tiebreak: "",
-  };
 }
 
 function tournamentScoreSetToForm(
@@ -5309,7 +5297,12 @@ export function ClubApp() {
         winnerEntryId = tournamentMatchEditForm.winner_entry_id;
       }
       if (!isWalkover) {
-        for (const [setIndex, scoreSetForm] of tournamentMatchEditForm.score_sets.entries()) {
+        const scoreSetForms = tournamentScoreSetFormsForResult(
+          tournamentMatchEditForm.score_sets,
+          tournament.best_of_sets,
+          isRetired,
+        );
+        for (const [setIndex, scoreSetForm] of scoreSetForms.entries()) {
           const player1Score = parseScoreValue(scoreSetForm.player1_score);
           const player2Score = parseScoreValue(scoreSetForm.player2_score);
 
@@ -10707,9 +10700,11 @@ function TournamentMatchEditDialog({
                         ...form,
                         is_retired: event.target.checked,
                         is_walkover: false,
-                        score_sets: form.score_sets.length
-                          ? form.score_sets
-                          : [emptyTournamentScoreSetForm()],
+                        score_sets: tournamentScoreSetFormsForResult(
+                          form.score_sets,
+                          tournament.best_of_sets,
+                          event.target.checked,
+                        ),
                         winner_entry_id: "",
                       })
                     }
@@ -10721,7 +10716,8 @@ function TournamentMatchEditDialog({
                 {form.is_retired ? (
                   <p className="text-xs leading-5 text-[#68756b]">
                     Terk etmeyen oyuncu/takımı kazanan seçin. Yalnızca oynanan setleri,
-                    son set yarım kaldıysa o ana kadarki skorunu girin. Oynanmayan seti çıkarın.
+                    son set yarım kaldıysa o ana kadarki skorunu girin. İlk sette de terk
+                    kaydedilebilir; sondaki boş setler otomatik olarak kayda alınmaz.
                   </p>
                 ) : null}
 
@@ -10774,6 +10770,10 @@ function TournamentMatchEditDialog({
                       const isCompletedSetTiebreak = isRegularSetTiebreakScore(
                         tournament.set_games_to_win, player1Score, player2Score,
                       );
+                      const isScoreRequired = !form.is_retired || setIndex <
+                        tournamentScoreSetFormsForResult(
+                          form.score_sets, tournament.best_of_sets, true,
+                        ).length;
 
                       return (
                         <div
@@ -10802,7 +10802,7 @@ function TournamentMatchEditDialog({
                                     player2_tiebreak: "",
                                   })
                                 }
-                                required
+                                required={isScoreRequired}
                                 type="number"
                                 value={scoreSet.player1_score}
                               />
@@ -10818,7 +10818,7 @@ function TournamentMatchEditDialog({
                                     player2_tiebreak: "",
                                   })
                                 }
-                                required
+                                required={isScoreRequired}
                                 type="number"
                                 value={scoreSet.player2_score}
                               />

@@ -22,6 +22,46 @@ export function setsNeededToWin(bestOfSets: number) {
   return Math.floor(bestOfSets / 2) + 1;
 }
 
+export type TournamentScoreSetFormState = {
+  player1_score: string;
+  player1_tiebreak: string;
+  player2_score: string;
+  player2_tiebreak: string;
+};
+
+export function emptyTournamentScoreSetForm(): TournamentScoreSetFormState {
+  return {
+    player1_score: "",
+    player1_tiebreak: "",
+    player2_score: "",
+    player2_tiebreak: "",
+  };
+}
+
+export function tournamentScoreSetFormsForResult(
+  scoreSets: TournamentScoreSetFormState[],
+  bestOfSets: number,
+  isRetired: boolean,
+) {
+  let setCount = scoreSets.length;
+
+  // Ignore only trailing, wholly unplayed sets. Keep zero scores, partial
+  // input and gaps between played sets so validation can still catch errors.
+  if (isRetired) {
+    while (
+      setCount > 0 &&
+      Object.values(scoreSets[setCount - 1]).every((value) => value.trim() === "")
+    ) {
+      setCount -= 1;
+    }
+  }
+
+  return Array.from(
+    { length: Math.max(setCount, isRetired ? 1 : setsNeededToWin(bestOfSets)) },
+    (_, index) => scoreSets[index] ?? emptyTournamentScoreSetForm(),
+  );
+}
+
 export function tournamentSetType(
   rules: TournamentScoringRules,
   setIndex: number,
