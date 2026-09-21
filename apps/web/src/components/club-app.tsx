@@ -41,6 +41,7 @@ import type { CSSProperties, FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  canCreateReservationAt,
   canTrainerEditOwnReservation,
   canTrainerEditReservation,
   canTrainerManageLessonReservation,
@@ -896,21 +897,20 @@ function dayAvailability(
   return "future";
 }
 
-function isBookableDay(day: Date, bookingWindowDays: number, currentTime: Date) {
-  return dayAvailability(day, bookingWindowDays, currentTime) === "bookable";
-}
-
 function isBookableStart(
   dateValue: string,
   timeValue: string,
   bookingWindowDays: number,
   currentTime: Date,
+  canCreatePastReservation = false,
 ) {
   const startsAt = buildLocalDateTime(dateValue, timeValue);
 
-  return (
-    startsAt >= currentTime &&
-    isBookableDay(startsAt, bookingWindowDays, currentTime)
+  return canCreateReservationAt(
+    startsAt,
+    bookingWindowDays,
+    currentTime,
+    canCreatePastReservation,
   );
 }
 
@@ -946,10 +946,17 @@ function firstBookableSlot(
   slots: string[],
   bookingWindowDays: number,
   currentTime: Date,
+  canCreatePastReservation = false,
 ) {
   return (
     slots.find((slot) =>
-      isBookableStart(dateValue, slot, bookingWindowDays, currentTime),
+      isBookableStart(
+        dateValue,
+        slot,
+        bookingWindowDays,
+        currentTime,
+        canCreatePastReservation,
+      ),
     ) ?? null
   );
 }
@@ -3269,23 +3276,33 @@ export function ClubApp() {
     }
 
     const requestedDate = date ?? selectedDate;
-    const dateForForm = isBookableDay(
-      requestedDate,
+    const requestedDateValue = dateInputValue(requestedDate);
+    const dateForForm = firstBookableSlot(
+      requestedDateValue,
+      timeSlots,
       effectiveBookingWindowDays,
       currentTime,
+      canManageReservations,
     )
       ? requestedDate
       : firstBookableDate(effectiveBookingWindowDays, timeSlots, currentTime);
     const dateValue = dateInputValue(dateForForm);
     const slotForForm =
       slot &&
-      isBookableStart(dateValue, slot, effectiveBookingWindowDays, currentTime)
+      isBookableStart(
+        dateValue,
+        slot,
+        effectiveBookingWindowDays,
+        currentTime,
+        canManageReservations,
+      )
         ? slot
         : firstBookableSlot(
             dateValue,
             timeSlots,
             effectiveBookingWindowDays,
             currentTime,
+            canManageReservations,
           );
     const selectedOwner =
       reservationOwnerOptions.find(
@@ -3423,6 +3440,7 @@ export function ClubApp() {
         reservationForm.start_time,
         effectiveBookingWindowDays,
         currentTime,
+        canManageReservations,
       )
     ) {
       setStatusMessage("Bu tarih ve saat için rezervasyon yapılamaz.");
@@ -5777,6 +5795,7 @@ export function ClubApp() {
               bookingWindowDays={effectiveBookingWindowDays}
               calendarView={calendarView}
               canCreateReservation={canCreateReservation}
+              canCreatePastReservation={canManageReservations}
               canEditReservation={canEditReservation}
               minimumCalendarDate={minimumCalendarDate}
               courts={courts}
@@ -5898,6 +5917,7 @@ export function ClubApp() {
           activeCourts={activeCourts}
           defaultTrainerId={selfLessonTrainerId}
           bookingWindowDays={effectiveBookingWindowDays}
+          canCreatePastReservation={canManageReservations}
           canMarkLesson={canMarkLesson}
           canChooseOwner={canManageReservations}
           canUseTournament={canManageReservations}
@@ -6061,6 +6081,7 @@ function CalendarPanel({
   bookingWindowDays,
   calendarView,
   canCreateReservation,
+  canCreatePastReservation,
   canEditReservation,
   minimumCalendarDate,
   courts,
@@ -6084,6 +6105,7 @@ function CalendarPanel({
   bookingWindowDays: number;
   calendarView: CalendarView;
   canCreateReservation: boolean;
+  canCreatePastReservation: boolean;
   canEditReservation: (reservation: Reservation) => boolean;
   minimumCalendarDate: Date | null;
   courts: Court[];
@@ -6189,7 +6211,11 @@ function CalendarPanel({
                     </button>
                   </div>
                   <p>
-                    {canCreateReservation
+                    {canCreatePastReservation
+                      ? `Admin olarak geçmiş gün ve saatlere kayıt ekleyebilir, gelecek için ${formatBookingWindowText(
+                          bookingWindowDays,
+                        )} rezervasyon oluşturabilirsiniz.`
+                      : canCreateReservation
                       ? `Hesabınızla ${formatBookingWindowText(
                           bookingWindowDays,
                         )} rezervasyon yapabilirsiniz.`
@@ -6277,6 +6303,7 @@ function CalendarPanel({
         <DayCalendar
           bookingWindowDays={bookingWindowDays}
           canCreateReservation={canCreateReservation}
+          canCreatePastReservation={canCreatePastReservation}
           canEditReservation={canEditReservation}
           courts={activeCourts}
           courtWindowStart={dayCourtWindowStart}
@@ -6328,6 +6355,7 @@ function CalendarPanel({
 function DayCalendar({
   bookingWindowDays,
   canCreateReservation,
+  canCreatePastReservation,
   canEditReservation,
   courtWindowStart,
   courts,
@@ -6345,6 +6373,7 @@ function DayCalendar({
 }: {
   bookingWindowDays: number;
   canCreateReservation: boolean;
+  canCreatePastReservation: boolean;
   canEditReservation: (reservation: Reservation) => boolean;
   courtWindowStart: number;
   courts: Court[];
@@ -6528,6 +6557,7 @@ function DayCalendar({
                     slot,
                     bookingWindowDays,
                     currentTime,
+                    canCreatePastReservation,
                   );
                 const slotCanOpen =
                   slotWithinBookingWindow && !tournamentConflict;
@@ -6595,10 +6625,12 @@ function DayCalendar({
                       className={`${cellClassName} flex items-center justify-center ${
                         tournamentConflict
                           ? "cursor-not-allowed bg-white"
-                          : slotIsPast
-                          ? "cursor-not-allowed bg-[#f1eee5] text-[#8b8f86]"
+                          : slotIsPast && slotCanOpen && canCreateReservation
+                          ? "cursor-pointer bg-[#f1eee5] text-[#68756b] hover:bg-[#e3f1df] hover:text-[#237000]"
                           : slotCanOpen && canCreateReservation
                           ? "cursor-pointer bg-[#f0f8ef] text-[#237000] hover:bg-[#e3f1df]"
+                          : slotIsPast
+                          ? "cursor-not-allowed bg-[#f1eee5] text-[#8b8f86]"
                           : slotCanOpen
                             ? "cursor-not-allowed bg-[#f0f8ef] text-[#237000]"
                             : "cursor-not-allowed bg-white text-[#8b8f86]"
@@ -9803,6 +9835,7 @@ function ReservationDialog({
   activeCourts,
   defaultTrainerId,
   bookingWindowDays,
+  canCreatePastReservation,
   canMarkLesson,
   canChooseOwner,
   canUseTournament,
@@ -9821,6 +9854,7 @@ function ReservationDialog({
   activeCourts: Court[];
   defaultTrainerId?: string;
   bookingWindowDays: number;
+  canCreatePastReservation: boolean;
   canMarkLesson: boolean;
   canChooseOwner: boolean;
   canUseTournament: boolean;
@@ -9877,23 +9911,28 @@ function ReservationDialog({
       form.start_time,
       bookingWindowDays,
       currentTime,
+      canCreatePastReservation,
     ) &&
     (!isTournamentForm || selectedEnd <= tournamentClosingTime);
   const canUseLesson = canMarkLesson;
   const generalMaxBookingDate = dateInputValue(
     addDays(currentTime, bookingWindowDays),
   );
-  const generalMinBookingDate = dateInputValue(currentTime);
+  const generalMinBookingDate = canCreatePastReservation
+    ? undefined
+    : dateInputValue(currentTime);
   const tournamentMinDate = selectedTournamentGroup
     ? selectedTournament?.group_stage_start_date
     : selectedTournament?.finals_start_date;
   const tournamentMaxDate = selectedTournamentGroup
     ? selectedTournament?.group_stage_end_date
     : selectedTournament?.finals_end_date;
-  const minBookingDate =
-    isTournamentForm && tournamentMinDate
-      ? [generalMinBookingDate, tournamentMinDate].sort()[1]
-      : generalMinBookingDate;
+  const minBookingDate = isTournamentForm
+    ? [generalMinBookingDate, tournamentMinDate]
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .at(-1)
+    : generalMinBookingDate;
   const maxBookingDate =
     isTournamentForm && tournamentMaxDate
       ? [generalMaxBookingDate, tournamentMaxDate].sort()[0]
@@ -9909,6 +9948,7 @@ function ReservationDialog({
           availableTimeSlots,
           bookingWindowDays,
           currentTime,
+          canCreatePastReservation,
         ) ??
         availableTimeSlots[0] ??
         form.start_time,
@@ -10070,6 +10110,7 @@ function ReservationDialog({
                     slot,
                     bookingWindowDays,
                     currentTime,
+                    canCreatePastReservation,
                   );
 
                   return (

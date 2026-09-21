@@ -1,5 +1,18 @@
-import { addMonths, startOfDay } from "date-fns";
+import { addDays, addMonths, startOfDay } from "date-fns";
 import type { Profile, Reservation } from "@/lib/types";
+
+export function canCreateReservationAt(
+  startsAt: Date,
+  bookingWindowDays: number,
+  now: Date,
+  canCreatePastReservation: boolean,
+) {
+  if (startsAt < now) {
+    return canCreatePastReservation;
+  }
+
+  return startOfDay(startsAt) <= startOfDay(addDays(now, bookingWindowDays));
+}
 
 export function earliestCalendarDate(profile: Profile | null, now: Date): Date | null {
   if (profile?.app_role === "admin" || profile?.app_role === "super_admin") {

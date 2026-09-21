@@ -1,11 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canTrainerEditOwnReservation, canTrainerEditReservation, canTrainerManageLessonReservation, earliestCalendarDate, registeredTrainer } from "../src/lib/reservation-permissions.ts";
+import { canCreateReservationAt, canTrainerEditOwnReservation, canTrainerEditReservation, canTrainerManageLessonReservation, earliestCalendarDate, registeredTrainer } from "../src/lib/reservation-permissions.ts";
 
 const now = new Date(2026, 8, 6, 12);
 const trainer = { id: "trainer", is_trainer: true, app_role: "user" };
 const lesson = { trainer_id: "trainer", user_id: "other", starts_at: new Date(2026, 8, 1, 10).toISOString(),
   status: "confirmed", note: JSON.stringify({kind: "lesson", trainer_name: "Original name"}) };
+
+test("only admins may create reservations in past days or elapsed hours", () => {
+  const currentTime = new Date(2026, 8, 19, 8, 15);
+  const elapsedHour = new Date(2026, 8, 19, 8);
+  const earlierDay = new Date(2026, 8, 16, 12);
+  const lastBookableDay = new Date(2026, 8, 21, 23);
+  const outsideWindow = new Date(2026, 8, 22, 9);
+
+  assert.equal(canCreateReservationAt(elapsedHour, 2, currentTime, false), false);
+  assert.equal(canCreateReservationAt(earlierDay, 2, currentTime, false), false);
+  assert.equal(canCreateReservationAt(elapsedHour, 2, currentTime, true), true);
+  assert.equal(canCreateReservationAt(earlierDay, 2, currentTime, true), true);
+  assert.equal(canCreateReservationAt(lastBookableDay, 2, currentTime, true), true);
+  assert.equal(canCreateReservationAt(outsideWindow, 2, currentTime, true), false);
+});
 
 test("assigned trainer manages another user's past or future lesson", () => {
   assert.equal(canTrainerManageLessonReservation(trainer, trainer.id, lesson, now), true);
