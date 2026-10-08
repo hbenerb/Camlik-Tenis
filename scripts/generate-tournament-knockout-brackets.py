@@ -20,7 +20,7 @@ PALE = colors.HexColor("#FCF1F2")
 LINE = colors.HexColor("#BBC7C0")
 WHITE = colors.white
 LEFT, RIGHT = 36, W - 36
-CARD_W, CARD_H = 236, 96
+CARD_W, CARD_H = 236, 66
 X_LEFT, X_RIGHT = LEFT, RIGHT - CARD_W
 X_CENTER = (W - CARD_W) / 2
 
@@ -43,7 +43,7 @@ class Booklet:
     def __init__(self, output: Path):
         output.parent.mkdir(parents=True, exist_ok=True)
         self.c = canvas.Canvas(str(output), pagesize=A4, pageCompression=1)
-        self.c.setTitle("29 Ekim Etkinliği - Eleme Tabloları")
+        self.c.setTitle("29 Ekim Etkinliği - Final Tabloları")
         self.c.setAuthor("Ayvalık Çamlık Tenis Kulübü")
         self.c.setSubject("8 Ekim 2026 - Dikey, sade ve isimsiz eleme şemaları")
         self.match_count = 0
@@ -84,8 +84,7 @@ class Booklet:
         self.c.rect(x, bottom, w, h, fill=1, stroke=1)
         # Names are at the bottom so upward arrows land in participant cells.
         self.line([(x, bottom + 38), (x + w, bottom + 38)])
-        self.line([(x, bottom + 66), (x + w, bottom + 66)])
-        self.line([(x + w / 2, bottom), (x + w / 2, bottom + 66)])
+        self.line([(x + w / 2, bottom), (x + w / 2, top)])
         for i, value in enumerate(players):
             cell_left = x + i * w / 2
             center = cell_left + w / 4
@@ -97,7 +96,6 @@ class Booklet:
             self.text(cell_left + 12, bottom + 50, "Skor", 8, color=MUTED)
             self.line([(cell_left + 39, bottom + 49), (cell_left + w / 2 - 12, bottom + 49)],
                       width=0.45)
-        self.text(x + 12, top - 20, "Tarih: ____________    Saat: __________", 8, color=MUTED)
         self.match_count += 1
         self.page_matches.append((final, top))
         return {"out": (x + w / 2, top),
@@ -123,6 +121,8 @@ class Booklet:
         self.arrow_count += 1
 
     def legend(self, lines):
+        if not lines:
+            return
         self.line([(LEFT, 108), (RIGHT, 108)], width=0.6)
         for i, value in enumerate(lines):
             self.text(LEFT, 92 - 14 * i, value, 8.8, color=MUTED)
@@ -137,22 +137,22 @@ class Booklet:
         self.text(LEFT, H - 86, "29 EKİM ETKİNLİĞİ", 11, True, RED)
         self.text(LEFT, H - 120, name, 27, True)
         format_label = {
-            "bye": "Çeyrek final / Yarı final / Final",
+            "bye": "Playoff / Yarı final / Final",
             "cross": "Yarı final / Final",
             "single_semi": "Yarı final / Final",
             "final": "Final",
-            "playoff": "Eleme / Yarı final / Final",
+            "playoff": "Playoff / Yarı final / Final",
         }[kind]
         self.text(LEFT, H - 145, format_label, 10.5, color=MUTED)
         self.text(RIGHT, H - 145, f"{count} MAÇ", 10, True, RED, "right")
         self.line([(LEFT, H - 163), (RIGHT, H - 163)], width=0.7)
         self.line([(LEFT, 43), (RIGHT, 43)], width=0.5)
-        self.text(LEFT, 27, "ELEME TABLOSU", 8, color=MUTED)
+        self.text(LEFT, 27, "FİNAL TABLOSU", 8, color=MUTED)
         self.text(RIGHT, 27, f"{page:02d} / 11", 8.5, True, MUTED, "right")
 
     def bye(self):
-        q1 = self.match(X_LEFT, 251, "ÇEYREK FİNAL 1", ["B2", "A3"])
-        q2 = self.match(X_RIGHT, 251, "ÇEYREK FİNAL 2", ["A2", "B3"])
+        q1 = self.match(X_LEFT, 251, "PLAYOFF 1", ["B2", "A3"])
+        q2 = self.match(X_RIGHT, 251, "PLAYOFF 2", ["A2", "B3"])
         s1 = self.match(X_LEFT, 447, "YARI FİNAL 1", ["A1", ""])
         s2 = self.match(X_RIGHT, 447, "YARI FİNAL 2", ["B1", ""])
         final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
@@ -161,7 +161,6 @@ class Booklet:
         self.arrow(s1, final, 0)
         self.arrow(s2, final, 1)
         self.legend([
-            "A1 = A grubu 1.'si. Harf grubu, sayı grup sırasını gösterir.",
             "A1 ve B1 BYE ile doğrudan yarı finale geçer.",
         ])
 
@@ -172,18 +171,16 @@ class Booklet:
         final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
         self.arrow(s1, final, 0)
         self.arrow(s2, final, 1)
-        self.legend(["Sayılar grup sırasını gösterir: 1 - 4 ve 2 - 3."
-                     if single else
-                     "A1 = A grubu 1.'si. Harf grubu, sayı grup sırasını gösterir."])
+        self.legend(["1 - 4 ve 2 - 3 yarı final oynar."] if single else [])
 
     def final(self):
         self.match(X_CENTER, 643, "FİNAL", ["1", "2"], True)
-        self.legend(["Sayılar grup sırasını gösterir. İlk iki sıra final oynar."])
+        self.legend(["İlk iki sıra final oynar."])
 
     def playoff(self):
         # Keep the elimination chain in the right-hand lane, without crossing lines.
-        e1 = self.match(X_RIGHT, 220, "ELEME 1", ["İ2", "İ3"])
-        e2 = self.match(X_RIGHT, 361, "ELEME 2", ["İ1", ""])
+        e1 = self.match(X_RIGHT, 220, "PLAYOFF 1", ["İ2", "İ3"])
+        e2 = self.match(X_RIGHT, 361, "PLAYOFF 2", ["İ1", ""])
         s1 = self.match(X_LEFT, 502, "YARI FİNAL 1", ["L2", "L3"])
         s2 = self.match(X_RIGHT, 502, "YARI FİNAL 2", ["L1", ""])
         final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
@@ -195,7 +192,7 @@ class Booklet:
         self.legend([
             "L1-L3: Grup birincileri. İ1-İ3: Grup ikincileri.",
             "Her küme puana göre sıralanır; 1 en yüksek puanlıdır.",
-            "Eşit puanda set averajı; eşitlik sürerse sıra ayrıca belirlenir.",
+            "En iyi ikinci ilk turu pas geçer.",
         ])
 
     def save(self):

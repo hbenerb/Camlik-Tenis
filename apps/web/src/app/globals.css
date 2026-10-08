@@ -287,6 +287,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Override the form font reset only for the compact tournament navigation. */
+.tournament-detail-tabs button {
+  font-size: clamp(0.75rem, 3vw, 0.875rem);
+  font-weight: 600;
+}
+
 @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse) {
   body::before {
     position: fixed;

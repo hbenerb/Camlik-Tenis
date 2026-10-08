@@ -10,7 +10,7 @@ değiştirilmedi. Supabase'den yalnız kategori/grup yapısı okundu.
 - Kaynak: `scripts/generate-tournament-knockout-brackets.py`
 - 11 kategori, 11 dikey A4 sayfa; her kategori ayrı sayfada.
 - Oyuncu adı yok. Grup/sıra etiketleri, maçlar arasındaki bağlantılar ve
-  elle doldurulabilecek tarih, saat ve skor alanları var.
+  elle doldurulabilecek skor alanları var. Tarih/saat alanları kaldırıldı.
 
 ### Dikey düzen revizyonu
 
@@ -22,6 +22,9 @@ değiştirilmedi. Supabase'den yalnız kategori/grup yapısı okundu.
 - Erkek Orta için L1-L3 birincileri, İ1-İ3 ikincileri ifade eder. Her küme kendi
   içinde puana göre sıralıdır; 1 en yüksek puanı gösterir.
 - Onaylı eşleşmeler, 31 maç ve her kategoriye bir sayfa kuralı aynen korundu.
+- Çeyrek final ve özel eleme turları artık Playoff 1 / Playoff 2 olarak görünür.
+- Harf/sayı açıklamaları ve Erkek Orta eşitlik dipnotu kaldırıldı.
+  Erkek Orta'ya “En iyi ikinci ilk turu pas geçer” dipnotu eklendi.
 
 ## Eşleşme kuralları
 

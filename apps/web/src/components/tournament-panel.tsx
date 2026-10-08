@@ -23,6 +23,7 @@ import {
 import { useId, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
+import { TournamentFinalsPanel } from "@/components/tournament-finals-panel";
 import {
   completedTournamentSetWinner,
   formatTournamentMatchScore,
@@ -32,7 +33,7 @@ import type { Court, TournamentMatch, TournamentWithDetails } from "@/lib/types"
 import type { TournamentDecidingSetType } from "@/lib/types";
 
 type TournamentScheduleScope = "all" | "day" | "week";
-type TournamentDetailTab = "schedule" | "players";
+type TournamentDetailTab = "schedule" | "players" | "finals";
 type TournamentAdminMode = "create" | "edit";
 const tournamentDurationOptions = [30, 45, 60, 75, 90, 105, 120, 150, 180];
 export const DEFAULT_TOURNAMENT_COLOR = "#237000";
@@ -298,12 +299,14 @@ function defaultTournamentDate(
 }
 
 export function TournamentDetailPanel({
+  canViewFinals,
   currentTime,
   onClose,
   onEditMatch,
   selectedTournamentId,
   tournaments,
 }: {
+  canViewFinals: boolean;
   currentTime: Date;
   onClose: () => void;
   onEditMatch?: (match: TournamentMatch) => void;
@@ -323,6 +326,7 @@ export function TournamentDetailPanel({
       .sort((first, second) => first.display_order - second.display_order)[0]
       ?.id ?? "";
   const [detailTab, setDetailTab] = useState<TournamentDetailTab>("schedule");
+  const visibleDetailTab = detailTab === "finals" && !canViewFinals ? "schedule" : detailTab;
   const [scope, setScope] = useState<TournamentScheduleScope>("week");
   const [anchorDate, setAnchorDate] = useState(initialAnchorDate);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -652,35 +656,48 @@ export function TournamentDetailPanel({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 p-2 sm:px-6">
+        <div aria-label="Turnuva bölümleri" className={`tournament-detail-tabs grid p-2 sm:px-6 ${canViewFinals ? "grid-cols-3" : "grid-cols-2"}`}>
           <button
-            className={`h-11 rounded-md text-sm font-semibold transition ${
-              detailTab === "schedule"
+            aria-pressed={visibleDetailTab === "schedule"}
+            className={`h-11 whitespace-nowrap rounded-md text-xs font-semibold transition sm:text-sm ${
+              visibleDetailTab === "schedule"
                 ? "hover:opacity-90"
                 : "text-[#546257] hover:bg-[#eee9dd]"
             }`}
             onClick={openSchedule}
-            style={detailTab === "schedule" ? tournamentAccentStyle : undefined}
+            style={visibleDetailTab === "schedule" ? tournamentAccentStyle : undefined}
             type="button"
           >
             Takvim
           </button>
           <button
-            className={`h-11 rounded-md text-sm font-semibold transition ${
-              detailTab === "players"
+            aria-pressed={visibleDetailTab === "players"}
+            className={`h-11 whitespace-nowrap rounded-md text-xs font-semibold transition sm:text-sm ${
+              visibleDetailTab === "players"
                 ? "hover:opacity-90"
                 : "text-[#546257] hover:bg-[#eee9dd]"
             }`}
             onClick={() => setDetailTab("players")}
-            style={detailTab === "players" ? tournamentAccentStyle : undefined}
+            style={visibleDetailTab === "players" ? tournamentAccentStyle : undefined}
             type="button"
           >
             Puan Durumu
           </button>
+          {canViewFinals ? (
+            <button
+              aria-pressed={visibleDetailTab === "finals"}
+              className={`h-11 whitespace-nowrap rounded-md text-xs font-semibold transition sm:text-sm ${visibleDetailTab === "finals" ? "hover:opacity-90" : "text-[#546257] hover:bg-[#eee9dd]"}`}
+              onClick={() => setDetailTab("finals")}
+              style={visibleDetailTab === "finals" ? tournamentAccentStyle : undefined}
+              type="button"
+            >
+              Finaller
+            </button>
+          ) : null}
         </div>
       </section>
 
-      {detailTab === "schedule" ? (
+      {visibleDetailTab === "schedule" ? (
         <section className="rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-6">
           <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
             <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
@@ -1185,6 +1202,16 @@ export function TournamentDetailPanel({
             </div>
           )}
         </section>
+      ) : visibleDetailTab === "finals" && canViewFinals ? (
+        <TournamentFinalsPanel
+          canViewFinals={canViewFinals}
+          categories={selectedTournament.categories}
+          color={tournamentColor}
+          onCategoryChange={setPlayersCategoryId}
+          selectedCategoryId={playerCategory?.id ?? ""}
+          textColor={tournamentTextColor}
+          tournamentId={selectedTournament.id}
+        />
       ) : (
         <section className="rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
