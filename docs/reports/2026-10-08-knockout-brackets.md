@@ -8,9 +8,19 @@ değiştirilmedi. Supabase'den yalnız kategori/grup yapısı okundu.
 
 - PDF: `output/pdf/29-Ekim-Eleme-Tablolari-2026-10-08.pdf`
 - Kaynak: `scripts/generate-tournament-knockout-brackets.py`
-- 11 kategori, 11 yatay A4 sayfa; her kategori ayrı sayfada.
+- 11 kategori, 11 dikey A4 sayfa; her kategori ayrı sayfada.
 - Oyuncu adı yok. Grup/sıra etiketleri, maçlar arasındaki bağlantılar ve
   elle doldurulabilecek tarih, saat ve skor alanları var.
+
+### Dikey düzen revizyonu
+
+- Eşleşmeler aynı boyutlu, iki tarafı yan yana gösteren sade tablolara yerleştirildi.
+- Turlar yukarıdan aşağı ilerler; dik açılı oklar boş katılımcı hücrelerine bağlanır.
+- Şampiyon kutuları ve "YF1 galibi" gibi tekrar eden kazanan etiketleri kaldırıldı.
+- Tablolarda A1/B2 gibi kısa etiketler kullanılır; açıklamalar sayfa altındadır.
+- Erkek Orta için L1-L3 birincileri, İ1-İ3 ikincileri ifade eder. Her küme kendi
+  içinde puana göre sıralıdır; 1 en yüksek puanı gösterir.
+- Onaylı eşleşmeler, 31 maç ve her kategoriye bir sayfa kuralı aynen korundu.
 
 ## Eşleşme kuralları
 
@@ -55,6 +65,9 @@ Grup aşaması ve üçüncülük maçları dahil değildir. BYE bir maç olarak 
 - Önceki oyuncu listesi yalnız kişisel isim bulunmadığını denetlemek için
   kullanıldı; PDF'de eşleşen oyuncu adı yok. Güncel sıralamalar hesaplanmadı.
 - Türkçe karakterler, taşma ve satır kırımları kontrol edildi.
+- Dikey revizyonda 11 sayfanın tamamı yeniden görsel olarak kontrol edildi.
+  31 maç tablosu, 20 ilerleme oku, boş kazanan hücreleri ve kaldırılan etiketler
+  kaynak assertions/metin çıkarımıyla ayrıca doğrulandı.
 
 ## Yeniden üretim
 

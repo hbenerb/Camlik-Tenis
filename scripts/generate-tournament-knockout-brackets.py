@@ -1,4 +1,4 @@
-"""Create the user-requested, nameless 29 Ekim knockout booklet (one category/page)."""
+"""Portrait, nameless knockout brackets: approved pairings with compact labels."""
 
 from __future__ import annotations
 
@@ -6,21 +6,23 @@ import argparse
 from pathlib import Path
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 ROOT = Path(__file__).resolve().parents[1]
-W, H = landscape(A4)
-INK = colors.HexColor("#1D2927")
-MUTED = colors.HexColor("#687470")
-RED = colors.HexColor("#BC2335")
-PALE = colors.HexColor("#FAECEE")
-LINE = colors.HexColor("#C9D2CE")
-PAPER = colors.HexColor("#FCFCFA")
-GREEN = colors.HexColor("#255B49")
-GPALE = colors.HexColor("#EDF4EF")
+W, H = A4
+INK = colors.HexColor("#202D29")
+MUTED = colors.HexColor("#737E78")
+RED = colors.HexColor("#B92033")
+PALE = colors.HexColor("#FCF1F2")
+LINE = colors.HexColor("#BBC7C0")
+WHITE = colors.white
+LEFT, RIGHT = 36, W - 36
+CARD_W, CARD_H = 236, 96
+X_LEFT, X_RIGHT = LEFT, RIGHT - CARD_W
+X_CENTER = (W - CARD_W) / 2
 
 CATEGORIES = [
     ("Erkek Master", "bye", 5),
@@ -38,211 +40,165 @@ CATEGORIES = [
 
 
 class Booklet:
-    def __init__(self, output: Path, orta_seeding: str, mapping: str):
+    def __init__(self, output: Path):
         output.parent.mkdir(parents=True, exist_ok=True)
-        self.c = canvas.Canvas(str(output), pagesize=(W, H), pageCompression=1)
+        self.c = canvas.Canvas(str(output), pagesize=A4, pageCompression=1)
         self.c.setTitle("29 Ekim Etkinliği - Eleme Tabloları")
         self.c.setAuthor("Ayvalık Çamlık Tenis Kulübü")
-        self.c.setSubject("8 Ekim 2026: 11 kategori için isimsiz çeyrek final, yarı final ve final şemaları")
-        self.orta_seeding = orta_seeding
-        self.mapping = mapping
+        self.c.setSubject("8 Ekim 2026 - Dikey, sade ve isimsiz eleme şemaları")
+        self.match_count = 0
+        self.arrow_count = 0
 
-    def text(self, x, y, value, size=11, bold=False, color=INK, align="left"):
-        assert 25 <= x <= W - 25 and 18 <= y <= H - 15, (value, x, y)
-        self.c.setFont("BodyBold" if bold else "Body", size)
+    def text(self, x, y, value, size=10, bold=False, color=INK, align="left"):
+        font = "BodyBold" if bold else "Body"
+        width = pdfmetrics.stringWidth(value, font, size)
+        x0 = x - (width if align == "right" else width / 2 if align == "center" else 0)
+        assert LEFT - 1 <= x0 and x0 + width <= RIGHT + 1, (value, x0, width)
+        assert 20 <= y <= H - 20, (value, y)
+        self.c.setFont(font, size)
         self.c.setFillColor(color)
-        fn = {"left": self.c.drawString, "right": self.c.drawRightString,
-              "center": self.c.drawCentredString}[align]
-        fn(x, y, value)
+        {"left": self.c.drawString, "right": self.c.drawRightString,
+         "center": self.c.drawCentredString}[align](x, y, value)
 
-    def line(self, pts, color=LINE, width=1.25):
+    def line(self, points, color=LINE, width=0.7):
         self.c.setStrokeColor(color)
         self.c.setLineWidth(width)
-        p = self.c.beginPath()
-        p.moveTo(*pts[0])
-        for point in pts[1:]:
-            p.lineTo(*point)
-        self.c.drawPath(p)
+        self.c.setLineJoin(1)
+        path = self.c.beginPath()
+        path.moveTo(*points[0])
+        for point in points[1:]:
+            path.lineTo(*point)
+        self.c.drawPath(path)
 
-    def box(self, x, y, w, h, fill=colors.white, stroke=LINE, radius=8):
-        self.c.setFillColor(fill)
-        self.c.setStrokeColor(stroke)
-        self.c.setLineWidth(0.8)
-        self.c.roundRect(x, y, w, h, radius, fill=1, stroke=1)
-
-    def wrapped(self, value, max_width, size):
-        result, line = [], ""
-        for word in value.split():
-            test = (line + " " + word).strip()
-            if pdfmetrics.stringWidth(test, "BodyBold", size) > max_width and line:
-                result.append(line)
-                line = word
-            else:
-                line = test
-        if line:
-            result.append(line)
-        assert len(result) <= 2, (value, result)
-        assert all(pdfmetrics.stringWidth(line, "BodyBold", size) <= max_width for line in result)
-        return result
-
-    def match(self, x, top, w, code, players, final=False, size=12):
-        h = 108
+    def match(self, x, top, label, players, final=False):
+        """A two-column table; arrow destinations are the empty participant cells."""
+        assert len(players) == 2
+        w, h = CARD_W, CARD_H
         bottom = top - h
-        self.box(x, bottom, w, h, stroke=RED if final else LINE)
-        self.c.setFillColor(PALE if final else colors.HexColor("#F0F3F1"))
-        self.c.roundRect(x + 1, top - 24, w - 2, 23, 7, fill=1, stroke=0)
-        self.c.rect(x + 1, top - 24, w - 2, 12, fill=1, stroke=0)
-        self.text(x + 12, top - 16, code, 9, True, RED if final else MUTED)
-        self.text(x + w - 12, top - 16, "SKOR", 7, False, MUTED, "right")
-        rows = [top - 42, top - 72]
-        for value, y in zip(players, rows):
-            lines = self.wrapped(value, w - 56, size)
-            for i, value_line in enumerate(lines):
-                self.text(x + 12, y + (5 if len(lines) == 2 else 0) - i * 13,
-                          value_line, size, True)
-            self.box(x + w - 33, y - 6, 22, 20, radius=3)
-        self.line([(x + 10, top - 57), (x + w - 10, top - 57)], width=0.45)
-        self.text(x + 12, bottom + 9, "Tarih: __________    Saat: ______", 7.5, color=MUTED)
-        return {"left": x, "right": x + w, "center": top - 54, "rows": rows}
+        assert bottom >= 120
+        self.text(x, top + 12, label, 9.5, True, RED if final else MUTED)
+        self.c.setFillColor(PALE if final else WHITE)
+        self.c.setStrokeColor(RED if final else LINE)
+        self.c.setLineWidth(1.1 if final else 0.8)
+        self.c.rect(x, bottom, w, h, fill=1, stroke=1)
+        # A clean participant row, a score row, then one shared date/time row.
+        self.line([(x, top - 38), (x + w, top - 38)])
+        self.line([(x, top - 66), (x + w, top - 66)])
+        self.line([(x + w / 2, top), (x + w / 2, top - 66)])
+        for i, value in enumerate(players):
+            cell_left = x + i * w / 2
+            center = cell_left + w / 4
+            if value:
+                self.text(center, top - 26, value, 19, True, align="center")
+            else:
+                self.line([(cell_left + 17, top - 27), (cell_left + w / 2 - 17, top - 27)],
+                          color=LINE, width=0.45)
+            self.text(cell_left + 12, top - 56, "Skor", 8, color=MUTED)
+            self.line([(cell_left + 39, top - 57), (cell_left + w / 2 - 12, top - 57)],
+                      width=0.45)
+        self.text(x + 12, bottom + 11, "Tarih: ____________    Saat: __________", 8, color=MUTED)
+        self.match_count += 1
+        return {"out": (x + w / 2, bottom),
+                "inputs": [(x + w / 4, top), (x + 3 * w / 4, top)],
+                "empty": [not p for p in players]}
 
-    def connect(self, start, target, bend=None):
-        sx, sy = start
-        ex, ey = target
-        bend = bend if bend is not None else (sx + ex) / 2
-        self.line([(sx, sy), (bend, sy), (bend, ey), (ex, ey)], RED)
+    def arrow(self, source, target, slot, bend_y=None):
+        assert target["empty"][slot], "Advance arrows must point to empty slots."
+        sx, sy = source["out"]
+        ex, ey = target["inputs"][slot]
+        assert sy > ey, "Every bracket connection advances down the page."
+        middle = bend_y if bend_y is not None else (sy + ey) / 2
+        assert ey + 25 < middle < sy - 12
+        # Keep a vertical gap for the arrowhead; the head lands on the table edge.
+        self.line([(sx, sy), (sx, middle), (ex, middle), (ex, ey + 5)], RED, 1.15)
+        path = self.c.beginPath()
+        path.moveTo(ex, ey)
+        path.lineTo(ex - 3.2, ey + 6)
+        path.lineTo(ex + 3.2, ey + 6)
+        path.close()
         self.c.setFillColor(RED)
-        self.c.circle(ex, ey, 2, stroke=0, fill=1)
+        self.c.drawPath(path, fill=1, stroke=0)
+        self.arrow_count += 1
 
-    def winner(self, x, y, w):
-        self.box(x, y, w, 58, PALE, RED)
-        self.text(x + 14, y + 38, "ŞAMPİYON", 9, True, RED)
-        self.text(x + 14, y + 17, "Final galibi", 15, True)
-
-    def stage(self, x, label, w=218):
-        self.text(x, 430, label, 10, True, RED)
-        self.line([(x, 420), (x + w, 420)], RED, 1)
-
-    def note(self, lines):
-        self.line([(36, 110), (W - 36, 110)], width=0.65)
-        for i, line in enumerate(lines):
-            self.text(36, 93 - i * 14, line, 9, color=MUTED)
+    def legend(self, lines):
+        self.line([(LEFT, 108), (RIGHT, 108)], width=0.6)
+        for i, value in enumerate(lines):
+            self.text(LEFT, 92 - 14 * i, value, 8.8, color=MUTED)
 
     def header(self, name, kind, count, page):
-        self.c.setFillColor(PAPER)
+        self.c.setFillColor(WHITE)
         self.c.rect(0, 0, W, H, fill=1, stroke=0)
         self.c.setFillColor(RED)
-        self.c.rect(0, H - 6, W, 6, fill=1, stroke=0)
-        self.text(36, H - 35, "AYVALIK ÇAMLIK TENİS KULÜBÜ", 9, True)
-        self.text(W - 36, H - 35, "8 EKİM 2026", 9, color=MUTED, align="right")
-        self.text(36, H - 66, "29 EKİM ETKİNLİĞİ  /  ELEME TABLOSU", 10, True, RED)
-        self.text(36, H - 104, name, 30, True)
-        subtitles = {"bye": "Grup birincileri BYE ile doğrudan yarı finalde",
-                     "cross": "İki gruptan dört yarı finalist",
-                     "final": "Tek gruptan iki finalist",
-                     "playoff": "Üç grup birincisi + ikinciler elemesinin galibi",
-                     "single_semi": "Tek gruptan dört yarı finalist"}
-        self.text(36, H - 128, subtitles[kind], 12, color=MUTED)
-        self.box(W - 146, H - 112, 110, 42, RED, RED)
-        self.text(W - 91, H - 95, f"{count} MAÇ", 17, True, colors.white, "center")
-        self.line([(36, 42), (W - 36, 42)], width=0.5)
-        self.text(36, 25, "İsimsiz planlama şeması. Tarih, saat ve skor alanları maç günü doldurulur.", 8, color=MUTED)
-        self.text(W - 36, 25, f"{page:02d} / 11", 9, True, MUTED, "right")
+        self.c.rect(LEFT, H - 31, 28, 3, fill=1, stroke=0)
+        self.text(LEFT, H - 53, "AYVALIK ÇAMLIK TENİS KULÜBÜ", 8.5, True, MUTED)
+        self.text(RIGHT, H - 53, "08.10.2026", 8.5, color=MUTED, align="right")
+        self.text(LEFT, H - 86, "29 EKİM ETKİNLİĞİ", 11, True, RED)
+        self.text(LEFT, H - 120, name, 27, True)
+        format_label = {
+            "bye": "Çeyrek final / Yarı final / Final",
+            "cross": "Yarı final / Final",
+            "single_semi": "Yarı final / Final",
+            "final": "Final",
+            "playoff": "Eleme / Yarı final / Final",
+        }[kind]
+        self.text(LEFT, H - 145, format_label, 10.5, color=MUTED)
+        self.text(RIGHT, H - 145, f"{count} MAÇ", 10, True, RED, "right")
+        self.line([(LEFT, H - 163), (RIGHT, H - 163)], width=0.7)
+        self.line([(LEFT, 43), (RIGHT, 43)], width=0.5)
+        self.text(LEFT, 27, "ELEME TABLOSU", 8, color=MUTED)
+        self.text(RIGHT, 27, f"{page:02d} / 11", 8.5, True, MUTED, "right")
 
     def bye(self):
-        x1, x2, x3, w = 36, 314, 592, 214
-        for x, name in [(x1, "ÇEYREK FİNAL"), (x2, "YARI FİNAL"), (x3, "FİNAL")]:
-            self.stage(x, name, w)
-        # Two cross-group quarterfinals; group winners skip this round entirely.
-        q1 = self.match(x1, 379, w, "ÇF1", ["B grubu 2.'si", "A grubu 3.'sü"])
-        q2 = self.match(x1, 244, w, "ÇF2", ["A grubu 2.'si", "B grubu 3.'sü"])
-        s1 = self.match(x2, 399, w, "YF1", ["A grubu 1.'si", "ÇF1 galibi"])
-        s2 = self.match(x2, 244, w, "YF2", ["B grubu 1.'si", "ÇF2 galibi"])
-        f = self.match(x3, 323, w, "FİNAL", ["YF1 galibi", "YF2 galibi"], final=True)
-        self.connect((q1["right"], q1["center"]), (s1["left"], s1["rows"][1]))
-        self.connect((q2["right"], q2["center"]), (s2["left"], s2["rows"][1]))
-        self.connect((s1["right"], s1["center"]), (f["left"], f["rows"][0]))
-        self.connect((s2["right"], s2["center"]), (f["left"], f["rows"][1]))
-        self.winner(x3, 136, w)
-        self.connect((x3 + w / 2, 215), (x3 + w / 2, 194))
-        self.note(["BYE: A ve B grup birincileri çeyrek final oynamaz; doğrudan YF1 ve YF2'ye yerleşir.",
-                   "Çeyrek finaller: B2 - A3 ve A2 - B3. Yarı finallerin galipleri finalde karşılaşır."])
+        q1 = self.match(X_LEFT, 638, "ÇEYREK FİNAL 1", ["B2", "A3"])
+        q2 = self.match(X_RIGHT, 638, "ÇEYREK FİNAL 2", ["A2", "B3"])
+        s1 = self.match(X_LEFT, 442, "YARI FİNAL 1", ["A1", ""])
+        s2 = self.match(X_RIGHT, 442, "YARI FİNAL 2", ["B1", ""])
+        final = self.match(X_CENTER, 246, "FİNAL", ["", ""], True)
+        self.arrow(q1, s1, 1)
+        self.arrow(q2, s2, 1)
+        self.arrow(s1, final, 0)
+        self.arrow(s2, final, 1)
+        self.legend([
+            "A1 = A grubu 1.'si. Harf grubu, sayı grup sırasını gösterir.",
+            "A1 ve B1 BYE ile doğrudan yarı finale geçer.",
+        ])
 
     def semi(self, single=False):
-        x1, x2, x3, w = 58, 325, 592, 214
-        self.stage(x1, "YARI FİNAL", w)
-        self.stage(x2, "FİNAL", w)
-        self.stage(x3, "ŞAMPİYON", w)
-        if self.mapping == "blank":
-            p1, p2 = ["Yarı finalist 1", "Yarı finalist 2"], ["Yarı finalist 3", "Yarı finalist 4"]
-        elif single:
-            p1, p2 = ["Grup 1.'si", "Grup 4.'sü"], ["Grup 2.'si", "Grup 3.'sü"]
-        else:
-            p1, p2 = ["A grubu 1.'si", "B grubu 2.'si"], ["B grubu 1.'si", "A grubu 2.'si"]
-        s1 = self.match(x1, 392, w, "YF1", p1)
-        s2 = self.match(x1, 238, w, "YF2", p2)
-        f = self.match(x2, 315, w, "FİNAL", ["YF1 galibi", "YF2 galibi"], final=True)
-        self.connect((s1["right"], s1["center"]), (f["left"], f["rows"][0]))
-        self.connect((s2["right"], s2["center"]), (f["left"], f["rows"][1]))
-        self.winner(x3, 232, w)
-        self.connect((f["right"], f["center"]), (x3, 261))
-        rule = ("Tek grup: ilk dört sıra yarı finale çıkar; eşleşmeler 1 - 4 ve 2 - 3 şeklindedir." if single else
-                "A ve B gruplarının ilk ikileri çapraz eşleşir: A1 - B2 ve B1 - A2.")
-        if self.mapping == "blank":
-            rule = "Yarı finalistlerin eşleşme yerleri daha sonra belirlenecektir."
-        self.note([rule, "İki yarı final galibi final oynar. Toplam: 2 yarı final + 1 final."])
+        first, second = (["1", "4"], ["2", "3"]) if single else (["A1", "B2"], ["B1", "A2"])
+        s1 = self.match(X_LEFT, 577, "YARI FİNAL 1", first)
+        s2 = self.match(X_RIGHT, 577, "YARI FİNAL 2", second)
+        final = self.match(X_CENTER, 327, "FİNAL", ["", ""], True)
+        self.arrow(s1, final, 0)
+        self.arrow(s2, final, 1)
+        self.legend(["Sayılar grup sırasını gösterir: 1 - 4 ve 2 - 3."
+                     if single else
+                     "A1 = A grubu 1.'si. Harf grubu, sayı grup sırasını gösterir."])
 
     def final(self):
-        x1, x2, w = 171, 497, 245
-        self.stage(x1, "FİNAL", w)
-        self.stage(x2, "ŞAMPİYON", w)
-        players = ["Finalist 1", "Finalist 2"] if self.mapping == "blank" else ["Grup 1.'si", "Grup 2.'si"]
-        f = self.match(x1, 338, w, "FİNAL", players, final=True, size=15)
-        self.winner(x2, 255, w)
-        self.connect((f["right"], f["center"]), (x2, 284))
-        self.box(171, 157, 571, 44, GPALE, GPALE)
-        self.text(189, 174, "Bu kategoride çeyrek final veya yarı final oynanmaz.", 12, True, GREEN)
-        self.note([("Finale çıkacak sıralamalar ayrıca belirlenecektir." if self.mapping == "blank" else
-                    "Grup aşamasını ilk iki sırada bitiren oyuncular / takımlar finalde karşılaşır."),
-                   "Toplam: 1 final. Finalin galibi kategori şampiyonu olur."])
+        self.match(X_CENTER, 472, "FİNAL", ["1", "2"], True)
+        self.legend(["Sayılar grup sırasını gösterir. İlk iki sıra final oynar."])
 
     def playoff(self):
-        xs, w = [36, 235, 434, 633], 172
-        for x, label in zip(xs, ["ELEME 1", "ELEME 2", "YARI FİNAL", "FİNAL"]):
-            self.stage(x, label, w)
-        self.box(36, 298, 371, 98, GPALE, GPALE)
-        self.text(50, 376, "DOĞRUDAN YARI FİNALE", 9, True, GREEN)
-        self.text(50, 353, "A1 + B1 + C1", 22, True, GREEN)
-        self.text(50, 329, "Üç grup birincisi eleme oynamaz.", 11, color=GREEN)
-        self.text(50, 312, "Dördüncü yarı finalist: E2 galibi.", 11, color=GREEN)
-        e1 = self.match(xs[0], 253, w, "E1", ["Puan sırası 2 olan ikinci", "Puan sırası 3 olan ikinci"], size=10.5)
-        e2 = self.match(xs[1], 253, w, "E2", ["En yüksek puanlı ikinci", "E1 galibi"], size=10.5)
-        if self.orta_seeding == "points":
-            p1 = ["En yüksek puanlı birinci", "E2 galibi"]
-            p2 = ["Puan sırası 2 olan birinci", "Puan sırası 3 olan birinci"]
-            lower_p, upper_p = p1, p2
-            placement = "Grup birincileri puana göre sıralanır; en yüksek puanlı birinci E2 galibiyle oynar."
-        else:
-            upper_p = ["Grup birincisi / 1. yer", "Grup birincisi / 2. yer"]
-            lower_p = ["Grup birincisi / 3. yer", "E2 galibi"]
-            placement = ("Üç grup birincisinin 1., 2. ve 3. yerleri kurayla belirlenir; bunlar puan sırası değildir."
-                         if self.orta_seeding == "draw" else
-                         "Grup birincilerinin yarı final yerleri henüz belirlenmedi; şemadaki yerler puan sırası değildir.")
-        s1 = self.match(xs[2], 399, w, "YF1", upper_p, size=10.5)
-        s2 = self.match(xs[2], 253, w, "YF2", lower_p, size=10.5)
-        f = self.match(xs[3], 326, w, "FİNAL", ["YF1 galibi", "YF2 galibi"], True, 11)
-        self.connect((e1["right"], e1["center"]), (e2["left"], e2["rows"][1]))
-        self.connect((e2["right"], e2["center"]), (s2["left"], s2["rows"][1]))
-        self.connect((s1["right"], s1["center"]), (f["left"], f["rows"][0]))
-        self.connect((s2["right"], s2["center"]), (f["left"], f["rows"][1]))
-        self.winner(xs[3], 141, w)
-        self.connect((xs[3] + w / 2, 218), (xs[3] + w / 2, 199))
-        self.note(["İkinciler kendi aralarında puana göre sıralanır: en düşük iki ikinci E1'i; galibi en iyi ikinciyle E2'yi oynar.",
-                   placement,
-                   "Puan eşitliğinde set averajı esas alınır; eşitlik sürerse sıra ayrıca belirlenir."])
+        # Keep the elimination chain in the right-hand lane, without crossing lines.
+        e1 = self.match(X_RIGHT, 643, "ELEME 1", ["İ2", "İ3"])
+        e2 = self.match(X_RIGHT, 502, "ELEME 2", ["İ1", ""])
+        s1 = self.match(X_LEFT, 361, "YARI FİNAL 1", ["L2", "L3"])
+        s2 = self.match(X_RIGHT, 361, "YARI FİNAL 2", ["L1", ""])
+        final = self.match(X_CENTER, 220, "FİNAL", ["", ""], True)
+        self.arrow(e1, e2, 1, bend_y=531)
+        self.arrow(e2, s2, 1, bend_y=390)
+        self.arrow(s1, final, 0, bend_y=249)
+        self.arrow(s2, final, 1, bend_y=249)
+        # This legend explains the compact table codes without adding long labels.
+        self.legend([
+            "L1-L3: Grup birincileri. İ1-İ3: Grup ikincileri.",
+            "Her küme puana göre sıralanır; 1 en yüksek puanlıdır.",
+            "Eşit puanda set averajı; eşitlik sürerse sıra ayrıca belirlenir.",
+        ])
 
     def save(self):
-        assert sum(count for _, _, count in CATEGORIES) == 31
         for i, (name, kind, count) in enumerate(CATEGORIES, 1):
+            before = self.match_count
             self.header(name, kind, count, i)
             if kind == "bye":
                 self.bye()
@@ -252,21 +208,24 @@ class Booklet:
                 self.final()
             else:
                 self.semi(kind == "single_semi")
+            assert self.match_count - before == count
             self.c.showPage()
+        assert self.match_count == 31
+        assert self.arrow_count == 20
         self.c.save()
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=ROOT / "output/pdf/29-Ekim-Eleme-Tablolari-2026-10-08.pdf")
-    parser.add_argument("--orta-seeding", choices=["points", "draw", "pending"], default="points")
-    parser.add_argument("--mapping", choices=["cross", "blank"], default="cross")
+    parser.add_argument("--orta-seeding", choices=["points"], default="points")
+    parser.add_argument("--mapping", choices=["cross"], default="cross")
     args = parser.parse_args()
     fonts = Path("/System/Library/Fonts/Supplemental")
     pdfmetrics.registerFont(TTFont("Body", str(fonts / "Arial.ttf")))
     pdfmetrics.registerFont(TTFont("BodyBold", str(fonts / "Arial Bold.ttf")))
-    Booklet(args.output, args.orta_seeding, args.mapping).save()
-    print(f"Created {args.output}: 11 pages / 31 matches")
+    Booklet(args.output).save()
+    print(f"Created {args.output}: 11 portrait pages / 31 matches / 20 arrows")
 
 
 if __name__ == "__main__":
