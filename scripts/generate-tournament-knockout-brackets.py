@@ -133,7 +133,6 @@ class Booklet:
         self.c.setFillColor(RED)
         self.c.rect(LEFT, H - 31, 28, 3, fill=1, stroke=0)
         self.text(LEFT, H - 53, "AYVALIK ÇAMLIK TENİS KULÜBÜ", 8.5, True, MUTED)
-        self.text(RIGHT, H - 53, "08.10.2026", 8.5, color=MUTED, align="right")
         self.text(LEFT, H - 86, "29 EKİM ETKİNLİĞİ", 11, True, RED)
         self.text(LEFT, H - 120, name, 27, True)
         format_label = {
@@ -147,7 +146,6 @@ class Booklet:
         self.text(RIGHT, H - 145, f"{count} MAÇ", 10, True, RED, "right")
         self.line([(LEFT, H - 163), (RIGHT, H - 163)], width=0.7)
         self.line([(LEFT, 43), (RIGHT, 43)], width=0.5)
-        self.text(LEFT, 27, "FİNAL TABLOSU", 8, color=MUTED)
         self.text(RIGHT, 27, f"{page:02d} / 11", 8.5, True, MUTED, "right")
 
     def bye(self):
