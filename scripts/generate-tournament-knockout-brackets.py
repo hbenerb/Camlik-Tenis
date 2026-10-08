@@ -28,7 +28,7 @@ CATEGORIES = [
     ("Erkek Master", "bye", 5),
     ("Erkek İleri", "bye", 5),
     ("Kadın İleri", "cross", 3),
-    ("Kadın Orta", "final", 1),
+    ("Kadın Orta", "single_semi", 3),
     ("Erkek Orta", "playoff", 5),
     ("Yeni Başlayan Kadın", "cross", 3),
     ("Double Master Erkek", "cross", 3),
@@ -212,8 +212,8 @@ class Booklet:
             assert [top for final, top in self.page_matches if final] == [643]
             assert all(final or top < 643 for final, top in self.page_matches)
             self.c.showPage()
-        assert self.match_count == 31
-        assert self.arrow_count == 20
+        assert self.match_count == 33
+        assert self.arrow_count == 22
         self.c.save()
 
 
@@ -227,7 +227,7 @@ def main():
     pdfmetrics.registerFont(TTFont("Body", str(fonts / "Arial.ttf")))
     pdfmetrics.registerFont(TTFont("BodyBold", str(fonts / "Arial Bold.ttf")))
     Booklet(args.output).save()
-    print(f"Created {args.output}: 11 portrait pages / 31 matches / 20 arrows")
+    print(f"Created {args.output}: 11 portrait pages / 33 matches / 22 arrows")
 
 
 if __name__ == "__main__":

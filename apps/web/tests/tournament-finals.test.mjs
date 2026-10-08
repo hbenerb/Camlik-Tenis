@@ -38,13 +38,13 @@ const { TournamentDetailPanel } = await import("../src/components/tournament-pan
 
 const categories = [
   ["Erkek Master", 2, 5], ["Erkek İleri", 2, 5], ["Kadın İleri", 2, 3],
-  ["Kadın Orta", 1, 1], ["Erkek Orta", 3, 5], ["Yeni Başlayan Kadın", 2, 3],
+  ["Kadın Orta", 1, 3], ["Erkek Orta", 3, 5], ["Yeni Başlayan Kadın", 2, 3],
   ["Double Master Erkek", 2, 3], ["Double İleri Erkek", 1, 1], ["Orta Mix", 1, 1],
   ["İleri Mix", 1, 3], ["Double Kadın", 1, 1],
 ].map(([name, group_count, matches], display_order) => ({ id: String(display_order), name, group_count, matches, display_order }));
 const templateFor = (name) => getTournamentFinalsTemplate(OCTOBER_29_TOURNAMENT_ID, categories.find((c) => c.name === name));
 
-test("all 11 approved categories contain 31 matches and 20 upward connections", () => {
+test("all 11 approved categories contain 33 matches and 22 upward connections", () => {
   let total = 0, edges = 0;
   for (const category of categories) {
     const template = templateFor(category.name);
@@ -71,8 +71,8 @@ test("all 11 approved categories contain 31 matches and 20 upward connections", 
       edges++;
     }
   }
-  assert.equal(total, 31);
-  assert.equal(edges, 20);
+  assert.equal(total, 33);
+  assert.equal(edges, 22);
 });
 
 test("master and advanced preserve cross quarterfinals and first-place byes", () => {
@@ -91,14 +91,26 @@ test("Erkek Orta keeps both eliminations and sends their winner to L1", () => {
   assert.equal(matches[3].next.matchId, "sf2");
 });
 
-test("cross semifinals, single-group mix and final-only categories match the approved PDF", () => {
+test("cross semifinals, single-group semifinals and final-only categories match the approved PDF", () => {
   for (const name of ["Kadın İleri", "Yeni Başlayan Kadın", "Double Master Erkek"]) {
     assert.deepEqual(templateFor(name).matches.slice(1).map((m) => m.seeds), [["A1", "B2"], ["B1", "A2"]]);
   }
-  assert.deepEqual(templateFor("İleri Mix").matches.slice(1).map((m) => m.seeds), [["1", "4"], ["2", "3"]]);
+  for (const name of ["Kadın Orta", "İleri Mix"]) {
+    assert.deepEqual(templateFor(name).matches.slice(1).map((m) => m.seeds), [["1", "4"], ["2", "3"]]);
+  }
   for (const category of categories.filter((c) => c.matches === 1)) {
     assert.deepEqual(templateFor(category.name).matches[0].seeds, ["1", "2"]);
   }
+});
+
+test("Kadın Orta uses the same empty semifinal/final template as İleri Mix", () => {
+  assert.deepEqual(templateFor("Kadın Orta"), templateFor("İleri Mix"));
+  const matches = templateFor("Kadın Orta").matches;
+  assert.deepEqual(matches.map((match) => match.title), ["Final", "Yarı final 1", "Yarı final 2"]);
+  assert.deepEqual(matches[0].seeds, ["", ""]);
+  assert.deepEqual(matches.slice(1).map((match) => match.next), [
+    { matchId: "final", slot: 0 }, { matchId: "final", slot: 1 },
+  ]);
 });
 
 test("unknown tournaments, categories and changed group structures are not guessed", () => {

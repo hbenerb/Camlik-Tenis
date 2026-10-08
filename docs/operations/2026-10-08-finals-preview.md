@@ -14,14 +14,16 @@
 
 ## Şablonlar
 
-Onaylanan PDF'deki 11 kategori / 31 maç / 20 bağlantı esas alınır.
+Onaylanan PDF'deki 11 kategori / 33 maç / 22 bağlantı esas alınır.
 Özel kurallar yalnız 29 Ekim turnuvası
 `13350264-a44c-4c44-8213-4aef62e3fbb6` için geçerlidir. Diğer turnuva,
 tanınmayan kategori veya değişmiş grup sayısı için şema uydurulmaz.
 
 Erkek Master / İleri'de birinciler doğrudan yarı finale geçer. Erkek Orta'nın
 iki aşamalı Playoff yolu ve en iyi birincinin bu yoldan gelenle eşleşmesi
-korunur. İleri Mix'te tek gruptan 1–4 / 2–3 yarı final eşleşmesi vardır.
+korunur. İleri Mix ve Kadın Orta'da tek gruptan 1–4 / 2–3 yarı final eşleşmesi
+vardır; kazananlar final oynar. Kadın Orta, aynı günkü son kullanıcı talebiyle
+yalnız finalden yarı final + finale geçirildi. Diğer kategoriler değiştirilmedi.
 
 Son kullanıcı revizyonuyla uygulama ve PDF'de çeyrek final / eleme maçları
 Playoff 1 / Playoff 2 olarak adlandırıldı. Genel harf/sayı açıklaması ve

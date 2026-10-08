@@ -77,7 +77,7 @@ const categoryTemplates: readonly (readonly [string, { groups: number; template:
   ["Erkek Master", { groups: 2, template: byeTemplate }],
   ["Erkek İleri", { groups: 2, template: byeTemplate }],
   ["Kadın İleri", { groups: 2, template: crossTemplate }],
-  ["Kadın Orta", { groups: 1, template: finalOnlyTemplate }],
+  ["Kadın Orta", { groups: 1, template: singleSemiTemplate }],
   ["Erkek Orta", { groups: 3, template: playoffTemplate }],
   ["Yeni Başlayan Kadın", { groups: 2, template: crossTemplate }],
   ["YB Kadın", { groups: 2, template: crossTemplate }],
