@@ -41,6 +41,11 @@ import type { CSSProperties, FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  findCourtConflict,
+  timeRangesOverlap,
+  tournamentOccupancyChanged,
+} from "@/lib/court-schedule";
+import {
   canCreateReservationAt,
   canTrainerEditOwnReservation,
   canTrainerEditReservation,
@@ -914,31 +919,13 @@ function isBookableStart(
   );
 }
 
-function timeRangesOverlap(
-  firstStartsAt: Date,
-  firstEndsAt: Date,
-  secondStartsAt: Date,
-  secondEndsAt: Date,
-) {
-  return firstStartsAt < secondEndsAt && secondStartsAt < firstEndsAt;
-}
-
 function findTournamentMatchConflict(
   matches: (TournamentMatch & { tournament_name: string })[],
   courtId: string,
   startsAt: Date,
   endsAt: Date,
 ) {
-  return matches.find(
-    (match) =>
-      match.court_id === courtId &&
-      timeRangesOverlap(
-        startsAt,
-        endsAt,
-        new Date(match.starts_at),
-        new Date(match.ends_at),
-      ),
-  );
+  return findCourtConflict(matches, courtId, startsAt, endsAt);
 }
 
 function firstBookableSlot(
@@ -5374,6 +5361,30 @@ export function ClubApp() {
           scoreValidation.winnerSide === 1
             ? player1Entry.id
             : player2Entry.id;
+      }
+    }
+
+    if (tournamentOccupancyChanged(editingTournamentMatch, {
+      ...editingTournamentMatch,
+      court_id: tournamentMatchEditForm.court_id,
+      starts_at: startsAt.toISOString(),
+      ends_at: endsAt.toISOString(),
+      status: nextStatus,
+    })) {
+      const matchConflict = findCourtConflict(
+        tournaments.flatMap((item) => item.matches),
+        tournamentMatchEditForm.court_id, startsAt, endsAt, editingTournamentMatch.id,
+      );
+      if (matchConflict) {
+        setStatusMessage("Bu kort ve saat aralığı başka bir turnuva maçıyla çakışıyor.");
+        return;
+      }
+      if (tournament.is_active && findCourtConflict(
+        reservations.filter((reservation) => reservation.status === "confirmed"),
+        tournamentMatchEditForm.court_id, startsAt, endsAt,
+      )) {
+        setStatusMessage("Bu kort ve saat aralığı mevcut bir rezervasyonla çakışıyor.");
+        return;
       }
     }
 
