@@ -15,7 +15,8 @@ değiştirilmedi. Supabase'den yalnız kategori/grup yapısı okundu.
 ### Dikey düzen revizyonu
 
 - Eşleşmeler aynı boyutlu, iki tarafı yan yana gösteren sade tablolara yerleştirildi.
-- Turlar yukarıdan aşağı ilerler; dik açılı oklar boş katılımcı hücrelerine bağlanır.
+- Final tüm sayfalarda en üsttedir. Turlar aşağıdan yukarı ilerler; dik açılı
+  oklar boş katılımcı hücrelerinin alt kenarına bağlanır.
 - Şampiyon kutuları ve "YF1 galibi" gibi tekrar eden kazanan etiketleri kaldırıldı.
 - Tablolarda A1/B2 gibi kısa etiketler kullanılır; açıklamalar sayfa altındadır.
 - Erkek Orta için L1-L3 birincileri, İ1-İ3 ikincileri ifade eder. Her küme kendi
@@ -68,6 +69,8 @@ Grup aşaması ve üçüncülük maçları dahil değildir. BYE bir maç olarak 
 - Dikey revizyonda 11 sayfanın tamamı yeniden görsel olarak kontrol edildi.
   31 maç tablosu, 20 ilerleme oku, boş kazanan hücreleri ve kaldırılan etiketler
   kaynak assertions/metin çıkarımıyla ayrıca doğrulandı.
+- Son yön revizyonunda her finalin sayfanın en üst maç tablosu olduğu ve
+  20 okun tamamının yukarı ilerlediği kaynak kontrolleriyle doğrulanır.
 
 ## Yeniden üretim
 

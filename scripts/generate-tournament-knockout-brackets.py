@@ -48,6 +48,7 @@ class Booklet:
         self.c.setSubject("8 Ekim 2026 - Dikey, sade ve isimsiz eleme şemaları")
         self.match_count = 0
         self.arrow_count = 0
+        self.page_matches = []
 
     def text(self, x, y, value, size=10, bold=False, color=INK, align="left"):
         font = "BodyBold" if bold else "Body"
@@ -81,40 +82,41 @@ class Booklet:
         self.c.setStrokeColor(RED if final else LINE)
         self.c.setLineWidth(1.1 if final else 0.8)
         self.c.rect(x, bottom, w, h, fill=1, stroke=1)
-        # A clean participant row, a score row, then one shared date/time row.
-        self.line([(x, top - 38), (x + w, top - 38)])
-        self.line([(x, top - 66), (x + w, top - 66)])
-        self.line([(x + w / 2, top), (x + w / 2, top - 66)])
+        # Names are at the bottom so upward arrows land in participant cells.
+        self.line([(x, bottom + 38), (x + w, bottom + 38)])
+        self.line([(x, bottom + 66), (x + w, bottom + 66)])
+        self.line([(x + w / 2, bottom), (x + w / 2, bottom + 66)])
         for i, value in enumerate(players):
             cell_left = x + i * w / 2
             center = cell_left + w / 4
             if value:
-                self.text(center, top - 26, value, 19, True, align="center")
+                self.text(center, bottom + 12, value, 19, True, align="center")
             else:
-                self.line([(cell_left + 17, top - 27), (cell_left + w / 2 - 17, top - 27)],
+                self.line([(cell_left + 17, bottom + 11), (cell_left + w / 2 - 17, bottom + 11)],
                           color=LINE, width=0.45)
-            self.text(cell_left + 12, top - 56, "Skor", 8, color=MUTED)
-            self.line([(cell_left + 39, top - 57), (cell_left + w / 2 - 12, top - 57)],
+            self.text(cell_left + 12, bottom + 50, "Skor", 8, color=MUTED)
+            self.line([(cell_left + 39, bottom + 49), (cell_left + w / 2 - 12, bottom + 49)],
                       width=0.45)
-        self.text(x + 12, bottom + 11, "Tarih: ____________    Saat: __________", 8, color=MUTED)
+        self.text(x + 12, top - 20, "Tarih: ____________    Saat: __________", 8, color=MUTED)
         self.match_count += 1
-        return {"out": (x + w / 2, bottom),
-                "inputs": [(x + w / 4, top), (x + 3 * w / 4, top)],
+        self.page_matches.append((final, top))
+        return {"out": (x + w / 2, top),
+                "inputs": [(x + w / 4, bottom), (x + 3 * w / 4, bottom)],
                 "empty": [not p for p in players]}
 
     def arrow(self, source, target, slot, bend_y=None):
         assert target["empty"][slot], "Advance arrows must point to empty slots."
         sx, sy = source["out"]
         ex, ey = target["inputs"][slot]
-        assert sy > ey, "Every bracket connection advances down the page."
+        assert sy < ey, "Every bracket connection advances up the page."
         middle = bend_y if bend_y is not None else (sy + ey) / 2
-        assert ey + 25 < middle < sy - 12
+        assert sy + 25 < middle < ey - 12
         # Keep a vertical gap for the arrowhead; the head lands on the table edge.
-        self.line([(sx, sy), (sx, middle), (ex, middle), (ex, ey + 5)], RED, 1.15)
+        self.line([(sx, sy), (sx, middle), (ex, middle), (ex, ey - 5)], RED, 1.15)
         path = self.c.beginPath()
         path.moveTo(ex, ey)
-        path.lineTo(ex - 3.2, ey + 6)
-        path.lineTo(ex + 3.2, ey + 6)
+        path.lineTo(ex - 3.2, ey - 6)
+        path.lineTo(ex + 3.2, ey - 6)
         path.close()
         self.c.setFillColor(RED)
         self.c.drawPath(path, fill=1, stroke=0)
@@ -149,11 +151,11 @@ class Booklet:
         self.text(RIGHT, 27, f"{page:02d} / 11", 8.5, True, MUTED, "right")
 
     def bye(self):
-        q1 = self.match(X_LEFT, 638, "ÇEYREK FİNAL 1", ["B2", "A3"])
-        q2 = self.match(X_RIGHT, 638, "ÇEYREK FİNAL 2", ["A2", "B3"])
-        s1 = self.match(X_LEFT, 442, "YARI FİNAL 1", ["A1", ""])
-        s2 = self.match(X_RIGHT, 442, "YARI FİNAL 2", ["B1", ""])
-        final = self.match(X_CENTER, 246, "FİNAL", ["", ""], True)
+        q1 = self.match(X_LEFT, 251, "ÇEYREK FİNAL 1", ["B2", "A3"])
+        q2 = self.match(X_RIGHT, 251, "ÇEYREK FİNAL 2", ["A2", "B3"])
+        s1 = self.match(X_LEFT, 447, "YARI FİNAL 1", ["A1", ""])
+        s2 = self.match(X_RIGHT, 447, "YARI FİNAL 2", ["B1", ""])
+        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
         self.arrow(q1, s1, 1)
         self.arrow(q2, s2, 1)
         self.arrow(s1, final, 0)
@@ -165,9 +167,9 @@ class Booklet:
 
     def semi(self, single=False):
         first, second = (["1", "4"], ["2", "3"]) if single else (["A1", "B2"], ["B1", "A2"])
-        s1 = self.match(X_LEFT, 577, "YARI FİNAL 1", first)
-        s2 = self.match(X_RIGHT, 577, "YARI FİNAL 2", second)
-        final = self.match(X_CENTER, 327, "FİNAL", ["", ""], True)
+        s1 = self.match(X_LEFT, 393, "YARI FİNAL 1", first)
+        s2 = self.match(X_RIGHT, 393, "YARI FİNAL 2", second)
+        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
         self.arrow(s1, final, 0)
         self.arrow(s2, final, 1)
         self.legend(["Sayılar grup sırasını gösterir: 1 - 4 ve 2 - 3."
@@ -175,20 +177,20 @@ class Booklet:
                      "A1 = A grubu 1.'si. Harf grubu, sayı grup sırasını gösterir."])
 
     def final(self):
-        self.match(X_CENTER, 472, "FİNAL", ["1", "2"], True)
+        self.match(X_CENTER, 643, "FİNAL", ["1", "2"], True)
         self.legend(["Sayılar grup sırasını gösterir. İlk iki sıra final oynar."])
 
     def playoff(self):
         # Keep the elimination chain in the right-hand lane, without crossing lines.
-        e1 = self.match(X_RIGHT, 643, "ELEME 1", ["İ2", "İ3"])
-        e2 = self.match(X_RIGHT, 502, "ELEME 2", ["İ1", ""])
-        s1 = self.match(X_LEFT, 361, "YARI FİNAL 1", ["L2", "L3"])
-        s2 = self.match(X_RIGHT, 361, "YARI FİNAL 2", ["L1", ""])
-        final = self.match(X_CENTER, 220, "FİNAL", ["", ""], True)
-        self.arrow(e1, e2, 1, bend_y=531)
+        e1 = self.match(X_RIGHT, 220, "ELEME 1", ["İ2", "İ3"])
+        e2 = self.match(X_RIGHT, 361, "ELEME 2", ["İ1", ""])
+        s1 = self.match(X_LEFT, 502, "YARI FİNAL 1", ["L2", "L3"])
+        s2 = self.match(X_RIGHT, 502, "YARI FİNAL 2", ["L1", ""])
+        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
+        self.arrow(e1, e2, 1, bend_y=249)
         self.arrow(e2, s2, 1, bend_y=390)
-        self.arrow(s1, final, 0, bend_y=249)
-        self.arrow(s2, final, 1, bend_y=249)
+        self.arrow(s1, final, 0, bend_y=531)
+        self.arrow(s2, final, 1, bend_y=531)
         # This legend explains the compact table codes without adding long labels.
         self.legend([
             "L1-L3: Grup birincileri. İ1-İ3: Grup ikincileri.",
@@ -199,6 +201,7 @@ class Booklet:
     def save(self):
         for i, (name, kind, count) in enumerate(CATEGORIES, 1):
             before = self.match_count
+            self.page_matches = []
             self.header(name, kind, count, i)
             if kind == "bye":
                 self.bye()
@@ -209,6 +212,8 @@ class Booklet:
             else:
                 self.semi(kind == "single_semi")
             assert self.match_count - before == count
+            assert [top for final, top in self.page_matches if final] == [643]
+            assert all(final or top < 643 for final, top in self.page_matches)
             self.c.showPage()
         assert self.match_count == 31
         assert self.arrow_count == 20
