@@ -40,6 +40,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { loadAllPages } from "@/lib/paginated-query";
 import {
   findCourtConflict,
   reservationWriteErrorMessage,
@@ -2392,13 +2393,21 @@ export function ClubApp() {
     const [settingsResult, courtsResult, reservationResult] = await Promise.all([
       supabase.from("club_settings").select("*").eq("id", 1).maybeSingle(),
       supabase.from("courts").select("*").order("display_order"),
-      supabase
-        .from("reservations")
-        .select(
-          "id, court_id, starts_at, ends_at, status, created_at, updated_at",
-        )
-        .eq("status", "confirmed")
-        .order("starts_at", { ascending: true }),
+      loadAllPages<GuestReservationRow>(async (from, to) => {
+        const pageResult = await supabase
+          .from("reservations")
+          .select(
+            "id, court_id, starts_at, ends_at, status, created_at, updated_at",
+          )
+          .eq("status", "confirmed")
+          .order("starts_at", { ascending: true })
+          .range(from, to);
+
+        return {
+          data: pageResult.data as GuestReservationRow[] | null,
+          error: pageResult.error,
+        };
+      }),
     ]);
 
     const loadedSettings =
@@ -2554,10 +2563,18 @@ export function ClubApp() {
       };
     });
 
-    const reservationResult = await supabase
-      .from("reservations")
-      .select("*, courts(name), profiles!reservations_user_id_fkey(email, full_name)")
-      .order("starts_at", { ascending: true });
+    const reservationResult = await loadAllPages<Reservation>(async (from, to) => {
+      const pageResult = await supabase
+        .from("reservations")
+        .select("*, courts(name), profiles!reservations_user_id_fkey(email, full_name)")
+        .order("starts_at", { ascending: true })
+        .range(from, to);
+
+      return {
+        data: pageResult.data as Reservation[] | null,
+        error: pageResult.error,
+      };
+    });
 
     let loadedMembers: Profile[] = [];
     let loadedNotifications: AppNotification[] = [];
