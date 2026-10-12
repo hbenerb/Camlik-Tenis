@@ -8,6 +8,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   FINALS_CARD_HEIGHT, FINALS_CARD_WIDTH, FINALS_ROW_STEP,
+  FINALS_MOBILE_CARD_HEIGHT, FINALS_MOBILE_ROW_STEP,
   OCTOBER_29_TOURNAMENT_ID, finalsConnection, finalsMatchPosition,
   getTournamentFinalsTemplate,
 } from "../src/lib/tournament-finals.ts";
@@ -87,6 +88,23 @@ test("master and advanced preserve cross quarterfinals and first-place byes", ()
   }
 });
 
+test("mobile cards and upward connectors share the same compact two-lane geometry", () => {
+  for (const category of categories) {
+    const template = templateFor(category.name);
+    for (const match of template.matches) {
+      const position = finalsMatchPosition(match, true);
+      assert.ok(position.left >= 0 && position.left + FINALS_CARD_WIDTH <= 100);
+      assert.equal(position.top, match.row * FINALS_MOBILE_ROW_STEP);
+      if (!match.next) continue;
+      const target = template.matches.find((item) => item.id === match.next.matchId);
+      const connection = finalsConnection(match, target, match.next.slot, true);
+      assert.equal(connection.arrowTop, finalsMatchPosition(target, true).top + FINALS_MOBILE_CARD_HEIGHT);
+      assert.ok(connection.arrowTop + 6 < position.top);
+      assert.equal(connection.arrowLeft, finalsConnection(match, target, match.next.slot).arrowLeft);
+    }
+  }
+});
+
 test("Erkek Orta keeps both eliminations and sends their winner to L1", () => {
   const matches = templateFor("Erkek Orta").matches;
   assert.deepEqual(matches.map((m) => m.seeds), [["", ""], ["L2", "L3"], ["L1", ""], ["İ1", ""], ["İ2", "İ3"]]);
@@ -150,6 +168,17 @@ test("finals content remains admin-only and missing results are never invented",
     assert.equal((html.match(/Üst tur sonucu bekleniyor|>Sonuç bekleniyor</g) ?? []).length, category.matches * 2);
     assert.ok(!html.includes("<input"));
     assert.ok(!html.includes("Şampiyon"));
+  }
+});
+
+test("finals fit the mobile width with stacked entrants, without a scrolling canvas", () => {
+  for (const category of categories) {
+    const html = renderToStaticMarkup(React.createElement(TournamentFinalsPanel, {...props, selectedCategoryId:category.id}));
+    assert.doesNotMatch(html, /min-w-\[640px\]|overflow-x-auto|yatay kaydır/);
+    assert.match(html, /grid-rows-2/);
+    assert.match(html, /sm:grid-cols-2/);
+    assert.match(html, /--finals-mobile-card-height:220px/);
+    assert.match(html, /--finals-card-height:158px/);
   }
 });
 

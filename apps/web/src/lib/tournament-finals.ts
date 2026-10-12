@@ -104,20 +104,23 @@ export function getTournamentFinalsTemplate(
 export const FINALS_CARD_WIDTH = 46;
 export const FINALS_CARD_HEIGHT = 158;
 export const FINALS_ROW_STEP = 222;
+// Phones keep both bracket lanes, but stack the two entrants inside each card.
+export const FINALS_MOBILE_CARD_HEIGHT = 220;
+export const FINALS_MOBILE_ROW_STEP = 264;
 
-export function finalsMatchPosition(match: FinalsMatch) {
+export function finalsMatchPosition(match: FinalsMatch, mobile = false) {
   return {
     left: match.lane === "left" ? 0 : match.lane === "right" ? 54 : 27,
-    top: match.row * FINALS_ROW_STEP,
+    top: match.row * (mobile ? FINALS_MOBILE_ROW_STEP : FINALS_ROW_STEP),
   };
 }
 
-export function finalsConnection(source: FinalsMatch, target: FinalsMatch, slot: 0 | 1) {
-  const from = finalsMatchPosition(source);
-  const to = finalsMatchPosition(target);
+export function finalsConnection(source: FinalsMatch, target: FinalsMatch, slot: 0 | 1, mobile = false) {
+  const from = finalsMatchPosition(source, mobile);
+  const to = finalsMatchPosition(target, mobile);
   const sx = from.left + FINALS_CARD_WIDTH / 2;
   const ex = to.left + FINALS_CARD_WIDTH * (slot === 0 ? 0.25 : 0.75);
-  const endY = to.top + FINALS_CARD_HEIGHT;
+  const endY = to.top + (mobile ? FINALS_MOBILE_CARD_HEIGHT : FINALS_CARD_HEIGHT);
   const bend = (from.top + endY) / 2;
   return {
     path: `M ${sx} ${from.top} V ${bend} H ${ex} V ${endY + 6}`,

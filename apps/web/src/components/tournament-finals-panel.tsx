@@ -1,9 +1,11 @@
 import { LockKeyhole } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 
 import {
   FINALS_CARD_HEIGHT,
   FINALS_CARD_WIDTH,
+  FINALS_MOBILE_CARD_HEIGHT,
+  FINALS_MOBILE_ROW_STEP,
   FINALS_ROW_STEP,
   finalsConnection,
   finalsMatchPosition,
@@ -37,18 +39,22 @@ export function TournamentFinalsPanel({
   }, [canViewFinals, tournament, selectedCategoryId, standings]);
   // Guard content as well as navigation, including a role change on this tab.
   if (!canViewFinals) return null;
-  const height = template
-    ? Math.max(...template.matches.map((match) => match.row)) * FINALS_ROW_STEP + FINALS_CARD_HEIGHT
-    : 0;
+  const lastRow = template ? Math.max(...template.matches.map((match) => match.row)) : 0;
+  const height = lastRow * FINALS_ROW_STEP + FINALS_CARD_HEIGHT;
+  const mobileHeight = lastRow * FINALS_MOBILE_ROW_STEP + FINALS_MOBILE_CARD_HEIGHT;
   const singleMatch = template?.matches.length === 1;
   const connections = template?.matches.flatMap((match) => {
     if (!match.next) return [];
     const target = template.matches.find((item) => item.id === match.next!.matchId);
-    return target ? [{ id: match.id, ...finalsConnection(match, target, match.next.slot) }] : [];
+    return target ? [{
+      id: match.id,
+      desktop: finalsConnection(match, target, match.next.slot),
+      mobile: finalsConnection(match, target, match.next.slot, true),
+    }] : [];
   }) ?? [];
 
   return (
-    <section aria-label="Finaller" className="rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-6">
+    <section aria-label="Finaller" className="min-w-0 rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold">Finaller</h3>
@@ -59,7 +65,7 @@ export function TournamentFinalsPanel({
         </div>
         <select
           aria-label="Final kategorisi"
-          className="input max-w-sm"
+          className="input min-w-0 max-w-sm"
           onChange={(event) => onCategoryChange(event.target.value)}
           value={category?.id ?? ""}
         >
@@ -80,27 +86,35 @@ export function TournamentFinalsPanel({
             {template.hasPending ? " Sonucu eksik maçlara bağlı yerler beklemede." : ""}
             {template.hasTies ? " Set ve oyun averajıyla çözülemeyen eşitlikler ayrıca belirlenmeli." : ""}
           </p>
-          {!singleMatch ? <p className="mt-2 text-xs text-[#68756b] sm:hidden">Şemayı yatay kaydırabilirsiniz.</p> : null}
-
-          <div className="mt-5 overflow-x-auto pb-2" tabIndex={0} role="region" aria-label={`${category.name} final tablosu`}>
-          <div aria-label={`${category.name} eleme şeması`} className={`relative mx-auto w-full ${singleMatch ? "max-w-lg" : "min-w-[640px] max-w-5xl"}`} style={{ height }}>
-            <svg
+          <div className="mt-5 min-w-0 pb-2" role="region" aria-label={`${category.name} final tablosu`}>
+          <div
+            aria-label={`${category.name} eleme şeması`}
+            className={`relative mx-auto h-[var(--finals-mobile-height)] w-full sm:h-[var(--finals-height)] ${singleMatch ? "max-w-lg" : "max-w-5xl"}`}
+            style={{ "--finals-mobile-height": `${mobileHeight}px`, "--finals-height": `${height}px` } as CSSProperties}
+          >
+            {(["mobile", "desktop"] as const).map((layout) => <svg
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 h-full w-full"
+              key={layout}
+              className={`pointer-events-none absolute inset-0 h-full w-full ${layout === "mobile" ? "sm:hidden" : "hidden sm:block"}`}
               fill="none"
               preserveAspectRatio="none"
-              viewBox={`0 0 100 ${height}`}
+              viewBox={`0 0 100 ${layout === "mobile" ? mobileHeight : height}`}
             >
               {connections.map((connection) => (
-                <path key={connection.id} d={connection.path} stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                <path key={connection.id} d={connection[layout].path} stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
               ))}
-            </svg>
+            </svg>)}
             {connections.map((connection) => (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute -translate-x-1/2 border-x-[4px] border-b-[6px] border-x-transparent"
+                className="pointer-events-none absolute top-[var(--finals-mobile-top)] -translate-x-1/2 border-x-[4px] border-b-[6px] border-x-transparent sm:top-[var(--finals-top)]"
                 key={connection.id}
-                style={{ left: `${connection.arrowLeft}%`, top: connection.arrowTop, borderBottomColor: color }}
+                style={{
+                  left: `${connection.desktop.arrowLeft}%`,
+                  "--finals-mobile-top": `${connection.mobile.arrowTop}px`,
+                  "--finals-top": `${connection.desktop.arrowTop}px`,
+                  borderBottomColor: color,
+                } as CSSProperties}
               />
             ))}
             <ol className="m-0 list-none p-0">
@@ -110,15 +124,17 @@ export function TournamentFinalsPanel({
                 return (
                   <li
                     aria-label={match.title}
-                    className="absolute overflow-hidden rounded-lg border bg-[var(--theme-panel)]"
+                    className="absolute top-[var(--finals-mobile-top)] h-[var(--finals-mobile-card-height)] min-w-0 overflow-hidden rounded-lg border bg-[var(--theme-panel)] sm:top-[var(--finals-top)] sm:h-[var(--finals-card-height)]"
                     key={match.id}
                     style={{
                       left: singleMatch ? 0 : `${position.left}%`,
-                      top: position.top,
+                      "--finals-mobile-top": `${finalsMatchPosition(match, true).top}px`,
+                      "--finals-top": `${position.top}px`,
+                      "--finals-mobile-card-height": `${FINALS_MOBILE_CARD_HEIGHT}px`,
+                      "--finals-card-height": `${FINALS_CARD_HEIGHT}px`,
                       width: singleMatch ? "100%" : `${FINALS_CARD_WIDTH}%`,
-                      height: FINALS_CARD_HEIGHT,
                       borderColor: isFinal ? color : "var(--theme-border)",
-                    }}
+                    } as CSSProperties}
                   >
                     <h5
                       className="flex h-7 items-center justify-center text-[11px] font-semibold sm:text-xs"
@@ -126,12 +142,12 @@ export function TournamentFinalsPanel({
                     >
                       {match.title}
                     </h5>
-                    <div className="grid h-[128px] grid-cols-2 divide-x divide-[var(--theme-border)]">
+                    <div className="grid h-[calc(100%-28px)] grid-rows-2 divide-y divide-[var(--theme-border)] sm:grid-cols-2 sm:grid-rows-1 sm:divide-x sm:divide-y-0">
                       {match.entrants.map((entry, index) => (
-                        <div className="flex min-w-0 flex-col items-center justify-center gap-1.5 px-2 py-2 text-center sm:px-3" key={index}>
+                        <div className="flex min-h-0 min-w-0 flex-col items-center justify-center gap-1 px-1.5 py-1 text-center sm:gap-1.5 sm:px-3 sm:py-2" key={index}>
                           <span className="text-[11px] font-semibold text-[#68756b]">{entry.seed}</span>
                           {entry.status === "confirmed" ? (
-                            <div className="space-y-1 text-sm font-bold leading-snug text-[var(--theme-text)]">
+                            <div className="w-full space-y-1 text-xs font-bold leading-4 text-[var(--theme-text)] sm:text-sm sm:leading-snug">
                               {entry.names.map((name, i) => <p className="break-words" key={i}>{name}</p>)}
                             </div>
                           ) : entry.status === "later_round" ? (
