@@ -42,6 +42,7 @@ import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   findCourtConflict,
+  reservationWriteErrorMessage,
   timeRangesOverlap,
   tournamentOccupancyChanged,
 } from "@/lib/court-schedule";
@@ -3274,23 +3275,6 @@ export function ClubApp() {
       ? requestedDate
       : firstBookableDate(effectiveBookingWindowDays, timeSlots, currentTime);
     const dateValue = dateInputValue(dateForForm);
-    const slotForForm =
-      slot &&
-      isBookableStart(
-        dateValue,
-        slot,
-        effectiveBookingWindowDays,
-        currentTime,
-        canManageReservations,
-      )
-        ? slot
-        : firstBookableSlot(
-            dateValue,
-            timeSlots,
-            effectiveBookingWindowDays,
-            currentTime,
-            canManageReservations,
-          );
     const selectedOwner =
       reservationOwnerOptions.find(
         (owner) => owner.id === (reservationForm.user_id || user.id),
@@ -3341,20 +3325,58 @@ export function ClubApp() {
       allowedTournamentCourtIds.has(court.id),
     );
     const requestedCourtId = courtId ?? activeCourts[0]?.id ?? "";
+    const selectedCourtId =
+      nextMatchType === "tournament"
+        ? firstTournamentCourt?.id ?? requestedCourtId
+        : requestedCourtId;
+    const slotsForForm =
+      nextMatchType === "tournament" ? tournamentTimeSlots : timeSlots;
+    const slotIsAvailable = (slotValue: string) => {
+      if (
+        !isBookableStart(
+          dateValue,
+          slotValue,
+          effectiveBookingWindowDays,
+          currentTime,
+          canManageReservations,
+        )
+      ) {
+        return false;
+      }
+
+      const startsAt = buildLocalDateTime(dateValue, slotValue);
+      const endsAt =
+        nextMatchType === "tournament" && tournamentForForm
+          ? addMinutes(startsAt, tournamentForForm.match_duration_minutes)
+          : addSlotDuration(startsAt, settings);
+
+      return !findCourtConflict(
+        reservations,
+        selectedCourtId,
+        startsAt,
+        endsAt,
+      ) && !findCourtConflict(
+        calendarTournamentMatches,
+        selectedCourtId,
+        startsAt,
+        endsAt,
+      );
+    };
+    const slotForForm =
+      slot && slotIsAvailable(slot)
+        ? slot
+        : slotsForForm.find(slotIsAvailable);
 
     setReservationForm({
       trainer_id: selfLessonTrainerId || registeredTrainer(reservationOwnerOptions, reservationForm.trainer_id)?.id ||
         (profile?.is_trainer ? profile.id : ""),
-      court_id:
-        nextMatchType === "tournament"
-          ? firstTournamentCourt?.id ?? requestedCourtId
-          : requestedCourtId,
+      court_id: selectedCourtId,
       custom_info: "",
       date: dateValue,
       is_custom: false,
       is_lesson: nextMatchType === "lesson",
       match_type: nextMatchType,
-      start_time: slotForForm ?? timeSlots[0] ?? "09:00",
+      start_time: slotForForm ?? slotsForForm[0] ?? "09:00",
       student_name: "",
       team1_player1_name:
         nextMatchType === "tournament"
@@ -3622,10 +3644,23 @@ export function ClubApp() {
       startsAt,
       endsAt,
     );
+    const reservationConflict = findCourtConflict(
+      reservations,
+      reservationForm.court_id,
+      startsAt,
+      endsAt,
+    );
 
     if (tournamentConflict) {
       setStatusMessage(
         `Bu saat ${tournamentConflict.tournament_name} turnuvasındaki bir maçla çakışıyor.`,
+      );
+      return;
+    }
+
+    if (reservationConflict) {
+      setStatusMessage(
+        "Bu kort ve saat dolu. Takvimi yenileyip başka bir saat seçin.",
       );
       return;
     }
@@ -3640,21 +3675,28 @@ export function ClubApp() {
         ? customInfo
         : buildReservationMatchNote(reservationForm);
 
-    const { error } = await supabase.from("reservations").insert({
-      court_id: reservationForm.court_id,
-      user_id: canManageReservations ? reservationForm.user_id || user.id : user.id,
-      trainer_id: isLessonReservationForm ? lessonTrainer?.id : null,
-      starts_at: startsAt.toISOString(),
-      ends_at: endsAt.toISOString(),
-      note: reservationNote,
-      status: "confirmed",
-    });
+    try {
+      const { error } = await supabase.from("reservations").insert({
+        court_id: reservationForm.court_id,
+        user_id: canManageReservations ? reservationForm.user_id || user.id : user.id,
+        trainer_id: isLessonReservationForm ? lessonTrainer?.id : null,
+        starts_at: startsAt.toISOString(),
+        ends_at: endsAt.toISOString(),
+        note: reservationNote,
+        status: "confirmed",
+      });
 
-    setIsSaving(false);
-
-    if (error) {
-      setStatusMessage(error.message);
+      if (error) {
+        setStatusMessage(reservationWriteErrorMessage(error));
+        return;
+      }
+    } catch {
+      setStatusMessage(
+        "Rezervasyon kaydedilemedi. Bağlantıyı kontrol edip tekrar deneyin.",
+      );
       return;
+    } finally {
+      setIsSaving(false);
     }
 
     setIsReservationOpen(false);
@@ -5936,12 +5978,21 @@ export function ClubApp() {
           currentTime={currentTime}
           form={reservationForm}
           isSaving={isSaving}
-          onClose={() => setIsReservationOpen(false)}
+          onClose={() => {
+            setIsReservationOpen(false);
+            setStatusMessage(null);
+          }}
           ownerOptions={reservationOwnerOptions}
           onSubmit={createReservation}
-          setForm={setReservationForm}
+          reservations={reservations}
+          setForm={(nextForm) => {
+            setStatusMessage(null);
+            setReservationForm(nextForm);
+          }}
           settings={settings}
+          statusMessage={statusMessage}
           timeSlots={timeSlots}
+          tournamentMatches={calendarTournamentMatches}
           tournamentTimeSlots={tournamentTimeSlots}
           tournaments={tournaments}
         />
@@ -9857,9 +9908,12 @@ function ReservationDialog({
   onClose,
   ownerOptions,
   onSubmit,
+  reservations,
   setForm,
   settings,
+  statusMessage,
   timeSlots,
+  tournamentMatches,
   tournamentTimeSlots,
   tournaments,
 }: {
@@ -9876,9 +9930,12 @@ function ReservationDialog({
   onClose: () => void;
   ownerOptions: Profile[];
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  reservations: Reservation[];
   setForm: (form: ReservationFormState) => void;
   settings: ClubSettings;
+  statusMessage: string | null;
   timeSlots: string[];
+  tournamentMatches: CalendarTournamentMatch[];
   tournamentTimeSlots: string[];
   tournaments: TournamentWithDetails[];
 }) {
@@ -9912,20 +9969,55 @@ function ReservationDialog({
   const selectableCourts = isTournamentForm
     ? activeCourts.filter((court) => selectedTournamentCourtIds.has(court.id))
     : activeCourts;
+  function slotUnavailableReason(
+    dateValue: string,
+    slot: string,
+    courtId = form.court_id,
+  ) {
+    if (
+      !isBookableStart(
+        dateValue,
+        slot,
+        bookingWindowDays,
+        currentTime,
+        canCreatePastReservation,
+      )
+    ) {
+      return "Bu saat için rezervasyon yapılamaz.";
+    }
+
+    const startsAt = buildLocalDateTime(dateValue, slot);
+    const endsAt =
+      isTournamentForm && selectedTournament
+        ? addMinutes(startsAt, selectedTournament.match_duration_minutes)
+        : addSlotDuration(startsAt, settings);
+    const closingTime = buildLocalDateTime(dateValue, settings.closing_time);
+
+    if (isTournamentForm && endsAt > closingTime) {
+      return "Maç kulübün kapanış saatinden önce bitmeli.";
+    }
+
+    if (findCourtConflict(tournamentMatches, courtId, startsAt, endsAt)) {
+      return "Bu kort ve saat bir turnuva maçı için ayrılmış.";
+    }
+
+    if (findCourtConflict(reservations, courtId, startsAt, endsAt)) {
+      return "Bu kort ve saat dolu.";
+    }
+
+    return null;
+  }
+
   const selectedStart = buildLocalDateTime(form.date, form.start_time);
   const selectedEnd =
     isTournamentForm && selectedTournament
       ? addMinutes(selectedStart, selectedTournament.match_duration_minutes)
       : addSlotDuration(selectedStart, settings);
-  const selectedSlotBookable =
-    isBookableStart(
-      form.date,
-      form.start_time,
-      bookingWindowDays,
-      currentTime,
-      canCreatePastReservation,
-    ) &&
-    (!isTournamentForm || selectedEnd <= tournamentClosingTime);
+  const selectedSlotUnavailableReason = slotUnavailableReason(
+    form.date,
+    form.start_time,
+  );
+  const selectedSlotBookable = !selectedSlotUnavailableReason;
   const canUseLesson = canMarkLesson;
   const generalMaxBookingDate = dateInputValue(
     addDays(currentTime, bookingWindowDays),
@@ -9955,12 +10047,8 @@ function ReservationDialog({
       ...form,
       date: dateValue,
       start_time:
-        firstBookableSlot(
-          dateValue,
-          availableTimeSlots,
-          bookingWindowDays,
-          currentTime,
-          canCreatePastReservation,
+        availableTimeSlots.find(
+          (slot) => !slotUnavailableReason(dateValue, slot),
         ) ??
         availableTimeSlots[0] ??
         form.start_time,
@@ -10075,9 +10163,18 @@ function ReservationDialog({
             <Field label="Kort">
               <select
                 className="input"
-                onChange={(event) =>
-                  setForm({ ...form, court_id: event.target.value })
-                }
+                onChange={(event) => {
+                  const courtId = event.target.value;
+                  const firstAvailableSlot = availableTimeSlots.find(
+                    (slot) =>
+                      !slotUnavailableReason(form.date, slot, courtId),
+                  );
+                  setForm({
+                    ...form,
+                    court_id: courtId,
+                    start_time: firstAvailableSlot ?? form.start_time,
+                  });
+                }}
                 required
                 value={form.court_id}
               >
@@ -10117,18 +10214,15 @@ function ReservationDialog({
                   </option>
                 ) : null}
                 {availableTimeSlots.map((slot) => {
-                  const optionBookable = isBookableStart(
+                  const unavailableReason = slotUnavailableReason(
                     form.date,
                     slot,
-                    bookingWindowDays,
-                    currentTime,
-                    canCreatePastReservation,
                   );
 
                   return (
-                    <option disabled={!optionBookable} key={slot} value={slot}>
+                    <option disabled={Boolean(unavailableReason)} key={slot} value={slot}>
                       {slot}
-                      {optionBookable ? "" : " - uygun değil"}
+                      {unavailableReason ? ` - ${unavailableReason}` : ""}
                     </option>
                   );
                 })}
@@ -10139,12 +10233,21 @@ function ReservationDialog({
           <div className="rounded-md border border-[#e6dfd2] bg-[#f6f1e7] p-2.5 text-xs text-[#546257] sm:text-sm">
             Seçilen aralık: {formatDateTitle(parseDateInput(form.date))},{" "}
             {formatTime(selectedStart)} - {formatTime(selectedEnd)}
-            {!selectedSlotBookable ? (
+            {selectedSlotUnavailableReason ? (
               <span className="mt-2 block font-medium text-[#a0543b]">
-                Bu saat için rezervasyon yapılamaz.
+                {selectedSlotUnavailableReason}
               </span>
             ) : null}
           </div>
+
+          {statusMessage ? (
+            <p
+              className="rounded-md border border-[#d9bd76] bg-[#fff4d6] px-3 py-2 text-sm font-medium text-[#75551d]"
+              role="alert"
+            >
+              {statusMessage}
+            </p>
+          ) : null}
 
           <button
             className="primary-button mt-auto sm:mt-0"

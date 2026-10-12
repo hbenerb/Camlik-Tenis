@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findCourtConflict, timeRangesOverlap, tournamentOccupancyChanged } from "../src/lib/court-schedule.ts";
+import { findCourtConflict, reservationWriteErrorMessage, timeRangesOverlap, tournamentOccupancyChanged } from "../src/lib/court-schedule.ts";
 
 const booking = {
   id: "first", court_id: "A", starts_at: "2026-10-10T14:00:00+03:00",
@@ -36,4 +36,22 @@ test("score/name edits, equivalent timezones and cancellation do not create occu
   assert.equal(tournamentOccupancyChanged(booking, {...booking, status:"completed"}), false);
   assert.equal(tournamentOccupancyChanged(booking, {...booking, starts_at:"2026-10-10T11:00:00Z"}), false);
   assert.equal(tournamentOccupancyChanged(booking, {...booking, court_id:"B", status:"canceled"}), false);
+});
+
+test("reservation write errors explain conflicts and recoverable failures", () => {
+  assert.equal(
+    reservationWriteErrorMessage({
+      code: "23P01",
+      message: 'conflicting key value violates exclusion constraint "no_overlapping_confirmed_reservations"',
+    }),
+    "Bu kort ve saat dolu. Takvimi yenileyip başka bir saat seçin.",
+  );
+  assert.equal(
+    reservationWriteErrorMessage({ code: "42501", message: "permission denied" }),
+    "Bu rezervasyonu kaydetme yetkiniz yok. Kulüple iletişime geçin.",
+  );
+  assert.equal(
+    reservationWriteErrorMessage({ message: "network request failed" }),
+    "Rezervasyon kaydedilemedi: network request failed",
+  );
 });
