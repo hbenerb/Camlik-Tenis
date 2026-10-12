@@ -1,0 +1,5615 @@
+{
+  "id": "13350264-a44c-4c44-8213-4aef62e3fbb6",
+  "name": "29 Ekim Etkinliği",
+  "best_of_sets": 3,
+  "set_games_to_win": 6,
+  "set_tiebreak_points": 7,
+  "deciding_set_type": "match_tiebreak",
+  "deciding_match_tiebreak_points": 10,
+  "categories": [
+    {
+      "id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "name": "Erkek Master",
+      "group_count": 2,
+      "display_order": 1
+    },
+    {
+      "id": "e207965b-0898-4b5e-acc6-985822733718",
+      "name": "Erkek İleri",
+      "group_count": 2,
+      "display_order": 2
+    },
+    {
+      "id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "name": "Kadın İleri",
+      "group_count": 2,
+      "display_order": 3
+    },
+    {
+      "id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "name": "Kadın Orta",
+      "group_count": 1,
+      "display_order": 4
+    },
+    {
+      "id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "name": "Erkek Orta",
+      "group_count": 3,
+      "display_order": 5
+    },
+    {
+      "id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "name": "Yeni Başlayan Kadın",
+      "group_count": 2,
+      "display_order": 6
+    },
+    {
+      "id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "name": "Double Master Erkek",
+      "group_count": 2,
+      "display_order": 7
+    },
+    {
+      "id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "name": "Double İleri Erkek",
+      "group_count": 1,
+      "display_order": 8
+    },
+    {
+      "id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "name": "Orta Mix",
+      "group_count": 1,
+      "display_order": 9
+    },
+    {
+      "id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "name": "İleri Mix",
+      "group_count": 1,
+      "display_order": 10
+    },
+    {
+      "id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "name": "Double Kadın",
+      "group_count": 1,
+      "display_order": 11
+    }
+  ],
+  "groups": [
+    {
+      "id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "name": "A",
+      "display_order": 1
+    },
+    {
+      "id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "name": "B",
+      "display_order": 2
+    },
+    {
+      "id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "name": "B",
+      "display_order": 2
+    },
+    {
+      "id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "name": "B",
+      "display_order": 2
+    },
+    {
+      "id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "name": "B",
+      "display_order": 2
+    },
+    {
+      "id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "name": "B",
+      "display_order": 2
+    },
+    {
+      "id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "name": "B",
+      "display_order": 2
+    },
+    {
+      "id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "name": "C",
+      "display_order": 3
+    }
+  ],
+  "players": [
+    {
+      "id": "8d740cd7-28a6-4c0e-8a1e-91afec80cf36",
+      "display_name": "Verda Akpınarlı"
+    },
+    {
+      "id": "0623611c-d66e-40da-8767-ee2f3c989389",
+      "display_name": "Ahmet Ok"
+    },
+    {
+      "id": "8b767241-024b-47ef-8911-72f5babd335e",
+      "display_name": "Ali Koray Güzel"
+    },
+    {
+      "id": "15c9943e-bef1-47e9-a91f-19f5870c5a48",
+      "display_name": "Ayşe Cömert"
+    },
+    {
+      "id": "c1389fb0-a1cc-49fc-9660-e38b9f4eccfd",
+      "display_name": "Baru Harsa"
+    },
+    {
+      "id": "bea2680c-080f-4006-a756-0f20a2ec9bd9",
+      "display_name": "Bener Bozkurt"
+    },
+    {
+      "id": "95dd05d4-aeda-4005-bd26-78a0e25b9906",
+      "display_name": "Burçin Dere"
+    },
+    {
+      "id": "08cf72c7-cdde-4b92-9f35-9f8e93f9fa15",
+      "display_name": "Burcu Yalabık"
+    },
+    {
+      "id": "e59666bc-8ef0-4824-baf8-535cdeed2df2",
+      "display_name": "Büşra Kaveloğlu"
+    },
+    {
+      "id": "8b6a9ba3-57d2-49e7-91f2-b61e30289643",
+      "display_name": "Çağla Bozkurt"
+    },
+    {
+      "id": "92d15d93-6d96-4d16-8699-998284d575d1",
+      "display_name": "Cengiz Gültekin"
+    },
+    {
+      "id": "6a8225bc-606b-45ba-8ae1-f1fb7b2e694b",
+      "display_name": "Cenk Cömert"
+    },
+    {
+      "id": "b56cc154-8a41-47f8-ab13-347e3d26d4eb",
+      "display_name": "Ecem Güzelhisar"
+    },
+    {
+      "id": "27c8a257-dfc1-4a09-9eb2-a3dc9340bafd",
+      "display_name": "Ekin Akgün"
+    },
+    {
+      "id": "108ca71b-048c-4ac4-8bfe-44cc3c72e0b8",
+      "display_name": "Elif Ay"
+    },
+    {
+      "id": "74a7726e-d123-4f62-9e9f-a193cf64c91d",
+      "display_name": "Elif Bora"
+    },
+    {
+      "id": "a25fa027-8833-4156-958c-189c50ffa2b2",
+      "display_name": "Emre Karaaslan"
+    },
+    {
+      "id": "57c24c91-a08f-431d-8c2f-bf86bbc66a4e",
+      "display_name": "Ersin Başaran"
+    },
+    {
+      "id": "6b8c9e98-4cad-4c60-b1bb-cb2aa511c047",
+      "display_name": "Esen Atay"
+    },
+    {
+      "id": "ef7a03e2-1b7e-4f79-b603-70c044c99665",
+      "display_name": "Esin Gülpınar"
+    },
+    {
+      "id": "b234d11f-1823-4675-968e-7af8a63231ea",
+      "display_name": "Turgay Urgancı"
+    },
+    {
+      "id": "6e5b4337-6195-4c4f-b266-676da7401d15",
+      "display_name": "Evrim Özcan"
+    },
+    {
+      "id": "8c156aef-7ac1-4776-9db7-69a4576d3ce3",
+      "display_name": "Aydoğan Aysan"
+    },
+    {
+      "id": "ccf88c77-d6f3-4bba-855f-f9d75bd6dfd9",
+      "display_name": "Gençay Üstünel"
+    },
+    {
+      "id": "fb5d663e-b407-4be5-af22-900b3fb0a7ed",
+      "display_name": "Gizem Topuz"
+    },
+    {
+      "id": "765a9a86-b765-4712-be78-784c1ce3baf7",
+      "display_name": "Gülfem Yavuz"
+    },
+    {
+      "id": "125aef1f-45dd-4969-ae7e-1c28d8d32f55",
+      "display_name": "Günnur Algın"
+    },
+    {
+      "id": "3afff8c8-bbb1-499f-8b9d-daca5e065eac",
+      "display_name": "Habibe Yağcı"
+    },
+    {
+      "id": "7b4ad8ce-ef53-464e-bff5-0fb31a1bf97f",
+      "display_name": "Haluk Sağun"
+    },
+    {
+      "id": "4f9b9ddc-b63c-49be-b8a7-24d46f028a68",
+      "display_name": "Hüseyin Kahraman"
+    },
+    {
+      "id": "1f945349-b2fe-4c2f-8f65-31780f03f2ba",
+      "display_name": "Tuncer Urgancı"
+    },
+    {
+      "id": "90a788df-6ab5-485b-83ed-42f0f0774fa4",
+      "display_name": "İlker Doğaç"
+    },
+    {
+      "id": "392a2e6f-a34a-4b67-9984-3e4f39d4d027",
+      "display_name": "İnan Özbakır"
+    },
+    {
+      "id": "dd78abaf-1720-4ab9-8029-0808747250f0",
+      "display_name": "Kemal Hür"
+    },
+    {
+      "id": "86c3bf0b-9f21-454c-b037-2ed3f107df3e",
+      "display_name": "Kemal Yardımcı"
+    },
+    {
+      "id": "39a16a52-40c3-40ae-9b7a-c74aa84b2782",
+      "display_name": "Mehmet Yiğit"
+    },
+    {
+      "id": "b9643b13-3e9b-4d7a-b1ec-a4f6e6eeae2a",
+      "display_name": "Mehtap"
+    },
+    {
+      "id": "55211ee9-e753-42ee-9006-5d9be546210d",
+      "display_name": "Merve Timuçin"
+    },
+    {
+      "id": "d46b997a-1805-4431-95e9-fcad7d505cf9",
+      "display_name": "Mete Albeyoğlu"
+    },
+    {
+      "id": "a36c9431-04f7-4341-91aa-4c566b33b522",
+      "display_name": "Münevver Oktay"
+    },
+    {
+      "id": "70743dcb-e2d7-4c57-850d-6ee5689c8ce7",
+      "display_name": "Nail Çakırdere"
+    },
+    {
+      "id": "c2918640-c3d2-4515-a8ca-188e6a0b22ac",
+      "display_name": "Naz Lale"
+    },
+    {
+      "id": "14d17308-a0fc-49d8-9efd-0e4516a65056",
+      "display_name": "Tuğberk Sepetci"
+    },
+    {
+      "id": "e7da50a8-4db2-4640-9874-8fdfc4a8c741",
+      "display_name": "Özcan Günay"
+    },
+    {
+      "id": "ae6585b1-69a6-44ec-b4ee-892093ff39d1",
+      "display_name": "Özge Dönmez"
+    },
+    {
+      "id": "cae2daf7-d1b6-4dd9-9aa9-d21d92972bd0",
+      "display_name": "Semra Yumlu"
+    },
+    {
+      "id": "938b1f87-8c3f-4aae-b3d1-d1d1038cb20c",
+      "display_name": "Serdar Gürge"
+    },
+    {
+      "id": "f5a91220-ab61-42bd-87d5-6f17f7c97848",
+      "display_name": "Serhat Gürsan"
+    },
+    {
+      "id": "fa91853a-ba77-4aa1-a703-c90780278e63",
+      "display_name": "Stefan De Jong"
+    },
+    {
+      "id": "58401d4e-3ce5-49dc-b2b7-756dcc7e0404",
+      "display_name": "Tayfun Bulut"
+    },
+    {
+      "id": "9c29c0c8-bd4b-4b8c-a2b7-e1aac86bf041",
+      "display_name": "Tuncer Akgün"
+    },
+    {
+      "id": "271d93f2-823a-49bc-97b3-e59014ac450b",
+      "display_name": "Uğur Ataman"
+    },
+    {
+      "id": "399739a3-2c06-487f-81d1-bdc432ffd535",
+      "display_name": "Ali Haydar Turhan"
+    },
+    {
+      "id": "f08048cb-32db-4e93-8e45-ee5c84ab6582",
+      "display_name": "Ümit Ünal"
+    },
+    {
+      "id": "7d0ea20a-fc83-4463-acf3-f9907c265274",
+      "display_name": "Utku Ataman"
+    },
+    {
+      "id": "d315f8eb-ad6c-4bdc-bc78-1e493bf505bc",
+      "display_name": "Işın Reisoğlu"
+    },
+    {
+      "id": "4777abd8-fb9c-4535-8805-279442716e85",
+      "display_name": "Yunus Emre Yerekapan"
+    },
+    {
+      "id": "fcc1a9fc-1cc4-4e59-96ce-cc9b9e9b9aa1",
+      "display_name": "Zeliha Aysan"
+    },
+    {
+      "id": "e7711968-5175-4216-a2e6-fd968b47cf90",
+      "display_name": "Zeynep Kürşat"
+    },
+    {
+      "id": "547d5e02-404f-4711-829d-61d692e4079f",
+      "display_name": "İlyas Yılmaz"
+    },
+    {
+      "id": "21cefebd-ff96-4434-b1b7-f97c79e02a0f",
+      "display_name": "İrem Akkuş"
+    },
+    {
+      "id": "7ddafc5c-afd9-4804-a5da-efbcfe573cb4",
+      "display_name": "Ümit Hisar"
+    },
+    {
+      "id": "dd84c5a7-bd7d-434b-a257-4e01eb18ae75",
+      "display_name": "Fatma Müsait"
+    },
+    {
+      "id": "5aaaaf46-9689-4476-9537-63acd6890faf",
+      "display_name": "İbrahim Çeyrek"
+    },
+    {
+      "id": "6d80cf8e-3b2c-4f10-b67d-bab5d4ce1734",
+      "display_name": "Nuray Baskak"
+    },
+    {
+      "id": "828f4656-6950-413b-ab4b-1bdb0e532e08",
+      "display_name": "Serkan İrden"
+    },
+    {
+      "id": "93acc0ca-05e6-49cf-b05a-8f2b7d4033c8",
+      "display_name": "Yavuz Özlen"
+    }
+  ],
+  "participants": [
+    {
+      "id": "263538da-f038-498b-b3ec-d8576419de0a",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "display_order": 1,
+      "player_ids": [
+        "8b767241-024b-47ef-8911-72f5babd335e"
+      ],
+      "display_name": "Ali Koray Güzel"
+    },
+    {
+      "id": "90bb9365-0b7e-4711-8172-95e25a5dc94a",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "display_order": 2,
+      "player_ids": [
+        "86c3bf0b-9f21-454c-b037-2ed3f107df3e"
+      ],
+      "display_name": "Kemal Yardımcı"
+    },
+    {
+      "id": "538f608e-cb24-446f-905e-10a7bed2a2bb",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "display_order": 3,
+      "player_ids": [
+        "70743dcb-e2d7-4c57-850d-6ee5689c8ce7"
+      ],
+      "display_name": "Nail Çakırdere"
+    },
+    {
+      "id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "display_order": 4,
+      "player_ids": [
+        "fa91853a-ba77-4aa1-a703-c90780278e63"
+      ],
+      "display_name": "Stefan De Jong"
+    },
+    {
+      "id": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "display_order": 5,
+      "player_ids": [
+        "1f945349-b2fe-4c2f-8f65-31780f03f2ba"
+      ],
+      "display_name": "Tuncer Urgancı"
+    },
+    {
+      "id": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "display_order": 1,
+      "player_ids": [
+        "0623611c-d66e-40da-8767-ee2f3c989389"
+      ],
+      "display_name": "Ahmet Ok"
+    },
+    {
+      "id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "display_order": 2,
+      "player_ids": [
+        "ccf88c77-d6f3-4bba-855f-f9d75bd6dfd9"
+      ],
+      "display_name": "Gençay Üstünel"
+    },
+    {
+      "id": "94d5aed2-62fa-464f-876e-92a4b56ae0ae",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "display_order": 3,
+      "player_ids": [
+        "58401d4e-3ce5-49dc-b2b7-756dcc7e0404"
+      ],
+      "display_name": "Tayfun Bulut"
+    },
+    {
+      "id": "979f494b-f149-429b-98d7-35dbdbcd13ff",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "display_order": 4,
+      "player_ids": [
+        "9c29c0c8-bd4b-4b8c-a2b7-e1aac86bf041"
+      ],
+      "display_name": "Tuncer Akgün"
+    },
+    {
+      "id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "display_order": 5,
+      "player_ids": [
+        "b234d11f-1823-4675-968e-7af8a63231ea"
+      ],
+      "display_name": "Turgay Urgancı"
+    },
+    {
+      "id": "29f4c3c1-d162-4fc8-95af-73e27fb607d0",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "display_order": 1,
+      "player_ids": [
+        "c1389fb0-a1cc-49fc-9660-e38b9f4eccfd"
+      ],
+      "display_name": "Baru Harsa"
+    },
+    {
+      "id": "d17bada8-db5d-4b86-a2f6-7440e16af944",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "display_order": 2,
+      "player_ids": [
+        "6a8225bc-606b-45ba-8ae1-f1fb7b2e694b"
+      ],
+      "display_name": "Cenk Cömert"
+    },
+    {
+      "id": "195955f5-5116-48e5-94b0-83ed55874a61",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "display_order": 3,
+      "player_ids": [
+        "d46b997a-1805-4431-95e9-fcad7d505cf9"
+      ],
+      "display_name": "Mete Albeyoğlu"
+    },
+    {
+      "id": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "display_order": 4,
+      "player_ids": [
+        "271d93f2-823a-49bc-97b3-e59014ac450b"
+      ],
+      "display_name": "Uğur Ataman"
+    },
+    {
+      "id": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "display_order": 5,
+      "player_ids": [
+        "f08048cb-32db-4e93-8e45-ee5c84ab6582"
+      ],
+      "display_name": "Ümit Ünal"
+    },
+    {
+      "id": "b496aa38-e80b-4763-93c6-43eefd38e58d",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "display_order": 1,
+      "player_ids": [
+        "95dd05d4-aeda-4005-bd26-78a0e25b9906"
+      ],
+      "display_name": "Burçin Dere"
+    },
+    {
+      "id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "display_order": 2,
+      "player_ids": [
+        "57c24c91-a08f-431d-8c2f-bf86bbc66a4e"
+      ],
+      "display_name": "Ersin Başaran"
+    },
+    {
+      "id": "1534e837-2bad-417a-9ddb-6791802d130b",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "display_order": 3,
+      "player_ids": [
+        "7b4ad8ce-ef53-464e-bff5-0fb31a1bf97f"
+      ],
+      "display_name": "Haluk Sağun"
+    },
+    {
+      "id": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "display_order": 4,
+      "player_ids": [
+        "392a2e6f-a34a-4b67-9984-3e4f39d4d027"
+      ],
+      "display_name": "İnan Özbakır"
+    },
+    {
+      "id": "59fecafc-ced7-4fd0-994f-5986b2103226",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "display_order": 5,
+      "player_ids": [
+        "7ddafc5c-afd9-4804-a5da-efbcfe573cb4"
+      ],
+      "display_name": "Ümit Hisar"
+    },
+    {
+      "id": "482aeb2f-72b8-4331-a54c-521c5ec2e4ee",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "display_order": 1,
+      "player_ids": [
+        "27c8a257-dfc1-4a09-9eb2-a3dc9340bafd"
+      ],
+      "display_name": "Ekin Akgün"
+    },
+    {
+      "id": "b8997931-6018-4410-b304-b9cce71ea968",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "display_order": 2,
+      "player_ids": [
+        "8d740cd7-28a6-4c0e-8a1e-91afec80cf36"
+      ],
+      "display_name": "Verda Akpınarlı"
+    },
+    {
+      "id": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "display_order": 3,
+      "player_ids": [
+        "6e5b4337-6195-4c4f-b266-676da7401d15"
+      ],
+      "display_name": "Evrim Özcan"
+    },
+    {
+      "id": "f2d6600e-a9ec-452d-8297-0c973d09de18",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "display_order": 4,
+      "player_ids": [
+        "e7711968-5175-4216-a2e6-fd968b47cf90"
+      ],
+      "display_name": "Zeynep Kürşat"
+    },
+    {
+      "id": "ad1a9261-f00f-49f7-9229-ac5881923660",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "display_order": 1,
+      "player_ids": [
+        "74a7726e-d123-4f62-9e9f-a193cf64c91d"
+      ],
+      "display_name": "Elif Bora"
+    },
+    {
+      "id": "af2dd479-0d69-4d96-864a-8cce1383b54c",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "display_order": 2,
+      "player_ids": [
+        "125aef1f-45dd-4969-ae7e-1c28d8d32f55"
+      ],
+      "display_name": "Günnur Algın"
+    },
+    {
+      "id": "e12b2581-15c5-422b-ace3-86c76d0d27e7",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "display_order": 3,
+      "player_ids": [
+        "c2918640-c3d2-4515-a8ca-188e6a0b22ac"
+      ],
+      "display_name": "Naz Lale"
+    },
+    {
+      "id": "59d6f358-39d9-4d51-aa3f-a96051b2ac06",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "display_order": 4,
+      "player_ids": [
+        "fcc1a9fc-1cc4-4e59-96ce-cc9b9e9b9aa1"
+      ],
+      "display_name": "Zeliha Aysan"
+    },
+    {
+      "id": "f33133d5-e072-433b-a95d-87b76a5461b7",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "display_order": 1,
+      "player_ids": [
+        "8b6a9ba3-57d2-49e7-91f2-b61e30289643"
+      ],
+      "display_name": "Çağla Bozkurt"
+    },
+    {
+      "id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "display_order": 2,
+      "player_ids": [
+        "b56cc154-8a41-47f8-ab13-347e3d26d4eb"
+      ],
+      "display_name": "Ecem Güzelhisar"
+    },
+    {
+      "id": "ac827316-34b2-4773-b8a8-a06e2b8c154e",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "display_order": 3,
+      "player_ids": [
+        "108ca71b-048c-4ac4-8bfe-44cc3c72e0b8"
+      ],
+      "display_name": "Elif Ay"
+    },
+    {
+      "id": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "display_order": 4,
+      "player_ids": [
+        "fb5d663e-b407-4be5-af22-900b3fb0a7ed"
+      ],
+      "display_name": "Gizem Topuz"
+    },
+    {
+      "id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "display_order": 5,
+      "player_ids": [
+        "55211ee9-e753-42ee-9006-5d9be546210d"
+      ],
+      "display_name": "Merve Timuçin"
+    },
+    {
+      "id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "display_order": 6,
+      "player_ids": [
+        "cae2daf7-d1b6-4dd9-9aa9-d21d92972bd0"
+      ],
+      "display_name": "Semra Yumlu"
+    },
+    {
+      "id": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "display_order": 1,
+      "player_ids": [
+        "4f9b9ddc-b63c-49be-b8a7-24d46f028a68"
+      ],
+      "display_name": "Hüseyin Kahraman"
+    },
+    {
+      "id": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "display_order": 2,
+      "player_ids": [
+        "e7da50a8-4db2-4640-9874-8fdfc4a8c741"
+      ],
+      "display_name": "Özcan Günay"
+    },
+    {
+      "id": "b8be3fa5-938c-4c37-a2ad-e123442c4482",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "display_order": 3,
+      "player_ids": [
+        "f5a91220-ab61-42bd-87d5-6f17f7c97848"
+      ],
+      "display_name": "Serhat Gürsan"
+    },
+    {
+      "id": "87743e07-fabb-48cf-b105-5fd5d6edee15",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "display_order": 4,
+      "player_ids": [
+        "4777abd8-fb9c-4535-8805-279442716e85"
+      ],
+      "display_name": "Yunus Emre Yerekapan"
+    },
+    {
+      "id": "7865f909-5b50-4372-a6c9-b54f2b8c3592",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "display_order": 1,
+      "player_ids": [
+        "bea2680c-080f-4006-a756-0f20a2ec9bd9"
+      ],
+      "display_name": "Bener Bozkurt"
+    },
+    {
+      "id": "7410c898-e312-4b7b-a6e8-80fa45a8f9cd",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "display_order": 2,
+      "player_ids": [
+        "a25fa027-8833-4156-958c-189c50ffa2b2"
+      ],
+      "display_name": "Emre Karaaslan"
+    },
+    {
+      "id": "2d93c306-3d77-4215-8bf7-42c552a9d268",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "display_order": 3,
+      "player_ids": [
+        "90a788df-6ab5-485b-83ed-42f0f0774fa4"
+      ],
+      "display_name": "İlker Doğaç"
+    },
+    {
+      "id": "03bca105-2682-4948-abae-3f2984d96e45",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "display_order": 4,
+      "player_ids": [
+        "39a16a52-40c3-40ae-9b7a-c74aa84b2782"
+      ],
+      "display_name": "Mehmet Yiğit"
+    },
+    {
+      "id": "ed16350e-984c-4894-8844-31c308e5168d",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "display_order": 1,
+      "player_ids": [
+        "92d15d93-6d96-4d16-8699-998284d575d1"
+      ],
+      "display_name": "Cengiz Gültekin"
+    },
+    {
+      "id": "81988aca-bad6-4348-bb70-f3fa8db1fd39",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "display_order": 2,
+      "player_ids": [
+        "938b1f87-8c3f-4aae-b3d1-d1d1038cb20c"
+      ],
+      "display_name": "Serdar Gürge"
+    },
+    {
+      "id": "dadd8fe0-db3b-432f-931c-4dd680067c39",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "display_order": 3,
+      "player_ids": [
+        "14d17308-a0fc-49d8-9efd-0e4516a65056"
+      ],
+      "display_name": "Tuğberk Sepetci"
+    },
+    {
+      "id": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "display_order": 4,
+      "player_ids": [
+        "7d0ea20a-fc83-4463-acf3-f9907c265274"
+      ],
+      "display_name": "Utku Ataman"
+    },
+    {
+      "id": "bbafc842-e836-4e94-b71f-29f497729723",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "display_order": 1,
+      "player_ids": [
+        "08cf72c7-cdde-4b92-9f35-9f8e93f9fa15"
+      ],
+      "display_name": "Burcu Yalabık"
+    },
+    {
+      "id": "b189cc40-c809-47be-b49a-46124cfc3bd2",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "display_order": 2,
+      "player_ids": [
+        "e59666bc-8ef0-4824-baf8-535cdeed2df2"
+      ],
+      "display_name": "Büşra Kaveloğlu"
+    },
+    {
+      "id": "d7727746-1a8f-4f3c-83af-8b770d20fe85",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "display_order": 3,
+      "player_ids": [
+        "ef7a03e2-1b7e-4f79-b603-70c044c99665"
+      ],
+      "display_name": "Esin Gülpınar"
+    },
+    {
+      "id": "d4d61956-09d5-4336-84e9-de71bf5de2f2",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "display_order": 4,
+      "player_ids": [
+        "ae6585b1-69a6-44ec-b4ee-892093ff39d1"
+      ],
+      "display_name": "Özge Dönmez"
+    },
+    {
+      "id": "08041a5a-9294-4ead-bf7a-2d95591cfda0",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "display_order": 1,
+      "player_ids": [
+        "21cefebd-ff96-4434-b1b7-f97c79e02a0f"
+      ],
+      "display_name": "İrem Akkuş"
+    },
+    {
+      "id": "e1ca44a8-a017-4b6d-be53-936162d907a1",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "display_order": 2,
+      "player_ids": [
+        "765a9a86-b765-4712-be78-784c1ce3baf7"
+      ],
+      "display_name": "Gülfem Yavuz"
+    },
+    {
+      "id": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "display_order": 3,
+      "player_ids": [
+        "3afff8c8-bbb1-499f-8b9d-daca5e065eac"
+      ],
+      "display_name": "Habibe Yağcı"
+    },
+    {
+      "id": "4e1d7770-00d3-4d86-af27-3a4fd56eaf2c",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "display_order": 4,
+      "player_ids": [
+        "a36c9431-04f7-4341-91aa-4c566b33b522"
+      ],
+      "display_name": "Münevver Oktay"
+    },
+    {
+      "id": "6cc0f72c-9dd5-45d6-901c-dfbff5d8b229",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "display_order": 1,
+      "player_ids": [
+        "86c3bf0b-9f21-454c-b037-2ed3f107df3e",
+        "58401d4e-3ce5-49dc-b2b7-756dcc7e0404"
+      ],
+      "display_name": "Kemal Yardımcı / Tayfun Bulut"
+    },
+    {
+      "id": "1af0e2cf-6f2b-43b2-9355-78bd15291c12",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "display_order": 2,
+      "player_ids": [
+        "8b767241-024b-47ef-8911-72f5babd335e",
+        "8c156aef-7ac1-4776-9db7-69a4576d3ce3"
+      ],
+      "display_name": "Ali Koray Güzel / Aydoğan Aysan"
+    },
+    {
+      "id": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "display_order": 3,
+      "player_ids": [
+        "828f4656-6950-413b-ab4b-1bdb0e532e08",
+        "0623611c-d66e-40da-8767-ee2f3c989389"
+      ],
+      "display_name": "Serkan İrden / Ahmet Ok"
+    },
+    {
+      "id": "e0f106ff-042a-4505-a18d-e7f04a3521fa",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "display_order": 4,
+      "player_ids": [
+        "b234d11f-1823-4675-968e-7af8a63231ea",
+        "1f945349-b2fe-4c2f-8f65-31780f03f2ba"
+      ],
+      "display_name": "Turgay Urgancı / Tuncer Urgancı"
+    },
+    {
+      "id": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "display_order": 1,
+      "player_ids": [
+        "ccf88c77-d6f3-4bba-855f-f9d75bd6dfd9",
+        "5aaaaf46-9689-4476-9537-63acd6890faf"
+      ],
+      "display_name": "Gençay Üstünel / İbrahim Çeyrek"
+    },
+    {
+      "id": "c536a374-32dd-4a28-9677-96ac722e26ab",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "display_order": 2,
+      "player_ids": [
+        "392a2e6f-a34a-4b67-9984-3e4f39d4d027",
+        "f08048cb-32db-4e93-8e45-ee5c84ab6582"
+      ],
+      "display_name": "İnan Özbakır / Ümit Ünal"
+    },
+    {
+      "id": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "display_order": 3,
+      "player_ids": [
+        "dd78abaf-1720-4ab9-8029-0808747250f0",
+        "547d5e02-404f-4711-829d-61d692e4079f"
+      ],
+      "display_name": "Kemal Hür / İlyas Yılmaz"
+    },
+    {
+      "id": "4bca8beb-bd11-4521-b13d-317cf303ed56",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "display_order": 4,
+      "player_ids": [
+        "e7da50a8-4db2-4640-9874-8fdfc4a8c741",
+        "9c29c0c8-bd4b-4b8c-a2b7-e1aac86bf041"
+      ],
+      "display_name": "Özcan Günay / Tuncer Akgün"
+    },
+    {
+      "id": "94a68b5e-aee3-421b-99b7-7c19a5f12bb8",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "display_order": 1,
+      "player_ids": [
+        "bea2680c-080f-4006-a756-0f20a2ec9bd9",
+        "c1389fb0-a1cc-49fc-9660-e38b9f4eccfd"
+      ],
+      "display_name": "Bener Bozkurt / Baru Harsa"
+    },
+    {
+      "id": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "display_order": 2,
+      "player_ids": [
+        "6a8225bc-606b-45ba-8ae1-f1fb7b2e694b",
+        "7b4ad8ce-ef53-464e-bff5-0fb31a1bf97f"
+      ],
+      "display_name": "Cenk Cömert / Haluk Sağun"
+    },
+    {
+      "id": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "display_order": 3,
+      "player_ids": [
+        "d46b997a-1805-4431-95e9-fcad7d505cf9",
+        "57c24c91-a08f-431d-8c2f-bf86bbc66a4e"
+      ],
+      "display_name": "Mete Albeyoğlu / Ersin Başaran"
+    },
+    {
+      "id": "db734d2f-9186-4a9c-907e-8b6291d52548",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "display_order": 4,
+      "player_ids": [
+        "93acc0ca-05e6-49cf-b05a-8f2b7d4033c8",
+        "39a16a52-40c3-40ae-9b7a-c74aa84b2782"
+      ],
+      "display_name": "Yavuz Özlen / Mehmet Yiğit"
+    },
+    {
+      "id": "d19b45ec-5bd5-4d38-bcdb-14516c1f2ca6",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "display_order": 1,
+      "player_ids": [
+        "8b6a9ba3-57d2-49e7-91f2-b61e30289643",
+        "bea2680c-080f-4006-a756-0f20a2ec9bd9"
+      ],
+      "display_name": "Çağla Bozkurt / Bener Bozkurt"
+    },
+    {
+      "id": "8304b9b3-3067-45d1-ad54-b07ffd994084",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "display_order": 2,
+      "player_ids": [
+        "c1389fb0-a1cc-49fc-9660-e38b9f4eccfd",
+        "d315f8eb-ad6c-4bdc-bc78-1e493bf505bc"
+      ],
+      "display_name": "Baru Harsa / Işın Reisoğlu"
+    },
+    {
+      "id": "a418b1da-d666-40a6-8d2b-b02402925a2f",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "display_order": 3,
+      "player_ids": [
+        "b56cc154-8a41-47f8-ab13-347e3d26d4eb",
+        "e7da50a8-4db2-4640-9874-8fdfc4a8c741"
+      ],
+      "display_name": "Ecem Güzelhisar / Özcan Günay"
+    },
+    {
+      "id": "f4f9cc0c-363a-4091-9da9-b4251595653b",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "display_order": 4,
+      "player_ids": [
+        "7b4ad8ce-ef53-464e-bff5-0fb31a1bf97f",
+        "fb5d663e-b407-4be5-af22-900b3fb0a7ed"
+      ],
+      "display_name": "Haluk Sağun / Gizem Topuz"
+    },
+    {
+      "id": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "display_order": 1,
+      "player_ids": [
+        "0623611c-d66e-40da-8767-ee2f3c989389",
+        "c2918640-c3d2-4515-a8ca-188e6a0b22ac"
+      ],
+      "display_name": "Ahmet Ok / Naz Lale"
+    },
+    {
+      "id": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "display_order": 2,
+      "player_ids": [
+        "74a7726e-d123-4f62-9e9f-a193cf64c91d",
+        "828f4656-6950-413b-ab4b-1bdb0e532e08"
+      ],
+      "display_name": "Elif Bora / Serkan İrden"
+    },
+    {
+      "id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "display_order": 3,
+      "player_ids": [
+        "6b8c9e98-4cad-4c60-b1bb-cb2aa511c047",
+        "86c3bf0b-9f21-454c-b037-2ed3f107df3e"
+      ],
+      "display_name": "Esen Atay / Kemal Yardımcı"
+    },
+    {
+      "id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "display_order": 4,
+      "player_ids": [
+        "6e5b4337-6195-4c4f-b266-676da7401d15",
+        "ccf88c77-d6f3-4bba-855f-f9d75bd6dfd9"
+      ],
+      "display_name": "Evrim Özcan / Gençay Üstünel"
+    },
+    {
+      "id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "display_order": 5,
+      "player_ids": [
+        "392a2e6f-a34a-4b67-9984-3e4f39d4d027",
+        "e7711968-5175-4216-a2e6-fd968b47cf90"
+      ],
+      "display_name": "İnan Özbakır / Zeynep Kürşat"
+    },
+    {
+      "id": "4ae08e8b-71b8-4313-97b1-b27d4fbed01f",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "display_order": 6,
+      "player_ids": [
+        "fcc1a9fc-1cc4-4e59-96ce-cc9b9e9b9aa1",
+        "8c156aef-7ac1-4776-9db7-69a4576d3ce3"
+      ],
+      "display_name": "Zeliha Aysan / Aydoğan Aysan"
+    },
+    {
+      "id": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "display_order": 1,
+      "player_ids": [
+        "6e5b4337-6195-4c4f-b266-676da7401d15",
+        "dd84c5a7-bd7d-434b-a257-4e01eb18ae75"
+      ],
+      "display_name": "Evrim Özcan / Fatma Müsait"
+    },
+    {
+      "id": "859874a6-360a-489f-830f-bf1676f78eeb",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "display_order": 2,
+      "player_ids": [
+        "125aef1f-45dd-4969-ae7e-1c28d8d32f55",
+        "27c8a257-dfc1-4a09-9eb2-a3dc9340bafd"
+      ],
+      "display_name": "Günnur Algın / Ekin Akgün"
+    },
+    {
+      "id": "aa656e05-feca-43f0-a319-5a6333c7816e",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "display_order": 3,
+      "player_ids": [
+        "b9643b13-3e9b-4d7a-b1ec-a4f6e6eeae2a",
+        "6d80cf8e-3b2c-4f10-b67d-bab5d4ce1734"
+      ],
+      "display_name": "Mehtap / Nuray Baskak"
+    },
+    {
+      "id": "caf4bebc-00ee-4558-9ee5-848dbaeae0d8",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "display_order": 4,
+      "player_ids": [
+        "fcc1a9fc-1cc4-4e59-96ce-cc9b9e9b9aa1",
+        "e7711968-5175-4216-a2e6-fd968b47cf90"
+      ],
+      "display_name": "Zeliha Aysan / Zeynep Kürşat"
+    }
+  ],
+  "matches": [
+    {
+      "id": "43a80550-ab52-4125-90da-2bc2f87cb925",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+      "player1_entry_id": "1534e837-2bad-417a-9ddb-6791802d130b",
+      "player2_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e"
+    },
+    {
+      "id": "0a9a3a5a-5af3-4d29-9c79-9de27d802b0c",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 9,
+          "player2_score": 11,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+      "player1_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player2_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab"
+    },
+    {
+      "id": "d66d26c6-940a-47a1-abcb-fc11799fcf39",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "ed16350e-984c-4894-8844-31c308e5168d",
+      "player1_entry_id": "81988aca-bad6-4348-bb70-f3fa8db1fd39",
+      "player2_entry_id": "ed16350e-984c-4894-8844-31c308e5168d"
+    },
+    {
+      "id": "091b9d0c-87ce-4d84-95c6-9d0ddfa355a4",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 7,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "03bca105-2682-4948-abae-3f2984d96e45",
+      "player1_entry_id": "03bca105-2682-4948-abae-3f2984d96e45",
+      "player2_entry_id": "7865f909-5b50-4372-a6c9-b54f2b8c3592"
+    },
+    {
+      "id": "a37dc8f4-494a-4e34-a12a-379c2339314c",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853",
+      "player1_entry_id": "81988aca-bad6-4348-bb70-f3fa8db1fd39",
+      "player2_entry_id": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853"
+    },
+    {
+      "id": "8eb5047e-0614-425f-aabd-48bf36c6fcb4",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+      "player1_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+      "player2_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab"
+    },
+    {
+      "id": "e8379ca9-2f0d-4689-bc4f-a17a45cdbf5d",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player1_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player2_entry_id": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6"
+    },
+    {
+      "id": "d18e3226-b8eb-4231-82bf-23dd5232395d",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+      "player1_entry_id": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+      "player2_entry_id": "b8be3fa5-938c-4c37-a2ad-e123442c4482"
+    },
+    {
+      "id": "ae531654-d769-4be0-b7dc-2affb95af3a9",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+      "player1_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+      "player2_entry_id": "59fecafc-ced7-4fd0-994f-5986b2103226"
+    },
+    {
+      "id": "87b6b8c8-8c99-4cdd-be2f-3d28db062954",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 4,
+          "player2_tiebreak": 7
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 6,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "ed16350e-984c-4894-8844-31c308e5168d",
+      "player1_entry_id": "dadd8fe0-db3b-432f-931c-4dd680067c39",
+      "player2_entry_id": "ed16350e-984c-4894-8844-31c308e5168d"
+    },
+    {
+      "id": "0c7de7a6-d7e7-4f15-a2d9-17d6d11646c3",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+      "player1_entry_id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf",
+      "player2_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab"
+    },
+    {
+      "id": "40df5dd0-09bc-47de-8c8c-346725464052",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "canceled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "ac827316-34b2-4773-b8a8-a06e2b8c154e",
+      "player2_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab"
+    },
+    {
+      "id": "6c69e5fe-d831-47a5-8c75-74d7d8fbd41b",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 7,
+          "player2_score": 6,
+          "player1_tiebreak": 7,
+          "player2_tiebreak": 3
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 11,
+          "player2_score": 9,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+      "player1_entry_id": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+      "player2_entry_id": "522dfba7-8d76-4d1b-b912-f808fd20f026"
+    },
+    {
+      "id": "669df418-7e06-490d-a4d9-8c2dbad383dc",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 7,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 9,
+          "player2_score": 11,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b8be3fa5-938c-4c37-a2ad-e123442c4482",
+      "player1_entry_id": "87743e07-fabb-48cf-b105-5fd5d6edee15",
+      "player2_entry_id": "b8be3fa5-938c-4c37-a2ad-e123442c4482"
+    },
+    {
+      "id": "4001f6bb-a7f0-4c16-b1c4-b779650d3a64",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+      "player1_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+      "player2_entry_id": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3"
+    },
+    {
+      "id": "574be02f-f4e0-46b2-adc2-1b3367a56dba",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b189cc40-c809-47be-b49a-46124cfc3bd2",
+      "player1_entry_id": "d4d61956-09d5-4336-84e9-de71bf5de2f2",
+      "player2_entry_id": "b189cc40-c809-47be-b49a-46124cfc3bd2"
+    },
+    {
+      "id": "79de56de-044e-40f8-a6c4-644c160424b7",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "195955f5-5116-48e5-94b0-83ed55874a61",
+      "player1_entry_id": "195955f5-5116-48e5-94b0-83ed55874a61",
+      "player2_entry_id": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3"
+    },
+    {
+      "id": "e8014625-2097-43ca-99f3-a90a97e19b73",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+      "player1_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+      "player2_entry_id": "78a2ac68-5631-47ad-a5b2-60450a61d410"
+    },
+    {
+      "id": "7e3ad766-4b52-4b43-9c77-3580ade14b0a",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "canceled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player2_entry_id": "ac827316-34b2-4773-b8a8-a06e2b8c154e"
+    },
+    {
+      "id": "7e53d536-d613-488c-bba4-3b34c7d675a8",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 2,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "e0f106ff-042a-4505-a18d-e7f04a3521fa",
+      "player1_entry_id": "1af0e2cf-6f2b-43b2-9355-78bd15291c12",
+      "player2_entry_id": "e0f106ff-042a-4505-a18d-e7f04a3521fa"
+    },
+    {
+      "id": "3c8ecf5b-37a6-4d46-adf2-7abc1bd18fb5",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "08041a5a-9294-4ead-bf7a-2d95591cfda0",
+      "player1_entry_id": "08041a5a-9294-4ead-bf7a-2d95591cfda0",
+      "player2_entry_id": "e1ca44a8-a017-4b6d-be53-936162d907a1"
+    },
+    {
+      "id": "8254d7cc-7a18-424d-8272-ccb3ce9e4b9f",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+      "player1_entry_id": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+      "player2_entry_id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff"
+    },
+    {
+      "id": "fcd52a55-f0c9-4993-b62d-52bd595ed4fc",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+      "player1_entry_id": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+      "player2_entry_id": "6cc0f72c-9dd5-45d6-901c-dfbff5d8b229"
+    },
+    {
+      "id": "874f7e70-6b10-4185-8990-a1bc991c6e0a",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "aa656e05-feca-43f0-a319-5a6333c7816e",
+      "player1_entry_id": "caf4bebc-00ee-4558-9ee5-848dbaeae0d8",
+      "player2_entry_id": "aa656e05-feca-43f0-a319-5a6333c7816e"
+    },
+    {
+      "id": "ea180e1f-6db4-4203-afd9-bad15893bf02",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 8,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "08041a5a-9294-4ead-bf7a-2d95591cfda0",
+      "player1_entry_id": "4e1d7770-00d3-4d86-af27-3a4fd56eaf2c",
+      "player2_entry_id": "08041a5a-9294-4ead-bf7a-2d95591cfda0"
+    },
+    {
+      "id": "ff713c09-6c03-40ad-ac29-12163c8e8059",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 4,
+          "player2_tiebreak": 7
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 13,
+          "player2_score": 15,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "59d6f358-39d9-4d51-aa3f-a96051b2ac06",
+      "player1_entry_id": "ad1a9261-f00f-49f7-9229-ac5881923660",
+      "player2_entry_id": "59d6f358-39d9-4d51-aa3f-a96051b2ac06"
+    },
+    {
+      "id": "1df69cff-141f-4363-a9bc-4a36783ef572",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player1_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player2_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976"
+    },
+    {
+      "id": "67232a4a-18fd-4970-9a4e-a53bbf127eb5",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 1,
+          "player2_tiebreak": 7
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "263538da-f038-498b-b3ec-d8576419de0a",
+      "player1_entry_id": "90bb9365-0b7e-4711-8172-95e25a5dc94a",
+      "player2_entry_id": "263538da-f038-498b-b3ec-d8576419de0a"
+    },
+    {
+      "id": "759ab075-875b-44fd-ad8c-38fb920891e6",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "59d6f358-39d9-4d51-aa3f-a96051b2ac06",
+      "player1_entry_id": "e12b2581-15c5-422b-ace3-86c76d0d27e7",
+      "player2_entry_id": "59d6f358-39d9-4d51-aa3f-a96051b2ac06"
+    },
+    {
+      "id": "57faf3c5-5751-49b2-961a-11a28ce1bc21",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "59fecafc-ced7-4fd0-994f-5986b2103226",
+      "player1_entry_id": "b496aa38-e80b-4763-93c6-43eefd38e58d",
+      "player2_entry_id": "59fecafc-ced7-4fd0-994f-5986b2103226"
+    },
+    {
+      "id": "ea01334a-8f7b-4c84-9c9c-9c6b7630c23b",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 8,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "4e1d7770-00d3-4d86-af27-3a4fd56eaf2c",
+      "player1_entry_id": "4e1d7770-00d3-4d86-af27-3a4fd56eaf2c",
+      "player2_entry_id": "e1ca44a8-a017-4b6d-be53-936162d907a1"
+    },
+    {
+      "id": "7df19155-08e9-4bd8-9609-797cb1aa8a3b",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+      "player1_entry_id": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+      "player2_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1"
+    },
+    {
+      "id": "9e43a686-7d2f-4762-81ea-f6c602769fb5",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": true,
+      "winner_entry_id": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+      "player1_entry_id": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+      "player2_entry_id": "263538da-f038-498b-b3ec-d8576419de0a"
+    },
+    {
+      "id": "096e3451-bc61-4b25-a2ec-7b2f0d832645",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "canceled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "f4f9cc0c-363a-4091-9da9-b4251595653b",
+      "player2_entry_id": "a418b1da-d666-40a6-8d2b-b02402925a2f"
+    },
+    {
+      "id": "3502f315-1b1c-45e7-9c8e-3e1d287524ec",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+      "player1_entry_id": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+      "player2_entry_id": "87743e07-fabb-48cf-b105-5fd5d6edee15"
+    },
+    {
+      "id": "842183bb-8152-48b8-9d2a-b646ba03f29f",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "scheduled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "f4f9cc0c-363a-4091-9da9-b4251595653b",
+      "player2_entry_id": "a418b1da-d666-40a6-8d2b-b02402925a2f"
+    },
+    {
+      "id": "c018fc6d-8ff8-4db3-8349-7ec259de380f",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+      "player1_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+      "player2_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602"
+    },
+    {
+      "id": "9802deb7-3940-46e8-85be-076f235758d3",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "59fecafc-ced7-4fd0-994f-5986b2103226",
+      "player1_entry_id": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+      "player2_entry_id": "59fecafc-ced7-4fd0-994f-5986b2103226"
+    },
+    {
+      "id": "86ea23ac-e163-4b94-a2e8-95ff405afb6a",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+      "player1_entry_id": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+      "player2_entry_id": "979f494b-f149-429b-98d7-35dbdbcd13ff"
+    },
+    {
+      "id": "e528d7ea-420a-472d-9313-352875717de1",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player1_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player2_entry_id": "979f494b-f149-429b-98d7-35dbdbcd13ff"
+    },
+    {
+      "id": "cdfdbd0b-c866-4bb9-8d7e-f51793d3a90f",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "03bca105-2682-4948-abae-3f2984d96e45",
+      "player1_entry_id": "03bca105-2682-4948-abae-3f2984d96e45",
+      "player2_entry_id": "2d93c306-3d77-4215-8bf7-42c552a9d268"
+    },
+    {
+      "id": "02e82fdf-2439-4c86-a6b9-27ce11b10e7e",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+      "player1_entry_id": "f33133d5-e072-433b-a95d-87b76a5461b7",
+      "player2_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976"
+    },
+    {
+      "id": "a178f852-5391-4647-b495-f5187d0da894",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 7,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 8,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "af2dd479-0d69-4d96-864a-8cce1383b54c",
+      "player1_entry_id": "ad1a9261-f00f-49f7-9229-ac5881923660",
+      "player2_entry_id": "af2dd479-0d69-4d96-864a-8cce1383b54c"
+    },
+    {
+      "id": "c67c104b-48db-4bbe-b902-1782b72b4e6b",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3",
+      "player1_entry_id": "d17bada8-db5d-4b86-a2f6-7440e16af944",
+      "player2_entry_id": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3"
+    },
+    {
+      "id": "d4b60c1d-8aee-403e-abe6-92c3a2ddea43",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+      "player1_entry_id": "ac827316-34b2-4773-b8a8-a06e2b8c154e",
+      "player2_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab"
+    },
+    {
+      "id": "ac372d35-e193-4300-ad92-c75d4030d2d2",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 8,
+          "player2_tiebreak": 10
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 5,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+      "player1_entry_id": "195955f5-5116-48e5-94b0-83ed55874a61",
+      "player2_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6"
+    },
+    {
+      "id": "424a569f-773b-4f5c-b273-009545d32ab1",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b189cc40-c809-47be-b49a-46124cfc3bd2",
+      "player1_entry_id": "bbafc842-e836-4e94-b71f-29f497729723",
+      "player2_entry_id": "b189cc40-c809-47be-b49a-46124cfc3bd2"
+    },
+    {
+      "id": "95695f7a-a979-4312-a015-f837f9ecd37c",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff",
+      "player1_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+      "player2_entry_id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff"
+    },
+    {
+      "id": "7d9838d1-3eb6-4870-9999-2e2592245438",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "d7727746-1a8f-4f3c-83af-8b770d20fe85",
+      "player1_entry_id": "bbafc842-e836-4e94-b71f-29f497729723",
+      "player2_entry_id": "d7727746-1a8f-4f3c-83af-8b770d20fe85"
+    },
+    {
+      "id": "84c13296-df67-4b12-8908-a6591d376621",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "bbafc842-e836-4e94-b71f-29f497729723",
+      "player1_entry_id": "bbafc842-e836-4e94-b71f-29f497729723",
+      "player2_entry_id": "d4d61956-09d5-4336-84e9-de71bf5de2f2"
+    },
+    {
+      "id": "3cc9986a-ed25-4109-9054-4731c92bba21",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+      "player1_entry_id": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+      "player2_entry_id": "db734d2f-9186-4a9c-907e-8b6291d52548"
+    },
+    {
+      "id": "ad02553d-ded2-463b-aad2-95d81ce139ca",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+      "player1_entry_id": "94a68b5e-aee3-421b-99b7-7c19a5f12bb8",
+      "player2_entry_id": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee"
+    },
+    {
+      "id": "3dac834d-82b0-4dcb-8cad-16682b30e703",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 7,
+          "player2_score": 6,
+          "player1_tiebreak": 7,
+          "player2_tiebreak": 2
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+      "player1_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+      "player2_entry_id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf"
+    },
+    {
+      "id": "ff9603b0-eee2-4989-9130-c3b6491a07bd",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+      "player1_entry_id": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+      "player2_entry_id": "491eb120-73d7-4c51-8a00-4aba1b56136d"
+    },
+    {
+      "id": "e1c9f1e4-de90-4ef3-92a3-031e44aee9a2",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+      "player1_entry_id": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+      "player2_entry_id": "482aeb2f-72b8-4331-a54c-521c5ec2e4ee"
+    },
+    {
+      "id": "04fa8014-7115-44e1-8e2c-ce41c970286d",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "e0f106ff-042a-4505-a18d-e7f04a3521fa",
+      "player1_entry_id": "6cc0f72c-9dd5-45d6-901c-dfbff5d8b229",
+      "player2_entry_id": "e0f106ff-042a-4505-a18d-e7f04a3521fa"
+    },
+    {
+      "id": "9d63b3e8-f5cd-4beb-a6f4-398ca4fba0b8",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+      "player1_entry_id": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+      "player2_entry_id": "4bca8beb-bd11-4521-b13d-317cf303ed56"
+    },
+    {
+      "id": "4ae0fac3-5875-40f0-b908-30aa3c9f491d",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+      "player1_entry_id": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+      "player2_entry_id": "859874a6-360a-489f-830f-bf1676f78eeb"
+    },
+    {
+      "id": "097180e0-dd7a-45ed-a8b9-3675ee8342c6",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "ad1a9261-f00f-49f7-9229-ac5881923660",
+      "player1_entry_id": "e12b2581-15c5-422b-ace3-86c76d0d27e7",
+      "player2_entry_id": "ad1a9261-f00f-49f7-9229-ac5881923660"
+    },
+    {
+      "id": "a5866241-c02a-4cb8-bf05-f5c94dc61ed7",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": true,
+      "winner_entry_id": "482aeb2f-72b8-4331-a54c-521c5ec2e4ee",
+      "player1_entry_id": "b8997931-6018-4410-b304-b9cce71ea968",
+      "player2_entry_id": "482aeb2f-72b8-4331-a54c-521c5ec2e4ee"
+    },
+    {
+      "id": "48ba893a-0929-4496-b57d-0ba044219383",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "af2dd479-0d69-4d96-864a-8cce1383b54c",
+      "player1_entry_id": "e12b2581-15c5-422b-ace3-86c76d0d27e7",
+      "player2_entry_id": "af2dd479-0d69-4d96-864a-8cce1383b54c"
+    },
+    {
+      "id": "4c3f2dad-e3ef-4492-ac5d-cf5715d0e9cc",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+      "player1_entry_id": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+      "player2_entry_id": "4e1d7770-00d3-4d86-af27-3a4fd56eaf2c"
+    },
+    {
+      "id": "80c3626c-7e85-4101-a2e5-dc0412532578",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 2,
+          "player2_tiebreak": 7
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 7,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3",
+      "player1_entry_id": "29f4c3c1-d162-4fc8-95af-73e27fb607d0",
+      "player2_entry_id": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3"
+    },
+    {
+      "id": "c8fa3613-8464-4a90-8756-ee3d67d7ef6f",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+      "player1_entry_id": "b8997931-6018-4410-b304-b9cce71ea968",
+      "player2_entry_id": "84f44720-a2fe-4f55-9a78-16e0bd592fd4"
+    },
+    {
+      "id": "490144e5-ba48-4971-8f21-7a4ce7204767",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player1_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player2_entry_id": "94d5aed2-62fa-464f-876e-92a4b56ae0ae"
+    },
+    {
+      "id": "65f2692d-a810-403a-89fe-ddfaa6f8c002",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+      "player1_entry_id": "ac827316-34b2-4773-b8a8-a06e2b8c154e",
+      "player2_entry_id": "fa37efb0-43ab-4a38-89ce-924d588b3976"
+    },
+    {
+      "id": "aee73c43-441d-4e44-84f4-1e6a5449a19d",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+      "player1_entry_id": "caf4bebc-00ee-4558-9ee5-848dbaeae0d8",
+      "player2_entry_id": "567b93e1-f562-4749-ad6e-384e68cf5e04"
+    },
+    {
+      "id": "6cebc0c0-c218-443e-9b50-2717602b16b2",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+      "player1_entry_id": "29f4c3c1-d162-4fc8-95af-73e27fb607d0",
+      "player2_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6"
+    },
+    {
+      "id": "5ecbe72e-5eee-4fae-baf8-5d4e9ea3a2aa",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 7,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "db734d2f-9186-4a9c-907e-8b6291d52548",
+      "player1_entry_id": "94a68b5e-aee3-421b-99b7-7c19a5f12bb8",
+      "player2_entry_id": "db734d2f-9186-4a9c-907e-8b6291d52548"
+    },
+    {
+      "id": "ee025027-85d1-438c-b333-abab1b4d11c9",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 4,
+          "player2_tiebreak": 7
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+      "player1_entry_id": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+      "player2_entry_id": "b496aa38-e80b-4763-93c6-43eefd38e58d"
+    },
+    {
+      "id": "1be9665f-0618-4703-980e-21665f635e56",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 9,
+          "player2_score": 11,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "94a68b5e-aee3-421b-99b7-7c19a5f12bb8",
+      "player1_entry_id": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+      "player2_entry_id": "94a68b5e-aee3-421b-99b7-7c19a5f12bb8"
+    },
+    {
+      "id": "2728e28a-cecb-4005-b51c-de7f040ffbe5",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 6,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+      "player1_entry_id": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+      "player2_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e"
+    },
+    {
+      "id": "90c74585-2cd8-41ac-9ae5-c3e0dfc40430",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "195955f5-5116-48e5-94b0-83ed55874a61",
+      "player1_entry_id": "29f4c3c1-d162-4fc8-95af-73e27fb607d0",
+      "player2_entry_id": "195955f5-5116-48e5-94b0-83ed55874a61"
+    },
+    {
+      "id": "1abd0f6a-6c11-4c4f-9de3-0c3b395fb654",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "7410c898-e312-4b7b-a6e8-80fa45a8f9cd",
+      "player1_entry_id": "7865f909-5b50-4372-a6c9-b54f2b8c3592",
+      "player2_entry_id": "7410c898-e312-4b7b-a6e8-80fa45a8f9cd"
+    },
+    {
+      "id": "30ad51a8-d142-4195-a588-39b77495fbe5",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "29f4c3c1-d162-4fc8-95af-73e27fb607d0",
+      "player1_entry_id": "29f4c3c1-d162-4fc8-95af-73e27fb607d0",
+      "player2_entry_id": "d17bada8-db5d-4b86-a2f6-7440e16af944"
+    },
+    {
+      "id": "0ad7fb7c-3318-4049-9c70-fe5c2b5588b9",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+      "player1_entry_id": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+      "player2_entry_id": "538f608e-cb24-446f-905e-10a7bed2a2bb"
+    },
+    {
+      "id": "5790ba21-110e-40c4-acf3-1b655a876333",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+      "player1_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+      "player2_entry_id": "979f494b-f149-429b-98d7-35dbdbcd13ff"
+    },
+    {
+      "id": "96d27e5b-30f5-42db-8b47-2eeb0bb87d16",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+      "player1_entry_id": "90bb9365-0b7e-4711-8172-95e25a5dc94a",
+      "player2_entry_id": "3aba5fff-0773-4331-8fa0-b7332d907c90"
+    },
+    {
+      "id": "cf6d06b2-8035-4dfc-ab55-f20972e3e568",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff",
+      "player1_entry_id": "4ae08e8b-71b8-4313-97b1-b27d4fbed01f",
+      "player2_entry_id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff"
+    },
+    {
+      "id": "84e7ca81-2a18-4af6-b830-e124bddb6091",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 7,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+      "player1_entry_id": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+      "player2_entry_id": "e0f106ff-042a-4505-a18d-e7f04a3521fa"
+    },
+    {
+      "id": "1daa4c69-f41c-4326-a8cd-e86475391375",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+      "player1_entry_id": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+      "player2_entry_id": "4bca8beb-bd11-4521-b13d-317cf303ed56"
+    },
+    {
+      "id": "123d06ca-a338-404d-9125-9a1765a5102b",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "aa656e05-feca-43f0-a319-5a6333c7816e",
+      "player1_entry_id": "859874a6-360a-489f-830f-bf1676f78eeb",
+      "player2_entry_id": "aa656e05-feca-43f0-a319-5a6333c7816e"
+    },
+    {
+      "id": "1d500c17-1ce4-4c37-bfc2-ed45f2a35f74",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "94d5aed2-62fa-464f-876e-92a4b56ae0ae",
+      "player1_entry_id": "94d5aed2-62fa-464f-876e-92a4b56ae0ae",
+      "player2_entry_id": "979f494b-f149-429b-98d7-35dbdbcd13ff"
+    },
+    {
+      "id": "21e17bb2-c861-4290-b446-44022c440e9a",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b496aa38-e80b-4763-93c6-43eefd38e58d",
+      "player1_entry_id": "b496aa38-e80b-4763-93c6-43eefd38e58d",
+      "player2_entry_id": "1534e837-2bad-417a-9ddb-6791802d130b"
+    },
+    {
+      "id": "0612e18f-7e5f-46a0-87a7-2e80ebd820db",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 8,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "8304b9b3-3067-45d1-ad54-b07ffd994084",
+      "player1_entry_id": "8304b9b3-3067-45d1-ad54-b07ffd994084",
+      "player2_entry_id": "a418b1da-d666-40a6-8d2b-b02402925a2f"
+    },
+    {
+      "id": "44ac3fff-8f6d-412d-acf5-4b4d938df9d5",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+      "player1_entry_id": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+      "player2_entry_id": "db734d2f-9186-4a9c-907e-8b6291d52548"
+    },
+    {
+      "id": "3131d128-d3ab-4f72-b827-b498ef43c565",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "59fecafc-ced7-4fd0-994f-5986b2103226",
+      "player1_entry_id": "1534e837-2bad-417a-9ddb-6791802d130b",
+      "player2_entry_id": "59fecafc-ced7-4fd0-994f-5986b2103226"
+    },
+    {
+      "id": "a261235a-ec16-44b2-a6bc-04164d8fb1f2",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "81988aca-bad6-4348-bb70-f3fa8db1fd39",
+      "player1_entry_id": "dadd8fe0-db3b-432f-931c-4dd680067c39",
+      "player2_entry_id": "81988aca-bad6-4348-bb70-f3fa8db1fd39"
+    },
+    {
+      "id": "038068f9-9633-45d7-afed-58034c37f839",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "90bb9365-0b7e-4711-8172-95e25a5dc94a",
+      "player1_entry_id": "90bb9365-0b7e-4711-8172-95e25a5dc94a",
+      "player2_entry_id": "538f608e-cb24-446f-905e-10a7bed2a2bb"
+    },
+    {
+      "id": "4474eae6-8127-47cd-b281-56b06d8aba0e",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b189cc40-c809-47be-b49a-46124cfc3bd2",
+      "player1_entry_id": "d7727746-1a8f-4f3c-83af-8b770d20fe85",
+      "player2_entry_id": "b189cc40-c809-47be-b49a-46124cfc3bd2"
+    },
+    {
+      "id": "6728bd6e-2705-4f4b-9180-d01a0decc466",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+      "player1_entry_id": "d17bada8-db5d-4b86-a2f6-7440e16af944",
+      "player2_entry_id": "23efd72c-f5ae-49ef-aea1-70306a28dca6"
+    },
+    {
+      "id": "4fa9bd43-aef3-4af6-9959-811715112640",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+      "player1_entry_id": "4ae08e8b-71b8-4313-97b1-b27d4fbed01f",
+      "player2_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c"
+    },
+    {
+      "id": "a02b7b65-16f3-4b1b-ab80-a85382b1a7be",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+      "player1_entry_id": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+      "player2_entry_id": "08041a5a-9294-4ead-bf7a-2d95591cfda0"
+    },
+    {
+      "id": "cd700499-19a1-48aa-a856-e3cdc1036f5a",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player1_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player2_entry_id": "538f608e-cb24-446f-905e-10a7bed2a2bb"
+    },
+    {
+      "id": "2b03f08a-dba1-43e3-9193-f545b57d8e45",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+      "player1_entry_id": "94d5aed2-62fa-464f-876e-92a4b56ae0ae",
+      "player2_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1"
+    },
+    {
+      "id": "f4189fc6-c172-4d0d-adc2-019901443be4",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 6,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+      "player1_entry_id": "4ae08e8b-71b8-4313-97b1-b27d4fbed01f",
+      "player2_entry_id": "78a2ac68-5631-47ad-a5b2-60450a61d410"
+    },
+    {
+      "id": "0e056aff-aa24-4f96-9fe2-325f1e8b6474",
+      "category_id": "0c88dffb-859d-43b2-9a90-bdf8528bb614",
+      "group_id": "5dc1d706-4226-42b5-ae17-7bff537f2aeb",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+      "player1_entry_id": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+      "player2_entry_id": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee"
+    },
+    {
+      "id": "d9e4c29f-8a92-489e-8028-ad518514f343",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "2d93c306-3d77-4215-8bf7-42c552a9d268",
+      "player1_entry_id": "7410c898-e312-4b7b-a6e8-80fa45a8f9cd",
+      "player2_entry_id": "2d93c306-3d77-4215-8bf7-42c552a9d268"
+    },
+    {
+      "id": "c7f4f78c-ec5c-44f7-87bc-db229c30fb12",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "canceled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "1534e837-2bad-417a-9ddb-6791802d130b",
+      "player2_entry_id": "b496aa38-e80b-4763-93c6-43eefd38e58d"
+    },
+    {
+      "id": "328e0de7-e506-425c-8015-53a588128186",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+      "player1_entry_id": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+      "player2_entry_id": "87743e07-fabb-48cf-b105-5fd5d6edee15"
+    },
+    {
+      "id": "cbe48365-be4d-4762-98d9-2f79d9733259",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+      "player1_entry_id": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+      "player2_entry_id": "f2d6600e-a9ec-452d-8297-0c973d09de18"
+    },
+    {
+      "id": "b98758bf-65be-47eb-bab5-7ff8b9e1bf05",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "f2d6600e-a9ec-452d-8297-0c973d09de18",
+      "player1_entry_id": "b8997931-6018-4410-b304-b9cce71ea968",
+      "player2_entry_id": "f2d6600e-a9ec-452d-8297-0c973d09de18"
+    },
+    {
+      "id": "cb073a22-25bf-42ce-821a-5843314ea68e",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 3,
+          "player2_tiebreak": 7
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player1_entry_id": "ac827316-34b2-4773-b8a8-a06e2b8c154e",
+      "player2_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc"
+    },
+    {
+      "id": "908ed29c-a878-4733-a790-9e7fc2d88983",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+      "player1_entry_id": "f33133d5-e072-433b-a95d-87b76a5461b7",
+      "player2_entry_id": "a543a258-dfe3-4540-a5a0-520f5a5a91ab"
+    },
+    {
+      "id": "8558823d-b143-49ec-97c0-8d5870a86ba9",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+      "player1_entry_id": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+      "player2_entry_id": "c536a374-32dd-4a28-9677-96ac722e26ab"
+    },
+    {
+      "id": "eebf4a64-6ab1-4899-b257-b2eb8db569a9",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player1_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player2_entry_id": "263538da-f038-498b-b3ec-d8576419de0a"
+    },
+    {
+      "id": "d219f72e-e547-4705-bce6-f2f9adc5b22c",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "f4f9cc0c-363a-4091-9da9-b4251595653b",
+      "player1_entry_id": "d19b45ec-5bd5-4d38-bcdb-14516c1f2ca6",
+      "player2_entry_id": "f4f9cc0c-363a-4091-9da9-b4251595653b"
+    },
+    {
+      "id": "5bf7200e-1a1e-45cf-9370-9e9c6ad444f1",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+      "player1_entry_id": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+      "player2_entry_id": "aa656e05-feca-43f0-a319-5a6333c7816e"
+    },
+    {
+      "id": "59f78f9c-5a93-4580-829b-fe6c62bb0635",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "2aae240f-f522-4a6b-9100-6df76a356438",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+      "player1_entry_id": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+      "player2_entry_id": "e1ca44a8-a017-4b6d-be53-936162d907a1"
+    },
+    {
+      "id": "4887de81-2817-40d0-82d5-63c1abc949eb",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "8304b9b3-3067-45d1-ad54-b07ffd994084",
+      "player1_entry_id": "d19b45ec-5bd5-4d38-bcdb-14516c1f2ca6",
+      "player2_entry_id": "8304b9b3-3067-45d1-ad54-b07ffd994084"
+    },
+    {
+      "id": "fd95bdfb-abaf-4676-97b7-4f4e6ba9ca27",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "canceled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player2_entry_id": "979f494b-f149-429b-98d7-35dbdbcd13ff"
+    },
+    {
+      "id": "c2b83163-1710-47fa-8841-34a31151672c",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853",
+      "player1_entry_id": "dadd8fe0-db3b-432f-931c-4dd680067c39",
+      "player2_entry_id": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853"
+    },
+    {
+      "id": "07c639bd-9d32-4df3-ad57-c8e68a9997ec",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "26059479-a3b4-47f2-aa7c-401d7b88662d",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "f2d6600e-a9ec-452d-8297-0c973d09de18",
+      "player1_entry_id": "f2d6600e-a9ec-452d-8297-0c973d09de18",
+      "player2_entry_id": "482aeb2f-72b8-4331-a54c-521c5ec2e4ee"
+    },
+    {
+      "id": "06e20f2a-ceb6-4cce-9b53-224afc838c00",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "263538da-f038-498b-b3ec-d8576419de0a",
+      "player1_entry_id": "263538da-f038-498b-b3ec-d8576419de0a",
+      "player2_entry_id": "538f608e-cb24-446f-905e-10a7bed2a2bb"
+    },
+    {
+      "id": "74d5cbdd-6ef6-4fc9-999d-b1a539815046",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf",
+      "player1_entry_id": "ac827316-34b2-4773-b8a8-a06e2b8c154e",
+      "player2_entry_id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf"
+    },
+    {
+      "id": "6e4b9317-b28c-4c2a-87da-9ff992e9c465",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 8,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+      "player1_entry_id": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+      "player2_entry_id": "3234ea66-a349-4cb3-a8d1-537c535bc6a1"
+    },
+    {
+      "id": "09017cf3-50e1-4ca4-842c-72d7334df092",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player1_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player2_entry_id": "90bb9365-0b7e-4711-8172-95e25a5dc94a"
+    },
+    {
+      "id": "7a6c51b8-ba33-4bf7-83c6-5388d516e9c6",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 5,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "a418b1da-d666-40a6-8d2b-b02402925a2f",
+      "player1_entry_id": "d19b45ec-5bd5-4d38-bcdb-14516c1f2ca6",
+      "player2_entry_id": "a418b1da-d666-40a6-8d2b-b02402925a2f"
+    },
+    {
+      "id": "1e8ca2eb-da60-44a4-aa68-62b002f87021",
+      "category_id": "6f5e9bdf-eabb-41c9-b179-670fe1a11481",
+      "group_id": "7bbb4449-19ef-43b8-8562-6d03b3ddcbb3",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "caf4bebc-00ee-4558-9ee5-848dbaeae0d8",
+      "player1_entry_id": "caf4bebc-00ee-4558-9ee5-848dbaeae0d8",
+      "player2_entry_id": "859874a6-360a-489f-830f-bf1676f78eeb"
+    },
+    {
+      "id": "622c3a2f-cd48-4ddb-a3f2-f23f9baa17bf",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "canceled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "d19b45ec-5bd5-4d38-bcdb-14516c1f2ca6",
+      "player2_entry_id": "8304b9b3-3067-45d1-ad54-b07ffd994084"
+    },
+    {
+      "id": "f28ceac9-b21d-4f96-b93f-f8f9a0a10b6e",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 7,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+      "player1_entry_id": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+      "player2_entry_id": "1af0e2cf-6f2b-43b2-9355-78bd15291c12"
+    },
+    {
+      "id": "23c78bba-4437-4005-8357-06fc3c074e2e",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "03bca105-2682-4948-abae-3f2984d96e45",
+      "player1_entry_id": "03bca105-2682-4948-abae-3f2984d96e45",
+      "player2_entry_id": "7410c898-e312-4b7b-a6e8-80fa45a8f9cd"
+    },
+    {
+      "id": "829e9bcc-3b51-44c1-9a88-41e0e51ec58b",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 0,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+      "player1_entry_id": "4ae08e8b-71b8-4313-97b1-b27d4fbed01f",
+      "player2_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602"
+    },
+    {
+      "id": "5117f625-532a-4c8d-bb0d-9e787c0a9823",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 5,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf",
+      "player1_entry_id": "f33133d5-e072-433b-a95d-87b76a5461b7",
+      "player2_entry_id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf"
+    },
+    {
+      "id": "f51583d1-0d1e-44cd-9123-50f34e050e75",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "e111b835-1391-4331-98d4-fe04f7d7d339",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+      "player1_entry_id": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+      "player2_entry_id": "b8be3fa5-938c-4c37-a2ad-e123442c4482"
+    },
+    {
+      "id": "b5c303e2-5235-4338-8158-f8a76202474b",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 1,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+      "player1_entry_id": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+      "player2_entry_id": "c536a374-32dd-4a28-9677-96ac722e26ab"
+    },
+    {
+      "id": "6d3429f6-4d4e-4881-9e10-b34ac33d53c7",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "6a1ad538-aa39-4749-ae90-f317a775713e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "1af0e2cf-6f2b-43b2-9355-78bd15291c12",
+      "player1_entry_id": "1af0e2cf-6f2b-43b2-9355-78bd15291c12",
+      "player2_entry_id": "6cc0f72c-9dd5-45d6-901c-dfbff5d8b229"
+    },
+    {
+      "id": "8d737aa5-3500-4916-8636-a896a89e2ba3",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "8a520b18-23bf-4eff-b0a7-2e12a705c273",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 7,
+          "player2_score": 6,
+          "player1_tiebreak": 7,
+          "player2_tiebreak": 4
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 8,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "7865f909-5b50-4372-a6c9-b54f2b8c3592",
+      "player1_entry_id": "7865f909-5b50-4372-a6c9-b54f2b8c3592",
+      "player2_entry_id": "2d93c306-3d77-4215-8bf7-42c552a9d268"
+    },
+    {
+      "id": "c77c3090-8454-404e-986f-f104f1399ded",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 7,
+          "player2_score": 5,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player1_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player2_entry_id": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf"
+    },
+    {
+      "id": "02917909-a042-43ab-9cbd-89d4f2e20692",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "f33133d5-e072-433b-a95d-87b76a5461b7",
+      "player1_entry_id": "f33133d5-e072-433b-a95d-87b76a5461b7",
+      "player2_entry_id": "ac827316-34b2-4773-b8a8-a06e2b8c154e"
+    },
+    {
+      "id": "a40b0936-d530-458a-9108-7090b4cc7092",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "00e92648-ac89-4c01-b911-50efd53961f6",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "195955f5-5116-48e5-94b0-83ed55874a61",
+      "player1_entry_id": "195955f5-5116-48e5-94b0-83ed55874a61",
+      "player2_entry_id": "d17bada8-db5d-4b86-a2f6-7440e16af944"
+    },
+    {
+      "id": "12454b95-ffbf-4a9d-9588-06e04b813697",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+      "player1_entry_id": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+      "player2_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa"
+    },
+    {
+      "id": "46715e7b-c541-45a6-85e6-aaa07b2a23eb",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+      "player1_entry_id": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+      "player2_entry_id": "b496aa38-e80b-4763-93c6-43eefd38e58d"
+    },
+    {
+      "id": "7adaaf29-6c73-421b-b04a-2e23d2c60ec9",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 7,
+          "player2_tiebreak": 9
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+      "player1_entry_id": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+      "player2_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602"
+    },
+    {
+      "id": "acd696db-2603-4c04-b5a7-3819315099eb",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+      "player1_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+      "player2_entry_id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff"
+    },
+    {
+      "id": "4d3a4928-c710-441f-b1f7-9688fac66e2e",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 7,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+      "player1_entry_id": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff",
+      "player2_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602"
+    },
+    {
+      "id": "56274147-6405-413f-bffd-dfb1f3320594",
+      "category_id": "e207965b-0898-4b5e-acc6-985822733718",
+      "group_id": "d34fe1a2-709f-4bd2-b99d-07b07444d7a1",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 8,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+      "player1_entry_id": "1534e837-2bad-417a-9ddb-6791802d130b",
+      "player2_entry_id": "50ac4bb6-b025-4d9f-ac07-28037ddad269"
+    },
+    {
+      "id": "e412f7c1-5b92-4a0d-9abc-76812014a6f4",
+      "category_id": "fad560b0-b0a1-45dc-b3ad-acd784ebacfd",
+      "group_id": "7aedd00b-8aa0-42a3-af38-2bf04a081455",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 7,
+          "player1_tiebreak": 4,
+          "player2_tiebreak": 7
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "d7727746-1a8f-4f3c-83af-8b770d20fe85",
+      "player1_entry_id": "d4d61956-09d5-4336-84e9-de71bf5de2f2",
+      "player2_entry_id": "d7727746-1a8f-4f3c-83af-8b770d20fe85"
+    },
+    {
+      "id": "e948035e-308d-4fcc-a698-851438f8591f",
+      "category_id": "d7f3271d-bc4f-4591-8836-6cb66e142ce2",
+      "group_id": "ef30437e-5d9c-47ad-99a7-b4dd384d2d4b",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "c536a374-32dd-4a28-9677-96ac722e26ab",
+      "player1_entry_id": "4bca8beb-bd11-4521-b13d-317cf303ed56",
+      "player2_entry_id": "c536a374-32dd-4a28-9677-96ac722e26ab"
+    },
+    {
+      "id": "291715ea-6d3c-4ec6-b05e-d48306d7251b",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "71998ec7-f875-40d4-966c-6d3337419a7c",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [],
+      "is_walkover": true,
+      "is_retired": false,
+      "winner_entry_id": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+      "player1_entry_id": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+      "player2_entry_id": "94d5aed2-62fa-464f-876e-92a4b56ae0ae"
+    },
+    {
+      "id": "885d5f76-2477-4597-bf3a-ffb89be6a102",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 4,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 4,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+      "player1_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+      "player2_entry_id": "5332540f-ff94-49ca-aab9-5b04e3a91602"
+    },
+    {
+      "id": "b99e3390-ed4e-4d24-80c6-bfffe6ee950b",
+      "category_id": "e9f0b810-3e52-4f44-9e17-181a8d03c60e",
+      "group_id": "8b3770e9-5aa3-408a-9c9b-819ea34ab637",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 1,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 7,
+          "player2_score": 10,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "af2dd479-0d69-4d96-864a-8cce1383b54c",
+      "player1_entry_id": "59d6f358-39d9-4d51-aa3f-a96051b2ac06",
+      "player2_entry_id": "af2dd479-0d69-4d96-864a-8cce1383b54c"
+    },
+    {
+      "id": "d9f33767-9d4e-4df9-af8d-f50f6cf7c7be",
+      "category_id": "05258045-f117-4b65-aa5b-dd5db6845944",
+      "group_id": "95b0f665-7185-4fea-8736-9b16a80d0f77",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 3,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "match_tiebreak",
+          "set_number": 3,
+          "player1_score": 10,
+          "player2_score": 7,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "f4f9cc0c-363a-4091-9da9-b4251595653b",
+      "player1_entry_id": "f4f9cc0c-363a-4091-9da9-b4251595653b",
+      "player2_entry_id": "8304b9b3-3067-45d1-ad54-b07ffd994084"
+    },
+    {
+      "id": "dca67cc8-540a-42b9-b43f-2707994cb1a1",
+      "category_id": "cfcae8b1-4d17-4799-9234-f0879a6e5249",
+      "group_id": "10f2c045-70a5-4942-b538-b02cfbde7f5e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 4,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+      "player1_entry_id": "f33133d5-e072-433b-a95d-87b76a5461b7",
+      "player2_entry_id": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc"
+    },
+    {
+      "id": "61e58c06-12eb-466e-9b8a-bd6129e09a0c",
+      "category_id": "e513759b-68bb-4893-8d0d-23fb93e8baa1",
+      "group_id": "d86f568f-95ec-4c1a-9e32-2d3de2e0b23e",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 6,
+          "player2_score": 2,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 6,
+          "player2_score": 0,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player1_entry_id": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+      "player2_entry_id": "3aba5fff-0773-4331-8fa0-b7332d907c90"
+    },
+    {
+      "id": "ee11c859-ee73-4167-b5db-c83b537cf0eb",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "completed",
+      "score_entered": true,
+      "score_sets": [
+        {
+          "type": "regular",
+          "set_number": 1,
+          "player1_score": 3,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        },
+        {
+          "type": "regular",
+          "set_number": 2,
+          "player1_score": 2,
+          "player2_score": 6,
+          "player1_tiebreak": null,
+          "player2_tiebreak": null
+        }
+      ],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+      "player1_entry_id": "4ae08e8b-71b8-4313-97b1-b27d4fbed01f",
+      "player2_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa"
+    },
+    {
+      "id": "3ef3882e-2003-4585-a62e-309a611f733a",
+      "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+      "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+      "phase": "group",
+      "status": "scheduled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+      "player2_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa"
+    },
+    {
+      "id": "1ac058ff-2ca3-45e9-925b-34de05bb023e",
+      "category_id": "ec438eec-a2df-40e6-820a-916f1915466e",
+      "group_id": "13d6e28f-44ef-4087-8540-79d6ca422fe6",
+      "phase": "group",
+      "status": "scheduled",
+      "score_entered": false,
+      "score_sets": [],
+      "is_walkover": false,
+      "is_retired": false,
+      "winner_entry_id": null,
+      "player1_entry_id": "ed16350e-984c-4894-8844-31c308e5168d",
+      "player2_entry_id": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853"
+    }
+  ],
+  "courts": []
+}

@@ -1,5 +1,5 @@
-// Approved 29 Ekim bracket templates only. These are not scheduled matches and
-// must not derive entrants from the live standings until seeding is approved.
+// Approved 29 Ekim bracket templates. Live seeding is resolved separately;
+// these diagrams never create or reschedule court bookings.
 export const OCTOBER_29_TOURNAMENT_ID = "13350264-a44c-4c44-8213-4aef62e3fbb6";
 
 export type FinalsMatch = {
@@ -102,8 +102,8 @@ export function getTournamentFinalsTemplate(
 // Horizontal coordinates are percentages, vertical coordinates are pixels.
 // Keeping two lanes even on phones preserves the actual advancement paths.
 export const FINALS_CARD_WIDTH = 46;
-export const FINALS_CARD_HEIGHT = 94;
-export const FINALS_ROW_STEP = 150;
+export const FINALS_CARD_HEIGHT = 158;
+export const FINALS_ROW_STEP = 222;
 
 export function finalsMatchPosition(match: FinalsMatch) {
   return {

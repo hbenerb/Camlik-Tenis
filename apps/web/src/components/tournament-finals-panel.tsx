@@ -1,4 +1,5 @@
 import { LockKeyhole } from "lucide-react";
+import { useMemo } from "react";
 
 import {
   FINALS_CARD_HEIGHT,
@@ -6,37 +7,40 @@ import {
   FINALS_ROW_STEP,
   finalsConnection,
   finalsMatchPosition,
-  getTournamentFinalsTemplate,
 } from "@/lib/tournament-finals";
-import type { TournamentCategory } from "@/lib/types";
+import { getTournamentFinalsSeeding } from "@/lib/tournament-finals-seeding";
+import type { GroupStandings } from "@/lib/tournament-standings";
+import type { TournamentWithDetails } from "@/lib/types";
 
 export function TournamentFinalsPanel({
   canViewFinals,
-  tournamentId,
-  categories,
+  tournament,
+  standings,
   selectedCategoryId,
   onCategoryChange,
   color,
   textColor,
 }: {
   canViewFinals: boolean;
-  tournamentId: string;
-  categories: TournamentCategory[];
+  tournament: TournamentWithDetails;
+  standings?: Map<string, GroupStandings>;
   selectedCategoryId: string;
   onCategoryChange: (categoryId: string) => void;
   color: string;
   textColor: string;
 }) {
-  // Guard the content as well as the parent navigation, including role changes
-  // while this tab is open. This preview has no data endpoint or write action.
+  const { orderedCategories, category, template } = useMemo(() => {
+    const orderedCategories = [...tournament.categories].sort((a, b) => a.display_order - b.display_order);
+    const category = orderedCategories.find((item) => item.id === selectedCategoryId) ?? orderedCategories[0];
+    return { orderedCategories, category, template: canViewFinals && category
+      ? getTournamentFinalsSeeding(tournament, category, standings) : null };
+  }, [canViewFinals, tournament, selectedCategoryId, standings]);
+  // Guard content as well as navigation, including a role change on this tab.
   if (!canViewFinals) return null;
-
-  const orderedCategories = [...categories].sort((a, b) => a.display_order - b.display_order);
-  const category = orderedCategories.find((item) => item.id === selectedCategoryId) ?? orderedCategories[0];
-  const template = category ? getTournamentFinalsTemplate(tournamentId, category) : null;
   const height = template
     ? Math.max(...template.matches.map((match) => match.row)) * FINALS_ROW_STEP + FINALS_CARD_HEIGHT
     : 0;
+  const singleMatch = template?.matches.length === 1;
   const connections = template?.matches.flatMap((match) => {
     if (!match.next) return [];
     const target = template.matches.find((item) => item.id === match.next!.matchId);
@@ -50,7 +54,7 @@ export function TournamentFinalsPanel({
           <h3 className="text-lg font-semibold">Finaller</h3>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-[#68756b]">
             <LockKeyhole aria-hidden="true" size={13} />
-            Yalnızca adminler · Ön izleme
+            Yalnızca adminler
           </p>
         </div>
         <select
@@ -71,9 +75,15 @@ export function TournamentFinalsPanel({
             <h4 className="text-sm font-semibold">{category.name}</h4>
             <span className="shrink-0 text-xs text-[#68756b]">{template.matches.length} maç</span>
           </div>
-          <p className="mt-3 text-xs text-[#68756b]">Oyuncular ve skorlar henüz atanmadı.</p>
+          <p className="mt-3 text-xs leading-relaxed text-[#68756b]">
+            İsimler grup sonuçlarından güncellenir. Playoff ve yarı final sonuçlarına bağlı üst tur yerleri henüz boş.
+            {template.hasPending ? " Sonucu eksik maçlara bağlı yerler beklemede." : ""}
+            {template.hasTies ? " Set ve oyun averajıyla çözülemeyen eşitlikler ayrıca belirlenmeli." : ""}
+          </p>
+          {!singleMatch ? <p className="mt-2 text-xs text-[#68756b] sm:hidden">Şemayı yatay kaydırabilirsiniz.</p> : null}
 
-          <div aria-label={`${category.name} eleme şeması`} className="relative mx-auto mt-5 w-full max-w-2xl" style={{ height }}>
+          <div className="mt-5 overflow-x-auto pb-2" tabIndex={0} role="region" aria-label={`${category.name} final tablosu`}>
+          <div aria-label={`${category.name} eleme şeması`} className={`relative mx-auto w-full ${singleMatch ? "max-w-lg" : "min-w-[640px] max-w-5xl"}`} style={{ height }}>
             <svg
               aria-hidden="true"
               className="pointer-events-none absolute inset-0 h-full w-full"
@@ -103,9 +113,9 @@ export function TournamentFinalsPanel({
                     className="absolute overflow-hidden rounded-lg border bg-[var(--theme-panel)]"
                     key={match.id}
                     style={{
-                      left: `${position.left}%`,
+                      left: singleMatch ? 0 : `${position.left}%`,
                       top: position.top,
-                      width: `${FINALS_CARD_WIDTH}%`,
+                      width: singleMatch ? "100%" : `${FINALS_CARD_WIDTH}%`,
                       height: FINALS_CARD_HEIGHT,
                       borderColor: isFinal ? color : "var(--theme-border)",
                     }}
@@ -116,12 +126,22 @@ export function TournamentFinalsPanel({
                     >
                       {match.title}
                     </h5>
-                    <div className="grid h-[64px] grid-cols-2 divide-x divide-[var(--theme-border)]">
-                      {match.seeds.map((seed, index) => (
-                        <div className="flex min-w-0 flex-col items-center px-2 py-2 sm:px-4" key={index}>
-                          <span aria-hidden="true" className="h-4 text-[10px] font-semibold text-[#68756b] sm:text-xs">{seed}</span>
-                          <span className="sr-only">{seed ? `${seed}: ` : ""}Oyuncu ve skor henüz atanmadı</span>
-                          <span aria-hidden="true" className="mt-3 w-full max-w-24 border-b border-dashed border-[var(--theme-border-strong)]" />
+                    <div className="grid h-[128px] grid-cols-2 divide-x divide-[var(--theme-border)]">
+                      {match.entrants.map((entry, index) => (
+                        <div className="flex min-w-0 flex-col items-center justify-center gap-1.5 px-2 py-2 text-center sm:px-3" key={index}>
+                          <span className="text-[11px] font-semibold text-[#68756b]">{entry.seed}</span>
+                          {entry.status === "confirmed" ? (
+                            <div className="space-y-1 text-sm font-bold leading-snug text-[var(--theme-text)]">
+                              {entry.names.map((name, i) => <p className="break-words" key={i}>{name}</p>)}
+                            </div>
+                          ) : entry.status === "later_round" ? (
+                            <>
+                              <span className="sr-only">Üst tur sonucu bekleniyor</span>
+                              <span aria-hidden="true" className="w-full max-w-24 border-b border-dashed border-[var(--theme-border-strong)]" />
+                            </>
+                          ) : (
+                            <span className="text-xs leading-relaxed text-[#68756b]">{entry.status === "tied" ? "Eşitlik çözülmedi" : "Sonuç bekleniyor"}</span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -130,6 +150,17 @@ export function TournamentFinalsPanel({
               })}
             </ol>
           </div>
+          </div>
+          {template.qualifiedAwaitingPlacement.length > 0 ? (
+            <div className="mt-4 rounded-md bg-[var(--theme-muted-surface)] p-3 text-sm">
+              <p className="font-semibold">Üst tur kesin · Eşleşme yeri bekleniyor</p>
+              <ul className="mt-2 grid list-none gap-2 sm:grid-cols-2">
+                {template.qualifiedAwaitingPlacement.map((entry) => (
+                  <li key={entry.entryId} className="leading-relaxed">{entry.names.join(" / ")}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {template.notes.length > 0 ? (
             <div className="mx-auto mt-5 max-w-2xl space-y-1 border-t border-[#ddd7c8] pt-3 text-xs leading-relaxed text-[#68756b]">
               {template.notes.map((note) => <p key={note}>{note}</p>)}

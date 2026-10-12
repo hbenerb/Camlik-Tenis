@@ -24,11 +24,8 @@ import { useId, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
 import { TournamentFinalsPanel } from "@/components/tournament-finals-panel";
-import {
-  completedTournamentSetWinner,
-  formatTournamentMatchScore,
-  tournamentEntryPoints,
-} from "@/lib/tournament-scoring";
+import { formatTournamentMatchScore } from "@/lib/tournament-scoring";
+import { tournamentStandings, type GroupStandings } from "@/lib/tournament-standings";
 import type { Court, TournamentMatch, TournamentWithDetails } from "@/lib/types";
 import type { TournamentDecidingSetType } from "@/lib/types";
 
@@ -364,62 +361,11 @@ export function TournamentDetailPanel({
       ),
     [selectedTournament],
   );
-  const participantStandingsById = useMemo(() => {
-    if (!selectedTournament) {
-      return new Map<
-        string,
-        { points: number; scoredMatches: number; setsWon: number; setsLost: number }
-      >();
-    }
-
-    const standings = new Map(
-      selectedTournament.participants.map((participant) => [
-        participant.id,
-        { points: 0, scoredMatches: 0, setsWon: 0, setsLost: 0 },
-      ]),
-    );
-
-    for (const match of selectedTournament.matches) {
-      if (
-        match.phase !== "group" ||
-        match.status !== "completed" ||
-        !match.score_entered
-      ) {
-        continue;
-      }
-
-      for (const entryId of [match.player1_entry_id, match.player2_entry_id]) {
-        const standing = standings.get(entryId);
-
-        if (!standing) {
-          continue;
-        }
-
-        standing.scoredMatches += 1;
-        standing.points += tournamentEntryPoints([match], entryId);
-      }
-
-      const firstStanding = standings.get(match.player1_entry_id);
-      const secondStanding = standings.get(match.player2_entry_id);
-
-      if (!firstStanding || !secondStanding) {
-        continue;
-      }
-
-      for (const scoreSet of match.score_sets) {
-        const winner = completedTournamentSetWinner(selectedTournament, scoreSet);
-        if (winner === 1) {
-          firstStanding.setsWon += 1;
-          secondStanding.setsLost += 1;
-        } else if (winner === 2) {
-          secondStanding.setsWon += 1;
-          firstStanding.setsLost += 1;
-        }
-      }
-    }
-
-    return standings;
-  }, [selectedTournament]);
+  const groupStandings = useMemo(() => selectedTournament
+    ? tournamentStandings(selectedTournament) : new Map<string, GroupStandings>(), [selectedTournament]);
+  const participantStandingsById = useMemo(() => new Map(
+    [...groupStandings.values()].flatMap((group) => group.rows.map((row) => [row.entry.id, row] as const)),
+  ), [groupStandings]);
 
   const participantOptions = useMemo(() => {
     if (!selectedTournament) {
@@ -1205,12 +1151,12 @@ export function TournamentDetailPanel({
       ) : visibleDetailTab === "finals" && canViewFinals ? (
         <TournamentFinalsPanel
           canViewFinals={canViewFinals}
-          categories={selectedTournament.categories}
+          tournament={selectedTournament}
+          standings={groupStandings}
           color={tournamentColor}
           onCategoryChange={setPlayersCategoryId}
           selectedCategoryId={playerCategory?.id ?? ""}
           textColor={tournamentTextColor}
-          tournamentId={selectedTournament.id}
         />
       ) : (
         <section className="rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-6">
@@ -1218,7 +1164,7 @@ export function TournamentDetailPanel({
             <div>
               <h3 className="text-lg font-semibold">Oyuncular</h3>
               <p className="mt-1 text-sm text-[#68756b]">
-                Kategori seçerek grup dağılımını görüntüleyin.
+                Eşit puanda kendi aralarındaki maçların set, ardından oyun averajı kullanılır. Maç tie-breaki oyun averajına katılmaz.
               </p>
             </div>
             <select
@@ -1256,43 +1202,7 @@ export function TournamentDetailPanel({
                       Grup {group.name}
                     </p>
                     <ul className="mt-3 space-y-2 text-sm">
-                      {selectedTournament.participants
-                        .filter((participant) => participant.group_id === group.id)
-                        .sort((first, second) => {
-                          const firstStanding = participantStandingsById.get(
-                            first.id,
-                          );
-                          const secondStanding = participantStandingsById.get(
-                            second.id,
-                          );
-                          const pointsDifference =
-                            (secondStanding?.points ?? 0) -
-                            (firstStanding?.points ?? 0);
-
-                          if (pointsDifference !== 0) {
-                            return pointsDifference;
-                          }
-
-                          const firstSetDifference =
-                            (firstStanding?.setsWon ?? 0) -
-                            (firstStanding?.setsLost ?? 0);
-                          const secondSetDifference =
-                            (secondStanding?.setsWon ?? 0) -
-                            (secondStanding?.setsLost ?? 0);
-
-                          if (secondSetDifference !== firstSetDifference) {
-                            return secondSetDifference - firstSetDifference;
-                          }
-
-                          const setsWonDifference =
-                            (secondStanding?.setsWon ?? 0) -
-                            (firstStanding?.setsWon ?? 0);
-
-                          return (
-                            setsWonDifference ||
-                            first.display_order - second.display_order
-                          );
-                        })
+                      {(groupStandings.get(group.id)?.rows ?? []).map((row) => row.entry)
                         .map((participant) => (
                           <li
                             className="flex flex-wrap items-center gap-1.5 rounded bg-[#f6f1e7] px-3 py-2"

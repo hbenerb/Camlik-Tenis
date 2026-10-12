@@ -1,8 +1,9 @@
-"""Portrait, nameless knockout brackets: approved pairings with compact labels."""
+"""Portrait brackets, optionally populated from the app's shared seeding export."""
 
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from reportlab.lib import colors
@@ -20,7 +21,7 @@ PALE = colors.HexColor("#FCF1F2")
 LINE = colors.HexColor("#BBC7C0")
 WHITE = colors.white
 LEFT, RIGHT = 36, W - 36
-CARD_W, CARD_H = 236, 66
+CARD_W, CARD_H = 236, 102
 X_LEFT, X_RIGHT = LEFT, RIGHT - CARD_W
 X_CENTER = (W - CARD_W) / 2
 
@@ -40,15 +41,31 @@ CATEGORIES = [
 
 
 class Booklet:
-    def __init__(self, output: Path):
+    def __init__(self, output: Path, seeding=None):
         output.parent.mkdir(parents=True, exist_ok=True)
         self.c = canvas.Canvas(str(output), pagesize=A4, pageCompression=1)
         self.c.setTitle("29 Ekim Etkinliği - Final Tabloları")
         self.c.setAuthor("Ayvalık Çamlık Tenis Kulübü")
-        self.c.setSubject("8 Ekim 2026 - Dikey, sade ve isimsiz eleme şemaları")
+        self.c.setSubject("Grup sonuçlarından kesinleşen final aşaması eşleşmeleri")
         self.match_count = 0
         self.arrow_count = 0
         self.page_matches = []
+        self.seeding = seeding
+        self.category_seeding = None
+
+    def wrapped(self, value, width, size=10.5):
+        lines, current = [], ""
+        for word in value.split():
+            candidate = f"{current} {word}".strip()
+            if current and pdfmetrics.stringWidth(candidate, "BodyBold", size) > width:
+                lines.append(current)
+                current = word
+            else:
+                current = candidate
+        if current:
+            lines.append(current)
+        assert all(pdfmetrics.stringWidth(line, "BodyBold", size) <= width for line in lines), value
+        return lines
 
     def text(self, x, y, value, size=10, bold=False, color=INK, align="left"):
         font = "BodyBold" if bold else "Body"
@@ -76,25 +93,38 @@ class Booklet:
         assert len(players) == 2
         w, h = CARD_W, CARD_H
         bottom = top - h
-        assert bottom >= 120
+        assert bottom >= 118
         self.text(x, top + 12, label, 9.5, True, RED if final else MUTED)
         self.c.setFillColor(PALE if final else WHITE)
         self.c.setStrokeColor(RED if final else LINE)
         self.c.setLineWidth(1.1 if final else 0.8)
         self.c.rect(x, bottom, w, h, fill=1, stroke=1)
         # Names are at the bottom so upward arrows land in participant cells.
-        self.line([(x, bottom + 38), (x + w, bottom + 38)])
+        self.line([(x, top - 24), (x + w, top - 24)])
         self.line([(x + w / 2, bottom), (x + w / 2, top)])
         for i, value in enumerate(players):
             cell_left = x + i * w / 2
             center = cell_left + w / 4
             if value:
-                self.text(center, bottom + 12, value, 19, True, align="center")
+                self.text(center, top - 38, value, 8, True, MUTED, "center")
+                entry = self.category_seeding["seeds"].get(value) if self.category_seeding else None
+                if entry:
+                    labels = entry["names"] if entry["status"] == "confirmed" else [
+                        "Eşitlik çözülmedi" if entry["status"] == "tied" else "Sonuç bekleniyor"]
+                    size = 10.5 if entry["status"] == "confirmed" else 9.5
+                    lines = [line for name in labels for line in self.wrapped(name, w / 2 - 16, size)]
+                    assert len(lines) <= 4, lines
+                    start = top - 56 + (2 - min(len(lines), 2)) * -6
+                    for n, line in enumerate(lines):
+                        self.text(center, start - 12 * n, line, size, True,
+                                  INK if entry["status"] == "confirmed" else MUTED, "center")
+                else:
+                    self.text(center, bottom + 22, value, 19, True, align="center")
             else:
                 self.line([(cell_left + 17, bottom + 11), (cell_left + w / 2 - 17, bottom + 11)],
                           color=LINE, width=0.45)
-            self.text(cell_left + 12, bottom + 50, "Skor", 8, color=MUTED)
-            self.line([(cell_left + 39, bottom + 49), (cell_left + w / 2 - 12, bottom + 49)],
+            self.text(cell_left + 12, top - 16, "Skor", 8, color=MUTED)
+            self.line([(cell_left + 39, top - 17), (cell_left + w / 2 - 12, top - 17)],
                       width=0.45)
         self.match_count += 1
         self.page_matches.append((final, top))
@@ -108,7 +138,7 @@ class Booklet:
         ex, ey = target["inputs"][slot]
         assert sy < ey, "Every bracket connection advances up the page."
         middle = bend_y if bend_y is not None else (sy + ey) / 2
-        assert sy + 25 < middle < ey - 12
+        assert sy + 12 < middle < ey - 12
         # Keep a vertical gap for the arrowhead; the head lands on the table edge.
         self.line([(sx, sy), (sx, middle), (ex, middle), (ex, ey - 5)], RED, 1.15)
         path = self.c.beginPath()
@@ -182,10 +212,10 @@ class Booklet:
         s1 = self.match(X_LEFT, 502, "YARI FİNAL 1", ["L2", "L3"])
         s2 = self.match(X_RIGHT, 502, "YARI FİNAL 2", ["L1", ""])
         final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
-        self.arrow(e1, e2, 1, bend_y=249)
-        self.arrow(e2, s2, 1, bend_y=390)
-        self.arrow(s1, final, 0, bend_y=531)
-        self.arrow(s2, final, 1, bend_y=531)
+        self.arrow(e1, e2, 1)
+        self.arrow(e2, s2, 1)
+        self.arrow(s1, final, 0)
+        self.arrow(s2, final, 1)
         # This legend explains the compact table codes without adding long labels.
         self.legend([
             "L1-L3: Grup birincileri. İ1-İ3: Grup ikincileri.",
@@ -193,10 +223,31 @@ class Booklet:
             "En iyi ikinci ilk turu pas geçer.",
         ])
 
+    def awaiting_placement(self, kind):
+        if not self.category_seeding:
+            return
+        entries = self.category_seeding["qualifiedAwaitingPlacement"]
+        if not entries:
+            return
+        top = 345 if kind == "playoff" else 238
+        width = CARD_W if kind == "playoff" else RIGHT - LEFT
+        self.text(LEFT, top, "ÜST TUR KESİN", 9, True, RED)
+        self.text(LEFT, top - 15, "Eşleşme yeri sonuçlara göre belirlenecek.", 8, color=MUTED)
+        y = top - 38
+        for entry in entries:
+            for line in self.wrapped(" / ".join(entry["names"]), width, 10.5):
+                self.text(LEFT, y, line, 10.5, True)
+                y -= 15
+            y -= 3
+        assert y > 115
+
     def save(self):
         for i, (name, kind, count) in enumerate(CATEGORIES, 1):
             before = self.match_count
             self.page_matches = []
+            self.category_seeding = next((c for c in self.seeding["categories"] if c["name"] == name), None) if self.seeding else None
+            if self.seeding:
+                assert self.category_seeding is not None, name
             self.header(name, kind, count, i)
             if kind == "bye":
                 self.bye()
@@ -206,6 +257,7 @@ class Booklet:
                 self.final()
             else:
                 self.semi(kind == "single_semi")
+            self.awaiting_placement(kind)
             assert self.match_count - before == count
             assert [top for final, top in self.page_matches if final] == [643]
             assert all(final or top < 643 for final, top in self.page_matches)
@@ -220,11 +272,13 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "output/pdf/29-Ekim-Eleme-Tablolari-2026-10-08.pdf")
     parser.add_argument("--orta-seeding", choices=["points"], default="points")
     parser.add_argument("--mapping", choices=["cross"], default="cross")
+    parser.add_argument("--seeding", type=Path, help="JSON exported with the app's shared seeding rules")
     args = parser.parse_args()
     fonts = Path("/System/Library/Fonts/Supplemental")
     pdfmetrics.registerFont(TTFont("Body", str(fonts / "Arial.ttf")))
     pdfmetrics.registerFont(TTFont("BodyBold", str(fonts / "Arial Bold.ttf")))
-    Booklet(args.output).save()
+    seeding = json.loads(args.seeding.read_text()) if args.seeding else None
+    Booklet(args.output, seeding).save()
     print(f"Created {args.output}: 11 portrait pages / 33 matches / 22 arrows")
 
 
