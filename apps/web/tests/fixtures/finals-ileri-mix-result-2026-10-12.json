@@ -1,0 +1,33 @@
+[
+  {
+    "id": "3ef3882e-2003-4585-a62e-309a611f733a",
+    "category_id": "4ec350d4-39de-4c31-be24-d0c379a51173",
+    "group_id": "ff7f60e8-500c-4834-b84c-54f289d4ae33",
+    "phase": "group",
+    "status": "completed",
+    "score_entered": true,
+    "score_sets": [
+      {
+        "type": "regular",
+        "set_number": 1,
+        "player1_score": 1,
+        "player2_score": 6,
+        "player1_tiebreak": null,
+        "player2_tiebreak": null
+      },
+      {
+        "type": "regular",
+        "set_number": 2,
+        "player1_score": 4,
+        "player2_score": 6,
+        "player1_tiebreak": null,
+        "player2_tiebreak": null
+      }
+    ],
+    "is_walkover": false,
+    "is_retired": false,
+    "winner_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa",
+    "player1_entry_id": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+    "player2_entry_id": "70504605-d60d-4cce-8f36-8c06420edfaa"
+  }
+]

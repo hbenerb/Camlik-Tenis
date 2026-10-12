@@ -258,6 +258,39 @@ test("remaining results never fix a slot early, including possible walkovers", (
   assert.ok(group.possibleRanks.get(inan.entry.id).has(5),"A walkover loss can still exclude İnan/Zeynep");
 });
 
+test("İleri Mix completed result resolves the three-way games tie and populates both semifinals", () => {
+  const data = structuredClone(live);
+  const updates = JSON.parse(readFileSync(new URL("./fixtures/finals-ileri-mix-result-2026-10-12.json", import.meta.url), "utf8"));
+  assert.equal(updates.length, 1);
+  data.matches = data.matches.map((match) => updates.find((update) => update.id === match.id) ?? match);
+  const table = groupTable("İleri Mix", "A", data);
+  assert.ok(table.complete);
+  assert.deepEqual(table.rows.map((row) => [row.entry.display_name, row.points]), [
+    ["Evrim Özcan / Gençay Üstünel", 15], ["Elif Bora / Serkan İrden", 13],
+    ["İnan Özbakır / Zeynep Kürşat", 9], ["Ahmet Ok / Naz Lale", 9],
+    ["Esen Atay / Kemal Yardımcı", 9], ["Zeliha Aysan / Aydoğan Aysan", 5],
+  ]);
+  const seeded = seedCategory("İleri Mix", data);
+  assert.equal(seeded.hasPending, false);
+  assert.equal(seeded.hasTies, false);
+  assert.deepEqual(seeded.qualifiedAwaitingPlacement, []);
+  assert.deepEqual(seeded.matches.slice(1).map((match) => match.entrants.map((entry) => entry.names)), [
+    [["Evrim Özcan", "Gençay Üstünel"], ["Ahmet Ok", "Naz Lale"]],
+    [["Elif Bora", "Serkan İrden"], ["İnan Özbakır", "Zeynep Kürşat"]],
+  ]);
+  assert.ok(seeded.matches[0].entrants.every((entry) => entry.status === "later_round"));
+  const html = renderToStaticMarkup(React.createElement(TournamentFinalsPanel, {
+    ...props, tournament:data, selectedCategoryId:categoryByName("İleri Mix").id,
+  }));
+  for (const name of ["Evrim Özcan", "Gençay Üstünel", "Ahmet Ok", "Naz Lale", "Elif Bora", "Serkan İrden", "İnan Özbakır", "Zeynep Kürşat"]) {
+    assert.ok(html.includes(name), name);
+  }
+  assert.doesNotMatch(html, /Sonuç bekleniyor|Üst tur kesin/);
+  for (const category of live.categories.filter((c) => c.name !== "İleri Mix")) {
+    assert.deepEqual(getTournamentFinalsSeeding(data, category), getTournamentFinalsSeeding(live, category));
+  }
+});
+
 test("inter-group rankings use overall points then sets then games, and do not invent a last tiebreak", () => {
   const rows = groupTable("Erkek Orta","A").rows;
   const a={...rows[0],points:9,setsWon:6,setsLost:0,gamesWon:30,gamesLost:10};

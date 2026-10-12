@@ -14,9 +14,23 @@ registerHooks({
 });
 const { getTournamentFinalsSeeding } = await import("../src/lib/tournament-finals-seeding.ts");
 const { tournamentStandings } = await import("../src/lib/tournament-standings.ts");
-const [input, output] = process.argv.slice(2);
-if (!input || !output) throw new Error("Usage: node export-tournament-finals.mjs snapshot.json output.json");
+const [input, output, matchUpdatesFile] = process.argv.slice(2);
+if (!input || !output) throw new Error("Usage: node export-tournament-finals.mjs snapshot.json output.json [match-updates.json]");
 const tournament = JSON.parse(readFileSync(input, "utf8"));
+// Retain the original pending-results snapshot for regression tests, while
+// allowing an audited, narrowly scoped result update in a subsequent bulletin.
+if (matchUpdatesFile) {
+  const updates = JSON.parse(readFileSync(matchUpdatesFile, "utf8"));
+  const byId = new Map(updates.map((match) => [match.id, match]));
+  if (byId.size !== updates.length) throw new Error("Duplicate match update");
+  for (const update of updates) {
+    const original = tournament.matches.find((match) => match.id === update.id);
+    if (!original || original.category_id !== update.category_id || original.group_id !== update.group_id) {
+      throw new Error(`Match update does not belong to this snapshot: ${update.id}`);
+    }
+  }
+  tournament.matches = tournament.matches.map((match) => byId.has(match.id) ? { ...match, ...byId.get(match.id) } : match);
+}
 const standings = tournamentStandings(tournament);
 const report = {
   tournamentId: tournament.id,

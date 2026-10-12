@@ -2297,15 +2297,21 @@
           "entrants": [
             {
               "seed": "1",
-              "status": "pending",
-              "entryId": null,
-              "names": []
+              "status": "confirmed",
+              "entryId": "70504605-d60d-4cce-8f36-8c06420edfaa",
+              "names": [
+                "Evrim Özcan",
+                "Gençay Üstünel"
+              ]
             },
             {
               "seed": "4",
-              "status": "pending",
-              "entryId": null,
-              "names": []
+              "status": "confirmed",
+              "entryId": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+              "names": [
+                "Ahmet Ok",
+                "Naz Lale"
+              ]
             }
           ]
         },
@@ -2325,15 +2331,21 @@
           "entrants": [
             {
               "seed": "2",
-              "status": "pending",
-              "entryId": null,
-              "names": []
+              "status": "confirmed",
+              "entryId": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+              "names": [
+                "Elif Bora",
+                "Serkan İrden"
+              ]
             },
             {
               "seed": "3",
-              "status": "pending",
-              "entryId": null,
-              "names": []
+              "status": "confirmed",
+              "entryId": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+              "names": [
+                "İnan Özbakır",
+                "Zeynep Kürşat"
+              ]
             }
           ]
         }
@@ -2341,20 +2353,12 @@
       "notes": [
         "Yarı finaller: 1–4 ve 2–3."
       ],
-      "hasPending": true,
+      "hasPending": false,
       "hasTies": false,
-      "qualifiedAwaitingPlacement": [
-        {
-          "seed": "A",
-          "status": "confirmed",
-          "entryId": "5332540f-ff94-49ca-aab9-5b04e3a91602",
-          "names": [
-            "Elif Bora",
-            "Serkan İrden"
-          ]
-        },
-        {
-          "seed": "A",
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "1": {
+          "seed": "1",
           "status": "confirmed",
           "entryId": "70504605-d60d-4cce-8f36-8c06420edfaa",
           "names": [
@@ -2362,8 +2366,26 @@
             "Gençay Üstünel"
           ]
         },
-        {
-          "seed": "A",
+        "2": {
+          "seed": "2",
+          "status": "confirmed",
+          "entryId": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+          "names": [
+            "Elif Bora",
+            "Serkan İrden"
+          ]
+        },
+        "3": {
+          "seed": "3",
+          "status": "confirmed",
+          "entryId": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+          "names": [
+            "İnan Özbakır",
+            "Zeynep Kürşat"
+          ]
+        },
+        "4": {
+          "seed": "4",
           "status": "confirmed",
           "entryId": "78a2ac68-5631-47ad-a5b2-60450a61d410",
           "names": [
@@ -2371,38 +2393,24 @@
             "Naz Lale"
           ]
         }
-      ],
-      "seeds": {
-        "1": {
-          "seed": "1",
-          "status": "pending",
-          "entryId": null,
-          "names": []
-        },
-        "2": {
-          "seed": "2",
-          "status": "pending",
-          "entryId": null,
-          "names": []
-        },
-        "3": {
-          "seed": "3",
-          "status": "pending",
-          "entryId": null,
-          "names": []
-        },
-        "4": {
-          "seed": "4",
-          "status": "pending",
-          "entryId": null,
-          "names": []
-        }
       },
       "standings": [
         {
           "group": "A",
-          "complete": false,
+          "complete": true,
           "rows": [
+            {
+              "points": 15,
+              "scoredMatches": 5,
+              "setsWon": 10,
+              "setsLost": 1,
+              "gamesWon": 57,
+              "gamesLost": 28,
+              "rank": 1,
+              "tied": false,
+              "entryId": "70504605-d60d-4cce-8f36-8c06420edfaa",
+              "name": "Evrim Özcan / Gençay Üstünel"
+            },
             {
               "points": 13,
               "scoredMatches": 5,
@@ -2410,22 +2418,22 @@
               "setsLost": 4,
               "gamesWon": 53,
               "gamesLost": 36,
-              "rank": 1,
+              "rank": 2,
               "tied": false,
               "entryId": "5332540f-ff94-49ca-aab9-5b04e3a91602",
               "name": "Elif Bora / Serkan İrden"
             },
             {
-              "points": 12,
-              "scoredMatches": 4,
-              "setsWon": 8,
-              "setsLost": 1,
-              "gamesWon": 45,
-              "gamesLost": 23,
-              "rank": 2,
+              "points": 9,
+              "scoredMatches": 5,
+              "setsWon": 5,
+              "setsLost": 6,
+              "gamesWon": 44,
+              "gamesLost": 46,
+              "rank": 3,
               "tied": false,
-              "entryId": "70504605-d60d-4cce-8f36-8c06420edfaa",
-              "name": "Evrim Özcan / Gençay Üstünel"
+              "entryId": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+              "name": "İnan Özbakır / Zeynep Kürşat"
             },
             {
               "points": 9,
@@ -2434,7 +2442,7 @@
               "setsLost": 7,
               "gamesWon": 40,
               "gamesLost": 53,
-              "rank": 3,
+              "rank": 4,
               "tied": false,
               "entryId": "78a2ac68-5631-47ad-a5b2-60450a61d410",
               "name": "Ahmet Ok / Naz Lale"
@@ -2446,22 +2454,10 @@
               "setsLost": 6,
               "gamesWon": 45,
               "gamesLost": 49,
-              "rank": 4,
+              "rank": 5,
               "tied": false,
               "entryId": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff",
               "name": "Esen Atay / Kemal Yardımcı"
-            },
-            {
-              "points": 8,
-              "scoredMatches": 4,
-              "setsWon": 5,
-              "setsLost": 4,
-              "gamesWon": 39,
-              "gamesLost": 34,
-              "rank": 5,
-              "tied": false,
-              "entryId": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
-              "name": "İnan Özbakır / Zeynep Kürşat"
             },
             {
               "points": 5,
