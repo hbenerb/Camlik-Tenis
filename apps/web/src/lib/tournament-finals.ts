@@ -1,5 +1,18 @@
 // Approved 29 Ekim bracket templates. Live seeding is resolved separately;
 // these diagrams never create or reschedule court bookings.
+import type { TournamentMatchPhase } from "@/lib/types";
+
+export const TOURNAMENT_ROUND_LABELS = {
+  group: "Grup", playoff: "Playoff", quarterfinal: "Çeyrek Final", semifinal: "Yarı Final", final: "Final",
+} satisfies Record<TournamentMatchPhase, string>;
+
+export function finalsRoundForMatch(id: string): TournamentMatchPhase {
+  return id === "final" ? "final" : id.startsWith("sf") ? "semifinal" : "playoff";
+}
+
+export function finalsRoundAcceptsMatch(phase: TournamentMatchPhase, id: string) {
+  return phase === "quarterfinal" ? id.startsWith("qf") : finalsRoundForMatch(id) === phase;
+}
 export const OCTOBER_29_TOURNAMENT_ID = "13350264-a44c-4c44-8213-4aef62e3fbb6";
 
 export type FinalsMatch = {

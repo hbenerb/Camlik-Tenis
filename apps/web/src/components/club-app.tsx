@@ -110,11 +110,15 @@ import type {
   TournamentEntryPlayer,
   TournamentGroup,
   TournamentMatch,
+  TournamentMatchPhase,
   TournamentParticipant,
   TournamentPlayer,
   TournamentScoreSet,
   TournamentWithDetails,
 } from "@/lib/types";
+import { TournamentRoundFields } from "@/components/tournament-round-fields";
+import { TOURNAMENT_ROUND_LABELS } from "@/lib/tournament-finals";
+import { inferTournamentRoundSelection, validateTournamentRoundSelection } from "@/lib/tournament-round-selection";
 
 type AppTab =
   | "calendar"
@@ -198,6 +202,8 @@ type ReservationFormState = {
   team2_player2_name: string;
   tournament_category_id: string;
   tournament_group_id: string;
+  tournament_phase?: TournamentMatchPhase;
+  tournament_bracket_match_id?: string;
   tournament_id: string;
   user_id: string;
 };
@@ -209,6 +215,8 @@ type TournamentMatchEditFormState = {
   court_id: string;
   date: string;
   group_id: string;
+  phase: TournamentMatchPhase;
+  bracket_match_id: string;
   player1_name: string;
   player2_name: string;
   start_time: string;
@@ -1642,6 +1650,8 @@ export function ClubApp() {
       court_id: "",
       date: dateInputValue(new Date()),
       group_id: "",
+      phase: "group",
+      bracket_match_id: "",
       player1_name: "",
       player2_name: "",
       start_time: "09:00",
@@ -3581,6 +3591,12 @@ export function ClubApp() {
 
       const endsAt = addMinutes(startsAt, tournament.match_duration_minutes);
 
+      const phase = group ? "group" : reservationForm.tournament_phase ?? "final";
+      const bracketId = group ? "" : reservationForm.tournament_bracket_match_id ?? "";
+      const roundError = validateTournamentRoundSelection(tournament, category.id, phase, bracketId,
+        [player1Entry.id, player2Entry.id]);
+      if (roundError) { setStatusMessage(roundError); return; }
+
       if (
         endsAt >
         buildLocalDateTime(reservationForm.date, settings.closing_time)
@@ -3631,7 +3647,9 @@ export function ClubApp() {
         court_id: reservationForm.court_id,
         ends_at: endsAt.toISOString(),
         group_id: group?.id ?? null,
-        phase: group ? "group" : "final",
+        phase,
+        bracket_match_id: bracketId || null,
+        round_label: phase === "group" ? null : TOURNAMENT_ROUND_LABELS[phase],
         player1_name: player1Name,
         player1_entry_id: player1Entry.id,
         player2_name: player2Name,
@@ -5257,12 +5275,15 @@ export function ClubApp() {
     }
 
     const startsAt = new Date(match.starts_at);
+    const roundSelection = inferTournamentRoundSelection(tournament, match);
     setEditingTournamentMatch(match);
     setTournamentMatchEditForm({
       category_id: match.category_id,
       court_id: match.court_id ?? "",
       date: dateInputValue(startsAt),
       group_id: match.group_id ?? "",
+      phase: roundSelection.phase,
+      bracket_match_id: roundSelection.bracketId,
       player1_name: match.player1_name,
       player2_name: match.player2_name,
       start_time: formatTime(startsAt),
@@ -5332,6 +5353,18 @@ export function ClubApp() {
 
     if (!tournamentMatchEditForm.court_id || !allowedCourtIds.has(tournamentMatchEditForm.court_id)) {
       setStatusMessage("Turnuvada kullanılabilen bir kort seçilmeli.");
+      return;
+    }
+
+    const roundError = validateTournamentRoundSelection(tournament, category.id,
+      tournamentMatchEditForm.phase, tournamentMatchEditForm.bracket_match_id,
+      [player1Entry.id, player2Entry.id], editingTournamentMatch.id);
+    if (tournamentMatchEditForm.status !== "canceled" && roundError) {
+      setStatusMessage(roundError);
+      return;
+    }
+    if (tournamentMatchEditForm.phase === "group" && !group) {
+      setStatusMessage("Grup seçilmeli.");
       return;
     }
 
@@ -5456,6 +5489,9 @@ export function ClubApp() {
         court_id: tournamentMatchEditForm.court_id,
         ends_at: endsAt.toISOString(),
         group_id: group?.id ?? null,
+        phase: tournamentMatchEditForm.phase,
+        bracket_match_id: tournamentMatchEditForm.bracket_match_id || null,
+        round_label: tournamentMatchEditForm.phase === "group" ? null : TOURNAMENT_ROUND_LABELS[tournamentMatchEditForm.phase],
         player1_name: player1Name,
         player1_entry_id: player1Entry.id,
         player2_name: player2Name,
@@ -6751,7 +6787,7 @@ function DayCalendar({
                         const content = (
                           <div
                             className="grid min-h-0 w-full gap-0.5 overflow-hidden px-1 py-0.5 sm:px-2 sm:py-1"
-                            title={`${match.tournament_name}: ${match.player1_name} / ${match.player2_name} · ${match.tournament_category_name} · ${match.tournament_group_name ? `Grup ${match.tournament_group_name}` : "Final"}`}
+                            title={`${match.tournament_name}: ${match.player1_name} / ${match.player2_name} · ${match.tournament_category_name} · ${match.tournament_group_name ? `Grup ${match.tournament_group_name}` : TOURNAMENT_ROUND_LABELS[match.phase]}`}
                           >
                             <p className="truncate text-[8px] font-bold uppercase leading-tight min-[380px]:text-[9px] sm:text-xs">
                               {match.tournament_name}
@@ -6769,7 +6805,7 @@ function DayCalendar({
                             <p className="truncate text-[8px] font-semibold leading-tight opacity-90 min-[380px]:text-[9px] sm:text-xs">
                               {match.tournament_category_name} · {match.tournament_group_name
                                 ? `Grup ${match.tournament_group_name}`
-                                : "Final"}
+                                : TOURNAMENT_ROUND_LABELS[match.phase]}
                             </p>
                           </div>
                         );
@@ -9364,6 +9400,8 @@ function ReservationModeToggle<T extends ReservationFormState>({
         team2_player2_name: "",
         tournament_category_id: category?.id ?? "",
         tournament_group_id: group?.id ?? "",
+        tournament_phase: group ? "group" : "final",
+        tournament_bracket_match_id: "",
         tournament_id: tournament?.id ?? "",
       });
       return;
@@ -9615,6 +9653,8 @@ function TournamentSetupFields<T extends ReservationFormState>({
       team2_player1_name: nextParticipants[1]?.display_name ?? "",
       tournament_category_id: category?.id ?? "",
       tournament_group_id: group?.id ?? "",
+      tournament_phase: group ? "group" : "final",
+      tournament_bracket_match_id: "",
       tournament_id: tournament.id,
     });
   }
@@ -9642,10 +9682,12 @@ function TournamentSetupFields<T extends ReservationFormState>({
       team2_player1_name: nextParticipants[1]?.display_name ?? "",
       tournament_category_id: categoryId,
       tournament_group_id: group?.id ?? "",
+      tournament_phase: group ? "group" : "final",
+      tournament_bracket_match_id: "",
     });
   }
 
-  function changeGroup(groupId: string) {
+  function changeGroup(groupId: string, phase: TournamentMatchPhase, bracketId: string, playerNames?: [string, string]) {
     if (!selectedTournament || !selectedCategory) {
       return;
     }
@@ -9662,9 +9704,11 @@ function TournamentSetupFields<T extends ReservationFormState>({
     setForm({
       ...form,
       date: getStageDate(selectedTournament, group),
-      team1_player1_name: nextParticipants[0]?.display_name ?? "",
-      team2_player1_name: nextParticipants[1]?.display_name ?? "",
+      team1_player1_name: playerNames?.[0] ?? (group ? nextParticipants[0]?.display_name ?? "" : ""),
+      team2_player1_name: playerNames?.[1] ?? (group ? nextParticipants[1]?.display_name ?? "" : ""),
       tournament_group_id: group?.id ?? "",
+      tournament_phase: phase,
+      tournament_bracket_match_id: bracketId,
     });
   }
 
@@ -9708,22 +9752,12 @@ function TournamentSetupFields<T extends ReservationFormState>({
             ))}
           </select>
         </Field>
-        <Field label="Grup">
-          <select
-            className="input input-compact"
-            disabled={!selectedCategory}
-            onChange={(event) => changeGroup(event.target.value)}
-            value={selectedGroup?.id ?? ""}
-          >
-            <option value="">Final (grupsuz)</option>
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                Grup {group.name}
-              </option>
-            ))}
-          </select>
-        </Field>
       </div>
+
+      <TournamentRoundFields tournament={selectedTournament} categoryId={selectedCategory?.id ?? ""}
+        groupId={selectedGroup?.id ?? ""} phase={selectedGroup ? "group" : form.tournament_phase ?? "final"}
+        bracketId={form.tournament_bracket_match_id ?? ""}
+        onChange={(selection) => changeGroup(selection.groupId, selection.phase, selection.bracketId, selection.playerNames)} />
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="1. Oyuncu">
@@ -10596,18 +10630,16 @@ function TournamentMatchEditDialog({
   );
   const allowedCourts = courts.filter((court) => allowedCourtIds.has(court.id));
   const tournamentGroups = tournament.groups;
-  const availableGroups = tournamentGroups
-    .filter((group) => group.category_id === form.category_id)
-    .sort((first, second) => first.display_order - second.display_order);
   const playerOptions = Array.from(
     new Set(
-      tournament.participants.map((participant) => participant.display_name),
+      tournament.participants.filter((participant) => participant.category_id === form.category_id &&
+        (form.phase !== "group" || participant.group_id === form.group_id)).map((participant) => participant.display_name),
     ),
   ).sort((first, second) => first.localeCompare(second, "tr"));
   const availableParticipants = tournament.participants.filter(
     (participant) =>
       participant.category_id === form.category_id &&
-      (!form.group_id || participant.group_id === form.group_id),
+      (form.phase !== "group" || participant.group_id === form.group_id),
   );
   const firstEntry = availableParticipants.find(
     (participant) =>
@@ -10639,6 +10671,8 @@ function TournamentMatchEditDialog({
       ...form,
       category_id: categoryId,
       group_id: firstGroup?.id ?? "",
+      phase: firstGroup ? "group" : "final",
+      bracket_match_id: "",
       score_entered: false,
       is_walkover: false,
       is_retired: false,
@@ -10724,22 +10758,16 @@ function TournamentMatchEditDialog({
                 ))}
               </select>
             </Field>
-            <Field label="Grup">
-              <select
-                className="input"
-                onChange={(event) =>
-                  setForm({ ...form, group_id: event.target.value })
-                }
-                value={form.group_id}
-              >
-                <option value="">Grupsuz / Final</option>
-                {availableGroups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    Grup {group.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <TournamentRoundFields tournament={tournament} categoryId={form.category_id}
+              groupId={form.group_id} phase={form.phase} bracketId={form.bracket_match_id} editingId={match.id}
+              onChange={(selection) => setForm({ ...form,
+                phase: selection.phase, group_id: selection.groupId, bracket_match_id: selection.bracketId,
+                player1_name: selection.playerNames?.[0] ?? form.player1_name,
+                player2_name: selection.playerNames?.[1] ?? form.player2_name,
+                score_entered: false, is_walkover: false, is_retired: false, winner_entry_id: "",
+                status: form.status === "canceled" ? "canceled" : "scheduled",
+                score_sets: initialTournamentScoreSetForms(scoringTournament),
+              })} />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">

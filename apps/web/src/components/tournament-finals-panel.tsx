@@ -82,10 +82,13 @@ export function TournamentFinalsPanel({
             <span className="shrink-0 text-xs text-[#68756b]">{template.matches.length} maç</span>
           </div>
           <p className="mt-3 text-xs leading-relaxed text-[#68756b]">
-            İsimler grup sonuçlarından güncellenir. Playoff ve yarı final sonuçlarına bağlı üst tur yerleri henüz boş.
+            İsimler grup sonuçlarından güncellenir. Eleme maçlarına sonuç girildiğinde kazanan üst tura geçer.
             {template.hasPending ? " Sonucu eksik maçlara bağlı yerler beklemede." : ""}
             {template.hasTies ? " Set ve oyun averajıyla çözülemeyen eşitlikler ayrıca belirlenmeli." : ""}
           </p>
+          {template.matches.some((match) => match.resultIssue) ? <p className="mt-2 text-xs text-amber-700">
+            Kayıtlı eleme maçı güncel eşleşmeyle uyuşmuyor. Üst tura geçiş için maçın turunu ve oyuncularını kontrol edin.
+          </p> : null}
           <div className="mt-5 min-w-0 pb-2" role="region" aria-label={`${category.name} final tablosu`}>
           <div
             aria-label={`${category.name} eleme şeması`}
@@ -124,7 +127,7 @@ export function TournamentFinalsPanel({
                 return (
                   <li
                     aria-label={match.title}
-                    className="absolute top-[var(--finals-mobile-top)] h-[var(--finals-mobile-card-height)] min-w-0 overflow-hidden rounded-lg border bg-[var(--theme-panel)] sm:top-[var(--finals-top)] sm:h-[var(--finals-card-height)]"
+                    className="absolute top-[var(--finals-mobile-top)] flex h-[var(--finals-mobile-card-height)] min-w-0 flex-col overflow-hidden rounded-lg border bg-[var(--theme-panel)] sm:top-[var(--finals-top)] sm:h-[var(--finals-card-height)]"
                     key={match.id}
                     style={{
                       left: singleMatch ? 0 : `${position.left}%`,
@@ -137,17 +140,18 @@ export function TournamentFinalsPanel({
                     } as CSSProperties}
                   >
                     <h5
-                      className="flex h-7 items-center justify-center text-[11px] font-semibold sm:text-xs"
+                      className="flex h-7 shrink-0 items-center justify-center text-[11px] font-semibold sm:text-xs"
                       style={{ backgroundColor: isFinal ? color : "var(--theme-muted-surface)", color: isFinal ? textColor : "var(--theme-text)" }}
                     >
                       {match.title}
                     </h5>
-                    <div className="grid h-[calc(100%-28px)] grid-rows-2 divide-y divide-[var(--theme-border)] sm:grid-cols-2 sm:grid-rows-1 sm:divide-x sm:divide-y-0">
+                    <div className="grid min-h-0 flex-1 grid-rows-2 divide-y divide-[var(--theme-border)] sm:grid-cols-2 sm:grid-rows-1 sm:divide-x sm:divide-y-0">
                       {match.entrants.map((entry, index) => (
                         <div className="flex min-h-0 min-w-0 flex-col items-center justify-center gap-1 px-1.5 py-1 text-center sm:gap-1.5 sm:px-3 sm:py-2" key={index}>
                           <span className="text-[11px] font-semibold text-[#68756b]">{entry.seed}</span>
                           {entry.status === "confirmed" ? (
-                            <div className="w-full space-y-1 text-xs font-bold leading-4 text-[var(--theme-text)] sm:text-sm sm:leading-snug">
+                            <div className={`w-full space-y-1 text-xs font-bold leading-4 sm:text-sm sm:leading-snug ${
+                              entry.entryId === match.winnerEntryId ? "text-[var(--theme-score-accent)]" : "text-[var(--theme-text)]"}`}>
                               {entry.names.map((name, i) => <p className="break-words" key={i}>{name}</p>)}
                             </div>
                           ) : entry.status === "later_round" ? (
@@ -161,6 +165,9 @@ export function TournamentFinalsPanel({
                         </div>
                       ))}
                     </div>
+                    {match.scoreText ? <p className="shrink-0 bg-[var(--theme-score-accent-bg)] px-1 text-center text-[10px] font-bold leading-4 text-[var(--theme-score-accent)] sm:text-xs">
+                      {match.scoreText}
+                    </p> : null}
                   </li>
                 );
               })}

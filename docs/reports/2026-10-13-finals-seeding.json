@@ -1,0 +1,2707 @@
+{
+  "tournamentId": "13350264-a44c-4c44-8213-4aef62e3fbb6",
+  "rules": {
+    "equalPoints": "mutual-set-difference-then-game-difference",
+    "crossGroup": "points-overall-sets-overall-games",
+    "matchTiebreakGames": "excluded"
+  },
+  "categories": [
+    {
+      "name": "Erkek Master",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "A1",
+            ""
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "A1",
+              "status": "confirmed",
+              "entryId": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+              "names": [
+                "Stefan De Jong"
+              ]
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "B1",
+            ""
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "B1",
+              "status": "confirmed",
+              "entryId": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+              "names": [
+                "Turgay Urgancı"
+              ]
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "qf1",
+          "title": "Playoff 1",
+          "row": 2,
+          "lane": "left",
+          "seeds": [
+            "B2",
+            "A3"
+          ],
+          "next": {
+            "matchId": "sf1",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "B2",
+              "status": "confirmed",
+              "entryId": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+              "names": [
+                "Gençay Üstünel"
+              ]
+            },
+            {
+              "seed": "A3",
+              "status": "confirmed",
+              "entryId": "263538da-f038-498b-b3ec-d8576419de0a",
+              "names": [
+                "Ali Koray Güzel"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "qf2",
+          "title": "Playoff 2",
+          "row": 2,
+          "lane": "right",
+          "seeds": [
+            "A2",
+            "B3"
+          ],
+          "next": {
+            "matchId": "sf2",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "A2",
+              "status": "confirmed",
+              "entryId": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+              "names": [
+                "Tuncer Urgancı"
+              ]
+            },
+            {
+              "seed": "B3",
+              "status": "confirmed",
+              "entryId": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+              "names": [
+                "Ahmet Ok"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "A1 ve B1, BYE ile doğrudan yarı finale geçer."
+      ],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "A1": {
+          "seed": "A1",
+          "status": "confirmed",
+          "entryId": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+          "names": [
+            "Stefan De Jong"
+          ]
+        },
+        "B1": {
+          "seed": "B1",
+          "status": "confirmed",
+          "entryId": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+          "names": [
+            "Turgay Urgancı"
+          ]
+        },
+        "B2": {
+          "seed": "B2",
+          "status": "confirmed",
+          "entryId": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+          "names": [
+            "Gençay Üstünel"
+          ]
+        },
+        "A3": {
+          "seed": "A3",
+          "status": "confirmed",
+          "entryId": "263538da-f038-498b-b3ec-d8576419de0a",
+          "names": [
+            "Ali Koray Güzel"
+          ]
+        },
+        "A2": {
+          "seed": "A2",
+          "status": "confirmed",
+          "entryId": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+          "names": [
+            "Tuncer Urgancı"
+          ]
+        },
+        "B3": {
+          "seed": "B3",
+          "status": "confirmed",
+          "entryId": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+          "names": [
+            "Ahmet Ok"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 12,
+              "scoredMatches": 4,
+              "setsWon": 4,
+              "setsLost": 0,
+              "gamesWon": 24,
+              "gamesLost": 9,
+              "rank": 1,
+              "tied": false,
+              "entryId": "2ab7681f-5829-4029-a5d5-fd22f5ac18c7",
+              "name": "Stefan De Jong"
+            },
+            {
+              "points": 10,
+              "scoredMatches": 4,
+              "setsWon": 3,
+              "setsLost": 2,
+              "gamesWon": 21,
+              "gamesLost": 23,
+              "rank": 2,
+              "tied": false,
+              "entryId": "3aba5fff-0773-4331-8fa0-b7332d907c90",
+              "name": "Tuncer Urgancı"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 4,
+              "setsWon": 2,
+              "setsLost": 1,
+              "gamesWon": 18,
+              "gamesLost": 16,
+              "rank": 3,
+              "tied": false,
+              "entryId": "263538da-f038-498b-b3ec-d8576419de0a",
+              "name": "Ali Koray Güzel"
+            },
+            {
+              "points": 6,
+              "scoredMatches": 4,
+              "setsWon": 0,
+              "setsLost": 6,
+              "gamesWon": 22,
+              "gamesLost": 37,
+              "rank": 4,
+              "tied": false,
+              "entryId": "90bb9365-0b7e-4711-8172-95e25a5dc94a",
+              "name": "Kemal Yardımcı"
+            },
+            {
+              "points": 0,
+              "scoredMatches": 4,
+              "setsWon": 0,
+              "setsLost": 0,
+              "gamesWon": 0,
+              "gamesLost": 0,
+              "rank": 5,
+              "tied": false,
+              "entryId": "538f608e-cb24-446f-905e-10a7bed2a2bb",
+              "name": "Nail Çakırdere"
+            }
+          ]
+        },
+        {
+          "group": "B",
+          "complete": true,
+          "rows": [
+            {
+              "points": 12,
+              "scoredMatches": 4,
+              "setsWon": 6,
+              "setsLost": 1,
+              "gamesWon": 36,
+              "gamesLost": 26,
+              "rank": 1,
+              "tied": false,
+              "entryId": "3234ea66-a349-4cb3-a8d1-537c535bc6a1",
+              "name": "Turgay Urgancı"
+            },
+            {
+              "points": 10,
+              "scoredMatches": 4,
+              "setsWon": 7,
+              "setsLost": 3,
+              "gamesWon": 45,
+              "gamesLost": 24,
+              "rank": 2,
+              "tied": false,
+              "entryId": "c8caa382-38b5-44ea-b3cb-c89add26fde7",
+              "name": "Gençay Üstünel"
+            },
+            {
+              "points": 8,
+              "scoredMatches": 4,
+              "setsWon": 3,
+              "setsLost": 4,
+              "gamesWon": 30,
+              "gamesLost": 24,
+              "rank": 3,
+              "tied": false,
+              "entryId": "d993b95d-6b85-45dc-8f3a-00c5f565c2e6",
+              "name": "Ahmet Ok"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 4,
+              "setsWon": 0,
+              "setsLost": 4,
+              "gamesWon": 10,
+              "gamesLost": 24,
+              "rank": 4,
+              "tied": false,
+              "entryId": "94d5aed2-62fa-464f-876e-92a4b56ae0ae",
+              "name": "Tayfun Bulut"
+            },
+            {
+              "points": 2,
+              "scoredMatches": 4,
+              "setsWon": 0,
+              "setsLost": 4,
+              "gamesWon": 1,
+              "gamesLost": 24,
+              "rank": 5,
+              "tied": false,
+              "entryId": "979f494b-f149-429b-98d7-35dbdbcd13ff",
+              "name": "Tuncer Akgün"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Erkek İleri",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "A1",
+            ""
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "A1",
+              "status": "confirmed",
+              "entryId": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+              "names": [
+                "Ümit Ünal"
+              ]
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "B1",
+            ""
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "B1",
+              "status": "confirmed",
+              "entryId": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+              "names": [
+                "Ersin Başaran"
+              ]
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "qf1",
+          "title": "Playoff 1",
+          "row": 2,
+          "lane": "left",
+          "seeds": [
+            "B2",
+            "A3"
+          ],
+          "next": {
+            "matchId": "sf1",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "B2",
+              "status": "confirmed",
+              "entryId": "59fecafc-ced7-4fd0-994f-5986b2103226",
+              "names": [
+                "Ümit Hisar"
+              ]
+            },
+            {
+              "seed": "A3",
+              "status": "confirmed",
+              "entryId": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3",
+              "names": [
+                "Uğur Ataman"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "qf2",
+          "title": "Playoff 2",
+          "row": 2,
+          "lane": "right",
+          "seeds": [
+            "A2",
+            "B3"
+          ],
+          "next": {
+            "matchId": "sf2",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "A2",
+              "status": "confirmed",
+              "entryId": "195955f5-5116-48e5-94b0-83ed55874a61",
+              "names": [
+                "Mete Albeyoğlu"
+              ]
+            },
+            {
+              "seed": "B3",
+              "status": "confirmed",
+              "entryId": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+              "names": [
+                "İnan Özbakır"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "A1 ve B1, BYE ile doğrudan yarı finale geçer."
+      ],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "A1": {
+          "seed": "A1",
+          "status": "confirmed",
+          "entryId": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+          "names": [
+            "Ümit Ünal"
+          ]
+        },
+        "B1": {
+          "seed": "B1",
+          "status": "confirmed",
+          "entryId": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+          "names": [
+            "Ersin Başaran"
+          ]
+        },
+        "B2": {
+          "seed": "B2",
+          "status": "confirmed",
+          "entryId": "59fecafc-ced7-4fd0-994f-5986b2103226",
+          "names": [
+            "Ümit Hisar"
+          ]
+        },
+        "A3": {
+          "seed": "A3",
+          "status": "confirmed",
+          "entryId": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3",
+          "names": [
+            "Uğur Ataman"
+          ]
+        },
+        "A2": {
+          "seed": "A2",
+          "status": "confirmed",
+          "entryId": "195955f5-5116-48e5-94b0-83ed55874a61",
+          "names": [
+            "Mete Albeyoğlu"
+          ]
+        },
+        "B3": {
+          "seed": "B3",
+          "status": "confirmed",
+          "entryId": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+          "names": [
+            "İnan Özbakır"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 12,
+              "scoredMatches": 4,
+              "setsWon": 8,
+              "setsLost": 1,
+              "gamesWon": 47,
+              "gamesLost": 24,
+              "rank": 1,
+              "tied": false,
+              "entryId": "23efd72c-f5ae-49ef-aea1-70306a28dca6",
+              "name": "Ümit Ünal"
+            },
+            {
+              "points": 10,
+              "scoredMatches": 4,
+              "setsWon": 7,
+              "setsLost": 2,
+              "gamesWon": 48,
+              "gamesLost": 22,
+              "rank": 2,
+              "tied": false,
+              "entryId": "195955f5-5116-48e5-94b0-83ed55874a61",
+              "name": "Mete Albeyoğlu"
+            },
+            {
+              "points": 8,
+              "scoredMatches": 4,
+              "setsWon": 2,
+              "setsLost": 5,
+              "gamesWon": 20,
+              "gamesLost": 36,
+              "rank": 3,
+              "tied": false,
+              "entryId": "ed1626a6-31f9-405a-bd4f-dac0bac88fa3",
+              "name": "Uğur Ataman"
+            },
+            {
+              "points": 6,
+              "scoredMatches": 4,
+              "setsWon": 3,
+              "setsLost": 6,
+              "gamesWon": 33,
+              "gamesLost": 42,
+              "rank": 4,
+              "tied": false,
+              "entryId": "29f4c3c1-d162-4fc8-95af-73e27fb607d0",
+              "name": "Baru Harsa"
+            },
+            {
+              "points": 3,
+              "scoredMatches": 4,
+              "setsWon": 0,
+              "setsLost": 6,
+              "gamesWon": 12,
+              "gamesLost": 36,
+              "rank": 5,
+              "tied": false,
+              "entryId": "d17bada8-db5d-4b86-a2f6-7440e16af944",
+              "name": "Cenk Cömert"
+            }
+          ]
+        },
+        {
+          "group": "B",
+          "complete": true,
+          "rows": [
+            {
+              "points": 12,
+              "scoredMatches": 4,
+              "setsWon": 6,
+              "setsLost": 2,
+              "gamesWon": 28,
+              "gamesLost": 23,
+              "rank": 1,
+              "tied": false,
+              "entryId": "7a2cffbe-54c9-4f97-8e97-8fa68a60638e",
+              "name": "Ersin Başaran"
+            },
+            {
+              "points": 10,
+              "scoredMatches": 4,
+              "setsWon": 7,
+              "setsLost": 2,
+              "gamesWon": 45,
+              "gamesLost": 26,
+              "rank": 2,
+              "tied": false,
+              "entryId": "59fecafc-ced7-4fd0-994f-5986b2103226",
+              "name": "Ümit Hisar"
+            },
+            {
+              "points": 8,
+              "scoredMatches": 4,
+              "setsWon": 5,
+              "setsLost": 6,
+              "gamesWon": 39,
+              "gamesLost": 38,
+              "rank": 3,
+              "tied": false,
+              "entryId": "50ac4bb6-b025-4d9f-ac07-28037ddad269",
+              "name": "İnan Özbakır"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 4,
+              "setsWon": 3,
+              "setsLost": 4,
+              "gamesWon": 30,
+              "gamesLost": 25,
+              "rank": 4,
+              "tied": false,
+              "entryId": "b496aa38-e80b-4763-93c6-43eefd38e58d",
+              "name": "Burçin Dere"
+            },
+            {
+              "points": 4,
+              "scoredMatches": 4,
+              "setsWon": 1,
+              "setsLost": 8,
+              "gamesWon": 16,
+              "gamesLost": 46,
+              "rank": 5,
+              "tied": false,
+              "entryId": "1534e837-2bad-417a-9ddb-6791802d130b",
+              "name": "Haluk Sağun"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kadın İleri",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "A1",
+            "B2"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "A1",
+              "status": "confirmed",
+              "entryId": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+              "names": [
+                "Evrim Özcan"
+              ]
+            },
+            {
+              "seed": "B2",
+              "status": "confirmed",
+              "entryId": "59d6f358-39d9-4d51-aa3f-a96051b2ac06",
+              "names": [
+                "Zeliha Aysan"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "B1",
+            "A2"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "B1",
+              "status": "confirmed",
+              "entryId": "af2dd479-0d69-4d96-864a-8cce1383b54c",
+              "names": [
+                "Günnur Algın"
+              ]
+            },
+            {
+              "seed": "A2",
+              "status": "confirmed",
+              "entryId": "f2d6600e-a9ec-452d-8297-0c973d09de18",
+              "names": [
+                "Zeynep Kürşat"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "A1": {
+          "seed": "A1",
+          "status": "confirmed",
+          "entryId": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+          "names": [
+            "Evrim Özcan"
+          ]
+        },
+        "B2": {
+          "seed": "B2",
+          "status": "confirmed",
+          "entryId": "59d6f358-39d9-4d51-aa3f-a96051b2ac06",
+          "names": [
+            "Zeliha Aysan"
+          ]
+        },
+        "B1": {
+          "seed": "B1",
+          "status": "confirmed",
+          "entryId": "af2dd479-0d69-4d96-864a-8cce1383b54c",
+          "names": [
+            "Günnur Algın"
+          ]
+        },
+        "A2": {
+          "seed": "A2",
+          "status": "confirmed",
+          "entryId": "f2d6600e-a9ec-452d-8297-0c973d09de18",
+          "names": [
+            "Zeynep Kürşat"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 4,
+              "setsLost": 1,
+              "gamesWon": 20,
+              "gamesLost": 12,
+              "rank": 1,
+              "tied": false,
+              "entryId": "84f44720-a2fe-4f55-9a78-16e0bd592fd4",
+              "name": "Evrim Özcan"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 1,
+              "setsLost": 2,
+              "gamesWon": 8,
+              "gamesLost": 8,
+              "rank": 2,
+              "tied": false,
+              "entryId": "f2d6600e-a9ec-452d-8297-0c973d09de18",
+              "name": "Zeynep Kürşat"
+            },
+            {
+              "points": 4,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 2,
+              "gamesWon": 8,
+              "gamesLost": 14,
+              "rank": 3,
+              "tied": false,
+              "entryId": "482aeb2f-72b8-4331-a54c-521c5ec2e4ee",
+              "name": "Ekin Akgün"
+            },
+            {
+              "points": 1,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 0,
+              "gamesWon": 2,
+              "gamesLost": 4,
+              "rank": 4,
+              "tied": false,
+              "entryId": "b8997931-6018-4410-b304-b9cce71ea968",
+              "name": "Verda Akpınarlı"
+            }
+          ]
+        },
+        {
+          "group": "B",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 2,
+              "gamesWon": 32,
+              "gamesLost": 20,
+              "rank": 1,
+              "tied": false,
+              "entryId": "af2dd479-0d69-4d96-864a-8cce1383b54c",
+              "name": "Günnur Algın"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 5,
+              "setsLost": 3,
+              "gamesWon": 29,
+              "gamesLost": 28,
+              "rank": 2,
+              "tied": false,
+              "entryId": "59d6f358-39d9-4d51-aa3f-a96051b2ac06",
+              "name": "Zeliha Aysan"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 4,
+              "setsLost": 4,
+              "gamesWon": 34,
+              "gamesLost": 27,
+              "rank": 3,
+              "tied": false,
+              "entryId": "ad1a9261-f00f-49f7-9229-ac5881923660",
+              "name": "Elif Bora"
+            },
+            {
+              "points": 3,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 6,
+              "gamesWon": 16,
+              "gamesLost": 36,
+              "rank": 4,
+              "tied": false,
+              "entryId": "e12b2581-15c5-422b-ace3-86c76d0d27e7",
+              "name": "Naz Lale"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kadın Orta",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "1",
+            "4"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "1",
+              "status": "confirmed",
+              "entryId": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+              "names": [
+                "Semra Yumlu"
+              ]
+            },
+            {
+              "seed": "4",
+              "status": "confirmed",
+              "entryId": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf",
+              "names": [
+                "Merve Timuçin"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "2",
+            "3"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "2",
+              "status": "confirmed",
+              "entryId": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+              "names": [
+                "Ecem Güzelhisar"
+              ]
+            },
+            {
+              "seed": "3",
+              "status": "confirmed",
+              "entryId": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+              "names": [
+                "Gizem Topuz"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "Yarı finaller: 1–4 ve 2–3."
+      ],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "1": {
+          "seed": "1",
+          "status": "confirmed",
+          "entryId": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+          "names": [
+            "Semra Yumlu"
+          ]
+        },
+        "2": {
+          "seed": "2",
+          "status": "confirmed",
+          "entryId": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+          "names": [
+            "Ecem Güzelhisar"
+          ]
+        },
+        "3": {
+          "seed": "3",
+          "status": "confirmed",
+          "entryId": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+          "names": [
+            "Gizem Topuz"
+          ]
+        },
+        "4": {
+          "seed": "4",
+          "status": "confirmed",
+          "entryId": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf",
+          "names": [
+            "Merve Timuçin"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 15,
+              "scoredMatches": 5,
+              "setsWon": 8,
+              "setsLost": 1,
+              "gamesWon": 48,
+              "gamesLost": 25,
+              "rank": 1,
+              "tied": false,
+              "entryId": "a543a258-dfe3-4540-a5a0-520f5a5a91ab",
+              "name": "Semra Yumlu"
+            },
+            {
+              "points": 13,
+              "scoredMatches": 5,
+              "setsWon": 9,
+              "setsLost": 2,
+              "gamesWon": 59,
+              "gamesLost": 35,
+              "rank": 2,
+              "tied": false,
+              "entryId": "db7a395b-ac7b-44d2-92f5-d9dbad21c6dc",
+              "name": "Ecem Güzelhisar"
+            },
+            {
+              "points": 11,
+              "scoredMatches": 5,
+              "setsWon": 6,
+              "setsLost": 4,
+              "gamesWon": 46,
+              "gamesLost": 46,
+              "rank": 3,
+              "tied": false,
+              "entryId": "fa37efb0-43ab-4a38-89ce-924d588b3976",
+              "name": "Gizem Topuz"
+            },
+            {
+              "points": 9,
+              "scoredMatches": 5,
+              "setsWon": 4,
+              "setsLost": 7,
+              "gamesWon": 43,
+              "gamesLost": 52,
+              "rank": 4,
+              "tied": false,
+              "entryId": "3ac31686-fab2-4022-9d0a-0b7e6d797eaf",
+              "name": "Merve Timuçin"
+            },
+            {
+              "points": 6,
+              "scoredMatches": 5,
+              "setsWon": 3,
+              "setsLost": 6,
+              "gamesWon": 37,
+              "gamesLost": 41,
+              "rank": 5,
+              "tied": false,
+              "entryId": "f33133d5-e072-433b-a95d-87b76a5461b7",
+              "name": "Çağla Bozkurt"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 5,
+              "setsWon": 0,
+              "setsLost": 10,
+              "gamesWon": 28,
+              "gamesLost": 62,
+              "rank": 6,
+              "tied": false,
+              "entryId": "ac827316-34b2-4773-b8a8-a06e2b8c154e",
+              "name": "Elif Ay"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Erkek Orta",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "L2",
+            "L3"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "L2",
+              "status": "confirmed",
+              "entryId": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853",
+              "names": [
+                "Utku Ataman"
+              ]
+            },
+            {
+              "seed": "L3",
+              "status": "confirmed",
+              "entryId": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+              "names": [
+                "Hüseyin Kahraman"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "L1",
+            ""
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "L1",
+              "status": "confirmed",
+              "entryId": "03bca105-2682-4948-abae-3f2984d96e45",
+              "names": [
+                "Mehmet Yiğit"
+              ]
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "e2",
+          "title": "Playoff 2",
+          "row": 2,
+          "lane": "right",
+          "seeds": [
+            "İ1",
+            ""
+          ],
+          "next": {
+            "matchId": "sf2",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "İ1",
+              "status": "confirmed",
+              "entryId": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+              "names": [
+                "Özcan Günay"
+              ]
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "e1",
+          "title": "Playoff 1",
+          "row": 3,
+          "lane": "right",
+          "seeds": [
+            "İ2",
+            "İ3"
+          ],
+          "next": {
+            "matchId": "e2",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "İ2",
+              "status": "confirmed",
+              "entryId": "ed16350e-984c-4894-8844-31c308e5168d",
+              "names": [
+                "Cengiz Gültekin"
+              ]
+            },
+            {
+              "seed": "İ3",
+              "status": "confirmed",
+              "entryId": "2d93c306-3d77-4215-8bf7-42c552a9d268",
+              "names": [
+                "İlker Doğaç"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "L1–L3: grup birincileri. İ1–İ3: grup ikincileri.",
+        "Her küme puana göre sıralanır; 1 en yüksek puanlıdır.",
+        "En iyi ikinci ilk turu pas geçer."
+      ],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "L2": {
+          "seed": "L2",
+          "status": "confirmed",
+          "entryId": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853",
+          "names": [
+            "Utku Ataman"
+          ]
+        },
+        "L3": {
+          "seed": "L3",
+          "status": "confirmed",
+          "entryId": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+          "names": [
+            "Hüseyin Kahraman"
+          ]
+        },
+        "L1": {
+          "seed": "L1",
+          "status": "confirmed",
+          "entryId": "03bca105-2682-4948-abae-3f2984d96e45",
+          "names": [
+            "Mehmet Yiğit"
+          ]
+        },
+        "İ1": {
+          "seed": "İ1",
+          "status": "confirmed",
+          "entryId": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+          "names": [
+            "Özcan Günay"
+          ]
+        },
+        "İ2": {
+          "seed": "İ2",
+          "status": "confirmed",
+          "entryId": "ed16350e-984c-4894-8844-31c308e5168d",
+          "names": [
+            "Cengiz Gültekin"
+          ]
+        },
+        "İ3": {
+          "seed": "İ3",
+          "status": "confirmed",
+          "entryId": "2d93c306-3d77-4215-8bf7-42c552a9d268",
+          "names": [
+            "İlker Doğaç"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 1,
+              "gamesWon": 34,
+              "gamesLost": 23,
+              "rank": 1,
+              "tied": false,
+              "entryId": "b224f301-f1ba-477c-b320-60c31b53d0c5",
+              "name": "Hüseyin Kahraman"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 5,
+              "setsLost": 2,
+              "gamesWon": 36,
+              "gamesLost": 17,
+              "rank": 2,
+              "tied": false,
+              "entryId": "522dfba7-8d76-4d1b-b912-f808fd20f026",
+              "name": "Özcan Günay"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 2,
+              "setsLost": 5,
+              "gamesWon": 22,
+              "gamesLost": 36,
+              "rank": 3,
+              "tied": false,
+              "entryId": "b8be3fa5-938c-4c37-a2ad-e123442c4482",
+              "name": "Serhat Gürsan"
+            },
+            {
+              "points": 3,
+              "scoredMatches": 3,
+              "setsWon": 1,
+              "setsLost": 6,
+              "gamesWon": 20,
+              "gamesLost": 36,
+              "rank": 4,
+              "tied": false,
+              "entryId": "87743e07-fabb-48cf-b105-5fd5d6edee15",
+              "name": "Yunus Emre Yerekapan"
+            }
+          ]
+        },
+        {
+          "group": "B",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 0,
+              "gamesWon": 37,
+              "gamesLost": 12,
+              "rank": 1,
+              "tied": false,
+              "entryId": "03bca105-2682-4948-abae-3f2984d96e45",
+              "name": "Mehmet Yiğit"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 3,
+              "setsLost": 4,
+              "gamesWon": 27,
+              "gamesLost": 27,
+              "rank": 2,
+              "tied": false,
+              "entryId": "2d93c306-3d77-4215-8bf7-42c552a9d268",
+              "name": "İlker Doğaç"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 2,
+              "setsLost": 4,
+              "gamesWon": 22,
+              "gamesLost": 30,
+              "rank": 3,
+              "tied": false,
+              "entryId": "7410c898-e312-4b7b-a6e8-80fa45a8f9cd",
+              "name": "Emre Karaaslan"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 2,
+              "setsLost": 5,
+              "gamesWon": 21,
+              "gamesLost": 38,
+              "rank": 4,
+              "tied": false,
+              "entryId": "7865f909-5b50-4372-a6c9-b54f2b8c3592",
+              "name": "Bener Bozkurt"
+            }
+          ]
+        },
+        {
+          "group": "C",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 1,
+              "gamesWon": 37,
+              "gamesLost": 25,
+              "rank": 1,
+              "tied": false,
+              "entryId": "1c8f5dc2-1b89-41ca-85b6-b8b73cfd8853",
+              "name": "Utku Ataman"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 5,
+              "setsLost": 3,
+              "gamesWon": 29,
+              "gamesLost": 28,
+              "rank": 2,
+              "tied": false,
+              "entryId": "ed16350e-984c-4894-8844-31c308e5168d",
+              "name": "Cengiz Gültekin"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 2,
+              "setsLost": 4,
+              "gamesWon": 24,
+              "gamesLost": 26,
+              "rank": 3,
+              "tied": false,
+              "entryId": "81988aca-bad6-4348-bb70-f3fa8db1fd39",
+              "name": "Serdar Gürge"
+            },
+            {
+              "points": 3,
+              "scoredMatches": 3,
+              "setsWon": 1,
+              "setsLost": 6,
+              "gamesWon": 23,
+              "gamesLost": 34,
+              "rank": 4,
+              "tied": false,
+              "entryId": "dadd8fe0-db3b-432f-931c-4dd680067c39",
+              "name": "Tuğberk Sepetci"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Yeni Başlayan Kadın",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "A1",
+            "B2"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "A1",
+              "status": "confirmed",
+              "entryId": "b189cc40-c809-47be-b49a-46124cfc3bd2",
+              "names": [
+                "Büşra Kaveloğlu"
+              ]
+            },
+            {
+              "seed": "B2",
+              "status": "confirmed",
+              "entryId": "08041a5a-9294-4ead-bf7a-2d95591cfda0",
+              "names": [
+                "İrem Akkuş"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "B1",
+            "A2"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "B1",
+              "status": "confirmed",
+              "entryId": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+              "names": [
+                "Habibe Yağcı"
+              ]
+            },
+            {
+              "seed": "A2",
+              "status": "confirmed",
+              "entryId": "d7727746-1a8f-4f3c-83af-8b770d20fe85",
+              "names": [
+                "Esin Gülpınar"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "A1": {
+          "seed": "A1",
+          "status": "confirmed",
+          "entryId": "b189cc40-c809-47be-b49a-46124cfc3bd2",
+          "names": [
+            "Büşra Kaveloğlu"
+          ]
+        },
+        "B2": {
+          "seed": "B2",
+          "status": "confirmed",
+          "entryId": "08041a5a-9294-4ead-bf7a-2d95591cfda0",
+          "names": [
+            "İrem Akkuş"
+          ]
+        },
+        "B1": {
+          "seed": "B1",
+          "status": "confirmed",
+          "entryId": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+          "names": [
+            "Habibe Yağcı"
+          ]
+        },
+        "A2": {
+          "seed": "A2",
+          "status": "confirmed",
+          "entryId": "d7727746-1a8f-4f3c-83af-8b770d20fe85",
+          "names": [
+            "Esin Gülpınar"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 0,
+              "gamesWon": 38,
+              "gamesLost": 19,
+              "rank": 1,
+              "tied": false,
+              "entryId": "b189cc40-c809-47be-b49a-46124cfc3bd2",
+              "name": "Büşra Kaveloğlu"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 4,
+              "setsLost": 2,
+              "gamesWon": 33,
+              "gamesLost": 30,
+              "rank": 2,
+              "tied": false,
+              "entryId": "d7727746-1a8f-4f3c-83af-8b770d20fe85",
+              "name": "Esin Gülpınar"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 2,
+              "setsLost": 4,
+              "gamesWon": 23,
+              "gamesLost": 30,
+              "rank": 3,
+              "tied": false,
+              "entryId": "bbafc842-e836-4e94-b71f-29f497729723",
+              "name": "Burcu Yalabık"
+            },
+            {
+              "points": 3,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 6,
+              "gamesWon": 23,
+              "gamesLost": 38,
+              "rank": 4,
+              "tied": false,
+              "entryId": "d4d61956-09d5-4336-84e9-de71bf5de2f2",
+              "name": "Özge Dönmez"
+            }
+          ]
+        },
+        {
+          "group": "B",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 4,
+              "setsLost": 0,
+              "gamesWon": 24,
+              "gamesLost": 10,
+              "rank": 1,
+              "tied": false,
+              "entryId": "0adc6ace-72ab-4427-a1b7-e3b883c3694b",
+              "name": "Habibe Yağcı"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 4,
+              "setsLost": 3,
+              "gamesWon": 24,
+              "gamesLost": 27,
+              "rank": 2,
+              "tied": false,
+              "entryId": "08041a5a-9294-4ead-bf7a-2d95591cfda0",
+              "name": "İrem Akkuş"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 3,
+              "setsLost": 5,
+              "gamesWon": 25,
+              "gamesLost": 31,
+              "rank": 3,
+              "tied": false,
+              "entryId": "4e1d7770-00d3-4d86-af27-3a4fd56eaf2c",
+              "name": "Münevver Oktay"
+            },
+            {
+              "points": 2,
+              "scoredMatches": 3,
+              "setsWon": 1,
+              "setsLost": 4,
+              "gamesWon": 18,
+              "gamesLost": 23,
+              "rank": 4,
+              "tied": false,
+              "entryId": "e1ca44a8-a017-4b6d-be53-936162d907a1",
+              "name": "Gülfem Yavuz"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Double Master Erkek",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "A1",
+            "B2"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "A1",
+              "status": "confirmed",
+              "entryId": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+              "names": [
+                "Serkan İrden",
+                "Ahmet Ok"
+              ]
+            },
+            {
+              "seed": "B2",
+              "status": "confirmed",
+              "entryId": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+              "names": [
+                "Kemal Hür",
+                "İlyas Yılmaz"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "B1",
+            "A2"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "B1",
+              "status": "confirmed",
+              "entryId": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+              "names": [
+                "Gençay Üstünel",
+                "İbrahim Çeyrek"
+              ]
+            },
+            {
+              "seed": "A2",
+              "status": "confirmed",
+              "entryId": "e0f106ff-042a-4505-a18d-e7f04a3521fa",
+              "names": [
+                "Turgay Urgancı",
+                "Tuncer Urgancı"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "A1": {
+          "seed": "A1",
+          "status": "confirmed",
+          "entryId": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+          "names": [
+            "Serkan İrden",
+            "Ahmet Ok"
+          ]
+        },
+        "B2": {
+          "seed": "B2",
+          "status": "confirmed",
+          "entryId": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+          "names": [
+            "Kemal Hür",
+            "İlyas Yılmaz"
+          ]
+        },
+        "B1": {
+          "seed": "B1",
+          "status": "confirmed",
+          "entryId": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+          "names": [
+            "Gençay Üstünel",
+            "İbrahim Çeyrek"
+          ]
+        },
+        "A2": {
+          "seed": "A2",
+          "status": "confirmed",
+          "entryId": "e0f106ff-042a-4505-a18d-e7f04a3521fa",
+          "names": [
+            "Turgay Urgancı",
+            "Tuncer Urgancı"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 0,
+              "gamesWon": 38,
+              "gamesLost": 20,
+              "rank": 1,
+              "tied": false,
+              "entryId": "4eb19dd2-3a18-4e46-bd5f-4f61856d40d1",
+              "name": "Serkan İrden / Ahmet Ok"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 4,
+              "setsLost": 3,
+              "gamesWon": 29,
+              "gamesLost": 27,
+              "rank": 2,
+              "tied": false,
+              "entryId": "e0f106ff-042a-4505-a18d-e7f04a3521fa",
+              "name": "Turgay Urgancı / Tuncer Urgancı"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 1,
+              "setsLost": 4,
+              "gamesWon": 16,
+              "gamesLost": 21,
+              "rank": 3,
+              "tied": false,
+              "entryId": "1af0e2cf-6f2b-43b2-9355-78bd15291c12",
+              "name": "Ali Koray Güzel / Aydoğan Aysan"
+            },
+            {
+              "points": 2,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 4,
+              "gamesWon": 9,
+              "gamesLost": 24,
+              "rank": 4,
+              "tied": false,
+              "entryId": "6cc0f72c-9dd5-45d6-901c-dfbff5d8b229",
+              "name": "Kemal Yardımcı / Tayfun Bulut"
+            }
+          ]
+        },
+        {
+          "group": "B",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 1,
+              "gamesWon": 34,
+              "gamesLost": 16,
+              "rank": 1,
+              "tied": false,
+              "entryId": "792f4d68-32c9-4b0a-92ac-c8fb148eac16",
+              "name": "Gençay Üstünel / İbrahim Çeyrek"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 3,
+              "setsLost": 2,
+              "gamesWon": 21,
+              "gamesLost": 12,
+              "rank": 2,
+              "tied": false,
+              "entryId": "491eb120-73d7-4c51-8a00-4aba1b56136d",
+              "name": "Kemal Hür / İlyas Yılmaz"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 4,
+              "gamesWon": 5,
+              "gamesLost": 24,
+              "rank": 3,
+              "tied": false,
+              "entryId": "c536a374-32dd-4a28-9677-96ac722e26ab",
+              "name": "İnan Özbakır / Ümit Ünal"
+            },
+            {
+              "points": 1,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 2,
+              "gamesWon": 4,
+              "gamesLost": 12,
+              "rank": 4,
+              "tied": false,
+              "entryId": "4bca8beb-bd11-4521-b13d-317cf303ed56",
+              "name": "Özcan Günay / Tuncer Akgün"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Double İleri Erkek",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "1",
+            "2"
+          ],
+          "entrants": [
+            {
+              "seed": "1",
+              "status": "confirmed",
+              "entryId": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+              "names": [
+                "Mete Albeyoğlu",
+                "Ersin Başaran"
+              ]
+            },
+            {
+              "seed": "2",
+              "status": "confirmed",
+              "entryId": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+              "names": [
+                "Cenk Cömert",
+                "Haluk Sağun"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "Grubun ilk iki sırası final oynar."
+      ],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "1": {
+          "seed": "1",
+          "status": "confirmed",
+          "entryId": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+          "names": [
+            "Mete Albeyoğlu",
+            "Ersin Başaran"
+          ]
+        },
+        "2": {
+          "seed": "2",
+          "status": "confirmed",
+          "entryId": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+          "names": [
+            "Cenk Cömert",
+            "Haluk Sağun"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 0,
+              "gamesWon": 36,
+              "gamesLost": 5,
+              "rank": 1,
+              "tied": false,
+              "entryId": "61e15420-ab8a-4bb0-bb93-848eaa55c3ee",
+              "name": "Mete Albeyoğlu / Ersin Başaran"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 3,
+              "setsLost": 4,
+              "gamesWon": 24,
+              "gamesLost": 26,
+              "rank": 2,
+              "tied": false,
+              "entryId": "f5eaf465-abf3-4c07-bb94-5211d8db07b7",
+              "name": "Cenk Cömert / Haluk Sağun"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 3,
+              "setsLost": 5,
+              "gamesWon": 21,
+              "gamesLost": 33,
+              "rank": 3,
+              "tied": false,
+              "entryId": "94a68b5e-aee3-421b-99b7-7c19a5f12bb8",
+              "name": "Bener Bozkurt / Baru Harsa"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 2,
+              "setsLost": 5,
+              "gamesWon": 18,
+              "gamesLost": 35,
+              "rank": 4,
+              "tied": false,
+              "entryId": "db734d2f-9186-4a9c-907e-8b6291d52548",
+              "name": "Yavuz Özlen / Mehmet Yiğit"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Orta Mix",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "1",
+            "2"
+          ],
+          "entrants": [
+            {
+              "seed": "1",
+              "status": "pending",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "2",
+              "status": "pending",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "Grubun ilk iki sırası final oynar."
+      ],
+      "hasPending": true,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "1": {
+          "seed": "1",
+          "status": "pending",
+          "entryId": null,
+          "names": []
+        },
+        "2": {
+          "seed": "2",
+          "status": "pending",
+          "entryId": null,
+          "names": []
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": false,
+          "rows": [
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 5,
+              "setsLost": 3,
+              "gamesWon": 31,
+              "gamesLost": 22,
+              "rank": 1,
+              "tied": false,
+              "entryId": "8304b9b3-3067-45d1-ad54-b07ffd994084",
+              "name": "Baru Harsa / Işın Reisoğlu"
+            },
+            {
+              "points": 6,
+              "scoredMatches": 2,
+              "setsWon": 4,
+              "setsLost": 1,
+              "gamesWon": 21,
+              "gamesLost": 13,
+              "rank": 2,
+              "tied": false,
+              "entryId": "f4f9cc0c-363a-4091-9da9-b4251595653b",
+              "name": "Haluk Sağun / Gizem Topuz"
+            },
+            {
+              "points": 4,
+              "scoredMatches": 2,
+              "setsWon": 3,
+              "setsLost": 2,
+              "gamesWon": 23,
+              "gamesLost": 15,
+              "rank": 3,
+              "tied": false,
+              "entryId": "a418b1da-d666-40a6-8d2b-b02402925a2f",
+              "name": "Ecem Güzelhisar / Özcan Günay"
+            },
+            {
+              "points": 3,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 6,
+              "gamesWon": 12,
+              "gamesLost": 37,
+              "rank": 4,
+              "tied": false,
+              "entryId": "d19b45ec-5bd5-4d38-bcdb-14516c1f2ca6",
+              "name": "Çağla Bozkurt / Bener Bozkurt"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "İleri Mix",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "",
+            ""
+          ],
+          "entrants": [
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            },
+            {
+              "seed": "",
+              "status": "later_round",
+              "entryId": null,
+              "names": []
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf1",
+          "title": "Yarı final 1",
+          "row": 1,
+          "lane": "left",
+          "seeds": [
+            "1",
+            "4"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 0
+          },
+          "entrants": [
+            {
+              "seed": "1",
+              "status": "confirmed",
+              "entryId": "70504605-d60d-4cce-8f36-8c06420edfaa",
+              "names": [
+                "Evrim Özcan",
+                "Gençay Üstünel"
+              ]
+            },
+            {
+              "seed": "4",
+              "status": "confirmed",
+              "entryId": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+              "names": [
+                "Ahmet Ok",
+                "Naz Lale"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        },
+        {
+          "id": "sf2",
+          "title": "Yarı final 2",
+          "row": 1,
+          "lane": "right",
+          "seeds": [
+            "2",
+            "3"
+          ],
+          "next": {
+            "matchId": "final",
+            "slot": 1
+          },
+          "entrants": [
+            {
+              "seed": "2",
+              "status": "confirmed",
+              "entryId": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+              "names": [
+                "Elif Bora",
+                "Serkan İrden"
+              ]
+            },
+            {
+              "seed": "3",
+              "status": "confirmed",
+              "entryId": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+              "names": [
+                "İnan Özbakır",
+                "Zeynep Kürşat"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "Yarı finaller: 1–4 ve 2–3."
+      ],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "1": {
+          "seed": "1",
+          "status": "confirmed",
+          "entryId": "70504605-d60d-4cce-8f36-8c06420edfaa",
+          "names": [
+            "Evrim Özcan",
+            "Gençay Üstünel"
+          ]
+        },
+        "2": {
+          "seed": "2",
+          "status": "confirmed",
+          "entryId": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+          "names": [
+            "Elif Bora",
+            "Serkan İrden"
+          ]
+        },
+        "3": {
+          "seed": "3",
+          "status": "confirmed",
+          "entryId": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+          "names": [
+            "İnan Özbakır",
+            "Zeynep Kürşat"
+          ]
+        },
+        "4": {
+          "seed": "4",
+          "status": "confirmed",
+          "entryId": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+          "names": [
+            "Ahmet Ok",
+            "Naz Lale"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 15,
+              "scoredMatches": 5,
+              "setsWon": 10,
+              "setsLost": 1,
+              "gamesWon": 57,
+              "gamesLost": 28,
+              "rank": 1,
+              "tied": false,
+              "entryId": "70504605-d60d-4cce-8f36-8c06420edfaa",
+              "name": "Evrim Özcan / Gençay Üstünel"
+            },
+            {
+              "points": 13,
+              "scoredMatches": 5,
+              "setsWon": 9,
+              "setsLost": 4,
+              "gamesWon": 53,
+              "gamesLost": 36,
+              "rank": 2,
+              "tied": false,
+              "entryId": "5332540f-ff94-49ca-aab9-5b04e3a91602",
+              "name": "Elif Bora / Serkan İrden"
+            },
+            {
+              "points": 9,
+              "scoredMatches": 5,
+              "setsWon": 5,
+              "setsLost": 6,
+              "gamesWon": 44,
+              "gamesLost": 46,
+              "rank": 3,
+              "tied": false,
+              "entryId": "17268e58-8df2-414a-985c-e9b2eb3bf69c",
+              "name": "İnan Özbakır / Zeynep Kürşat"
+            },
+            {
+              "points": 9,
+              "scoredMatches": 5,
+              "setsWon": 4,
+              "setsLost": 7,
+              "gamesWon": 40,
+              "gamesLost": 53,
+              "rank": 4,
+              "tied": false,
+              "entryId": "78a2ac68-5631-47ad-a5b2-60450a61d410",
+              "name": "Ahmet Ok / Naz Lale"
+            },
+            {
+              "points": 9,
+              "scoredMatches": 5,
+              "setsWon": 5,
+              "setsLost": 6,
+              "gamesWon": 45,
+              "gamesLost": 49,
+              "rank": 5,
+              "tied": false,
+              "entryId": "6ccf86a9-ea9d-4d30-8626-bc7daa17afff",
+              "name": "Esen Atay / Kemal Yardımcı"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 5,
+              "setsWon": 1,
+              "setsLost": 10,
+              "gamesWon": 28,
+              "gamesLost": 55,
+              "rank": 6,
+              "tied": false,
+              "entryId": "4ae08e8b-71b8-4313-97b1-b27d4fbed01f",
+              "name": "Zeliha Aysan / Aydoğan Aysan"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Double Kadın",
+      "matches": [
+        {
+          "id": "final",
+          "title": "Final",
+          "row": 0,
+          "lane": "center",
+          "seeds": [
+            "1",
+            "2"
+          ],
+          "entrants": [
+            {
+              "seed": "1",
+              "status": "confirmed",
+              "entryId": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+              "names": [
+                "Evrim Özcan",
+                "Fatma Müsait"
+              ]
+            },
+            {
+              "seed": "2",
+              "status": "confirmed",
+              "entryId": "aa656e05-feca-43f0-a319-5a6333c7816e",
+              "names": [
+                "Mehtap",
+                "Nuray Baskak"
+              ]
+            }
+          ],
+          "winnerEntryId": null,
+          "resultMatchId": null,
+          "scoreText": "",
+          "resultIssue": ""
+        }
+      ],
+      "notes": [
+        "Grubun ilk iki sırası final oynar."
+      ],
+      "hasPending": false,
+      "hasTies": false,
+      "qualifiedAwaitingPlacement": [],
+      "seeds": {
+        "1": {
+          "seed": "1",
+          "status": "confirmed",
+          "entryId": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+          "names": [
+            "Evrim Özcan",
+            "Fatma Müsait"
+          ]
+        },
+        "2": {
+          "seed": "2",
+          "status": "confirmed",
+          "entryId": "aa656e05-feca-43f0-a319-5a6333c7816e",
+          "names": [
+            "Mehtap",
+            "Nuray Baskak"
+          ]
+        }
+      },
+      "standings": [
+        {
+          "group": "A",
+          "complete": true,
+          "rows": [
+            {
+              "points": 9,
+              "scoredMatches": 3,
+              "setsWon": 6,
+              "setsLost": 0,
+              "gamesWon": 36,
+              "gamesLost": 15,
+              "rank": 1,
+              "tied": false,
+              "entryId": "567b93e1-f562-4749-ad6e-384e68cf5e04",
+              "name": "Evrim Özcan / Fatma Müsait"
+            },
+            {
+              "points": 7,
+              "scoredMatches": 3,
+              "setsWon": 2,
+              "setsLost": 2,
+              "gamesWon": 18,
+              "gamesLost": 18,
+              "rank": 2,
+              "tied": false,
+              "entryId": "aa656e05-feca-43f0-a319-5a6333c7816e",
+              "name": "Mehtap / Nuray Baskak"
+            },
+            {
+              "points": 5,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 4,
+              "gamesWon": 11,
+              "gamesLost": 24,
+              "rank": 3,
+              "tied": false,
+              "entryId": "caf4bebc-00ee-4558-9ee5-848dbaeae0d8",
+              "name": "Zeliha Aysan / Zeynep Kürşat"
+            },
+            {
+              "points": 1,
+              "scoredMatches": 3,
+              "setsWon": 0,
+              "setsLost": 2,
+              "gamesWon": 4,
+              "gamesLost": 12,
+              "rank": 4,
+              "tied": false,
+              "entryId": "859874a6-360a-489f-830f-bf1676f78eeb",
+              "name": "Günnur Algın / Ekin Akgün"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

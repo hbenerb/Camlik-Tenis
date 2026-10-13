@@ -4,7 +4,7 @@ export type CalendarView = "day" | "week" | "month";
 export type SkillLevel = "beginner" | "intermediate" | "advanced" | "master";
 export type NotificationScheduleType = "instant" | "scheduled" | "recurring";
 export type AppNotificationStatus = "active" | "canceled";
-export type TournamentMatchPhase = "group" | "final";
+export type TournamentMatchPhase = "group" | "playoff" | "quarterfinal" | "semifinal" | "final";
 export type TournamentMatchStatus = "scheduled" | "completed" | "canceled";
 export type TournamentDecidingSetType = "regular" | "match_tiebreak";
 export type TournamentScoreSetType = "regular" | "match_tiebreak";
@@ -193,6 +193,7 @@ export type TournamentMatch = {
   player1_entry_id: string;
   player2_entry_id: string;
   round_label: string | null;
+  bracket_match_id?: string | null;
   status: TournamentMatchStatus;
   score_entered: boolean;
   score_sets: TournamentScoreSet[];

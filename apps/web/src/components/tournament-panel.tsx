@@ -25,6 +25,7 @@ import type { FormEvent } from "react";
 
 import { TournamentFinalsPanel } from "@/components/tournament-finals-panel";
 import { formatTournamentMatchScore } from "@/lib/tournament-scoring";
+import { TOURNAMENT_ROUND_LABELS } from "@/lib/tournament-finals";
 import { tournamentStandings, type GroupStandings } from "@/lib/tournament-standings";
 import type { Court, TournamentMatch, TournamentWithDetails } from "@/lib/types";
 import type { TournamentDecidingSetType } from "@/lib/types";
@@ -923,7 +924,7 @@ export function TournamentDetailPanel({
                                       }`}
                                     >
                                       {category?.name ?? "Kategori"}
-                                      {group ? ` · Grup ${group.name}` : " · Final"}
+                                      {group ? ` · Grup ${group.name}` : ` · ${TOURNAMENT_ROUND_LABELS[match.phase]}`}
                                     </p>
                                     <p
                                       className={`truncate text-[9px] font-medium leading-tight ${
@@ -944,7 +945,7 @@ export function TournamentDetailPanel({
                                 const matchClassName =
                                   "relative grid w-full min-w-0 gap-1 rounded border p-2 text-left shadow-sm transition";
                                 const matchTitle = `${match.player1_name} - ${match.player2_name} · ${category?.name ?? "Kategori"}${
-                                  group ? ` · Grup ${group.name}` : " · Final"
+                                  group ? ` · Grup ${group.name}` : ` · ${TOURNAMENT_ROUND_LABELS[match.phase]}`
                                 }`;
 
                                 return onEditMatch ? (
@@ -1096,7 +1097,7 @@ export function TournamentDetailPanel({
                                 <p className="truncate">
                                   {category?.name ?? "Kategori"}
                                   {group ? ` · Grup ${group.name}` : ""}
-                                  {match.phase === "final" ? " · Final" : ""}
+                                  {match.phase !== "group" ? ` · ${TOURNAMENT_ROUND_LABELS[match.phase]}` : ""}
                                 </p>
                                 <span className="flex shrink-0 items-center gap-1.5 font-medium">
                                   {match.courts?.name ?? "Kort belirlenecek"}

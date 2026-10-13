@@ -1,4 +1,5 @@
-import { getTournamentFinalsTemplate } from "@/lib/tournament-finals";
+import { finalsRoundAcceptsMatch, getTournamentFinalsTemplate } from "@/lib/tournament-finals";
+import { formatTournamentMatchScore, validateTournamentScore } from "@/lib/tournament-scoring";
 import { compareOverallStandings, tournamentStandings, type GroupStandings, type Standing } from "@/lib/tournament-standings";
 import type { TournamentCategory, TournamentParticipant, TournamentWithDetails } from "@/lib/types";
 
@@ -82,7 +83,51 @@ export function getTournamentFinalsSeeding(
     const group = groups.length === 1 ? groups[0] : groups.find((group) => group.name.trim().toUpperCase() === seed[0]);
     return fromGroup(seed, group ? standings.get(group.id) : undefined, rank);
   };
-  const matches = template.matches.map((match) => ({ ...match, entrants: match.seeds.map(resolve) }));
+  const matches = template.matches.map((match) => ({
+    ...match, entrants: match.seeds.map(resolve), winnerEntryId: null as string | null,
+    resultMatchId: null as string | null, scoreText: "", resultIssue: "",
+  }));
+  // Resolve upstream rounds first. Recompute from source results every time so
+  // corrections, cancellations and deleted scores cannot leave a stale winner.
+  for (const match of [...matches].sort((a, b) => b.row - a.row)) {
+    const linked = tournament.matches.filter((record) => record.category_id === category.id &&
+      record.tournament_id === tournament.id && record.bracket_match_id === match.id && record.status !== "canceled");
+    if (linked.length > 1) { match.resultIssue = "Bu eşleşmeye birden fazla maç bağlanmış."; continue; }
+    const record = linked[0];
+    if (!record) continue;
+    match.resultMatchId = record.id;
+    const expected = match.entrants.map((entry) => entry.entryId);
+    if (!finalsRoundAcceptsMatch(record.phase, match.id) || record.group_id ||
+      expected.some((id) => !id) || expected[0] === expected[1] ||
+      !expected.includes(record.player1_entry_id) || !expected.includes(record.player2_entry_id) ||
+      record.player1_entry_id === record.player2_entry_id) {
+      match.resultIssue = "Kayıtlı maçın oyuncuları veya turu güncel tabloyla uyuşmuyor; maçı düzenleyin.";
+      continue;
+    }
+    if (record.phase === "quarterfinal") match.title = match.title.replace("Playoff", "Çeyrek final");
+    if (!record.score_entered || record.status !== "completed") continue;
+    const winner = match.entrants.find((entry) => entry.entryId === record.winner_entry_id);
+    const side = record.winner_entry_id === record.player1_entry_id ? 1 : 2;
+    const validated = record.is_walkover ? null : validateTournamentScore(tournament, record.score_sets, {
+      retiredWinnerSide: record.is_retired ? side : undefined,
+    });
+    if (!winner || (validated && (validated.error || validated.winnerSide !== side))) {
+      match.resultIssue = "Maç sonucu doğrulanamadı; skoru kontrol edin.";
+      continue;
+    }
+    match.winnerEntryId = winner.entryId;
+    const displayRecord = record.player1_entry_id === expected[0] ? record : {
+      ...record, score_sets: record.score_sets.map((set) => ({ ...set,
+        player1_score: set.player2_score, player2_score: set.player1_score,
+        player1_tiebreak: set.player2_tiebreak, player2_tiebreak: set.player1_tiebreak,
+      })),
+    };
+    match.scoreText = formatTournamentMatchScore(displayRecord) ?? "";
+    if (match.next) {
+      const target = matches.find((item) => item.id === match.next!.matchId);
+      if (target) target.entrants[match.next.slot] = { ...winner, seed: "" };
+    }
+  }
   const placedIds = new Set(matches.flatMap((match) => match.entrants.flatMap((entry) => entry.entryId ? [entry.entryId] : [])));
   // Show guaranteed qualifiers even when a remaining result can change their
   // exact bracket positions (notably the three-group Erkek Orta draw).

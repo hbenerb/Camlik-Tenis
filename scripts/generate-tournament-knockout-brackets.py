@@ -88,10 +88,14 @@ class Booklet:
             path.lineTo(*point)
         self.c.drawPath(path)
 
-    def match(self, x, top, label, players, final=False):
+    def match(self, x, top, label, players, final=False, match_id=None):
         """A two-column table; arrow destinations are the empty participant cells."""
         assert len(players) == 2
         w, h = CARD_W, CARD_H
+        resolved = next((m for m in self.category_seeding["matches"] if m["id"] == match_id), None) if self.category_seeding else None
+        score = resolved.get("scoreText", "") if resolved else ""
+        if resolved and resolved["title"].startswith("Çeyrek"):
+            label = "ÇEYREK FİNAL " + match_id[-1]
         bottom = top - h
         assert bottom >= 118
         self.text(x, top + 12, label, 9.5, True, RED if final else MUTED)
@@ -101,13 +105,16 @@ class Booklet:
         self.c.rect(x, bottom, w, h, fill=1, stroke=1)
         # Names are at the bottom so upward arrows land in participant cells.
         self.line([(x, top - 24), (x + w, top - 24)])
-        self.line([(x + w / 2, bottom), (x + w / 2, top)])
+        self.line([(x + w / 2, bottom), (x + w / 2, top - 24 if score else top)])
+        if score:
+            self.text(x + w / 2, top - 16, score.replace("–", "-"), 9, True, colors.HexColor("#15803d"), "center")
         for i, value in enumerate(players):
             cell_left = x + i * w / 2
             center = cell_left + w / 4
-            if value:
-                self.text(center, top - 38, value, 8, True, MUTED, "center")
-                entry = self.category_seeding["seeds"].get(value) if self.category_seeding else None
+            entry = resolved["entrants"][i] if resolved else (self.category_seeding["seeds"].get(value) if self.category_seeding else None)
+            if value or (entry and entry["status"] == "confirmed"):
+                if value:
+                    self.text(center, top - 38, value, 8, True, MUTED, "center")
                 if entry:
                     labels = entry["names"] if entry["status"] == "confirmed" else [
                         "Eşitlik çözülmedi" if entry["status"] == "tied" else "Sonuç bekleniyor"]
@@ -116,16 +123,17 @@ class Booklet:
                     assert len(lines) <= 4, lines
                     start = top - 56 + (2 - min(len(lines), 2)) * -6
                     for n, line in enumerate(lines):
+                        name_color = colors.HexColor("#15803d") if resolved and entry.get("entryId") == resolved.get("winnerEntryId") and resolved.get("winnerEntryId") else INK
                         self.text(center, start - 12 * n, line, size, True,
-                                  INK if entry["status"] == "confirmed" else MUTED, "center")
+                                  name_color if entry["status"] == "confirmed" else MUTED, "center")
                 else:
                     self.text(center, bottom + 22, value, 19, True, align="center")
             else:
                 self.line([(cell_left + 17, bottom + 11), (cell_left + w / 2 - 17, bottom + 11)],
                           color=LINE, width=0.45)
-            self.text(cell_left + 12, top - 16, "Skor", 8, color=MUTED)
-            self.line([(cell_left + 39, top - 17), (cell_left + w / 2 - 12, top - 17)],
-                      width=0.45)
+            if not score:
+                self.text(cell_left + 12, top - 16, "Skor", 8, color=MUTED)
+                self.line([(cell_left + 39, top - 17), (cell_left + w / 2 - 12, top - 17)], width=0.45)
         self.match_count += 1
         self.page_matches.append((final, top))
         return {"out": (x + w / 2, top),
@@ -179,11 +187,11 @@ class Booklet:
         self.text(RIGHT, 27, f"{page:02d} / 11", 8.5, True, MUTED, "right")
 
     def bye(self):
-        q1 = self.match(X_LEFT, 251, "PLAYOFF 1", ["B2", "A3"])
-        q2 = self.match(X_RIGHT, 251, "PLAYOFF 2", ["A2", "B3"])
-        s1 = self.match(X_LEFT, 447, "YARI FİNAL 1", ["A1", ""])
-        s2 = self.match(X_RIGHT, 447, "YARI FİNAL 2", ["B1", ""])
-        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
+        q1 = self.match(X_LEFT, 251, "PLAYOFF 1", ["B2", "A3"], match_id="qf1")
+        q2 = self.match(X_RIGHT, 251, "PLAYOFF 2", ["A2", "B3"], match_id="qf2")
+        s1 = self.match(X_LEFT, 447, "YARI FİNAL 1", ["A1", ""], match_id="sf1")
+        s2 = self.match(X_RIGHT, 447, "YARI FİNAL 2", ["B1", ""], match_id="sf2")
+        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True, "final")
         self.arrow(q1, s1, 1)
         self.arrow(q2, s2, 1)
         self.arrow(s1, final, 0)
@@ -194,24 +202,24 @@ class Booklet:
 
     def semi(self, single=False):
         first, second = (["1", "4"], ["2", "3"]) if single else (["A1", "B2"], ["B1", "A2"])
-        s1 = self.match(X_LEFT, 393, "YARI FİNAL 1", first)
-        s2 = self.match(X_RIGHT, 393, "YARI FİNAL 2", second)
-        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
+        s1 = self.match(X_LEFT, 393, "YARI FİNAL 1", first, match_id="sf1")
+        s2 = self.match(X_RIGHT, 393, "YARI FİNAL 2", second, match_id="sf2")
+        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True, "final")
         self.arrow(s1, final, 0)
         self.arrow(s2, final, 1)
         self.legend(["1 - 4 ve 2 - 3 yarı final oynar."] if single else [])
 
     def final(self):
-        self.match(X_CENTER, 643, "FİNAL", ["1", "2"], True)
+        self.match(X_CENTER, 643, "FİNAL", ["1", "2"], True, "final")
         self.legend(["İlk iki sıra final oynar."])
 
     def playoff(self):
         # Keep the elimination chain in the right-hand lane, without crossing lines.
-        e1 = self.match(X_RIGHT, 220, "PLAYOFF 1", ["İ2", "İ3"])
-        e2 = self.match(X_RIGHT, 361, "PLAYOFF 2", ["İ1", ""])
-        s1 = self.match(X_LEFT, 502, "YARI FİNAL 1", ["L2", "L3"])
-        s2 = self.match(X_RIGHT, 502, "YARI FİNAL 2", ["L1", ""])
-        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True)
+        e1 = self.match(X_RIGHT, 220, "PLAYOFF 1", ["İ2", "İ3"], match_id="e1")
+        e2 = self.match(X_RIGHT, 361, "PLAYOFF 2", ["İ1", ""], match_id="e2")
+        s1 = self.match(X_LEFT, 502, "YARI FİNAL 1", ["L2", "L3"], match_id="sf1")
+        s2 = self.match(X_RIGHT, 502, "YARI FİNAL 2", ["L1", ""], match_id="sf2")
+        final = self.match(X_CENTER, 643, "FİNAL", ["", ""], True, "final")
         self.arrow(e1, e2, 1)
         self.arrow(e2, s2, 1)
         self.arrow(s1, final, 0)

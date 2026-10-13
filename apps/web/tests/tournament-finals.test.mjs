@@ -38,7 +38,10 @@ const { TournamentFinalsPanel } = await import("../src/components/tournament-fin
 const { TournamentDetailPanel } = await import("../src/components/tournament-panel.tsx");
 const { tournamentGroupStandings, tournamentStandings, compareOverallStandings } = await import("../src/lib/tournament-standings.ts");
 const { getTournamentFinalsSeeding } = await import("../src/lib/tournament-finals-seeding.ts");
+const { inferTournamentRoundSelection, validateTournamentRoundSelection } = await import("../src/lib/tournament-round-selection.ts");
+const { TournamentRoundFields } = await import("../src/components/tournament-round-fields.tsx");
 const live = JSON.parse(readFileSync(new URL("./fixtures/finals-2026-10-12.json", import.meta.url), "utf8"));
+const latest = JSON.parse(readFileSync(new URL("./fixtures/finals-2026-10-13.json", import.meta.url), "utf8"));
 
 const categories = [
   ["Erkek Master", 2, 5], ["Erkek İleri", 2, 5], ["Kadın İleri", 2, 3],
@@ -318,6 +321,117 @@ test("İleri Mix completed result resolves the three-way games tie and populates
   for (const category of live.categories.filter((c) => c.name !== "İleri Mix")) {
     assert.deepEqual(getTournamentFinalsSeeding(data, category), getTournamentFinalsSeeding(live, category));
   }
+});
+
+function completeBracket(data, name, id, winnerSide = 1, extra = {}) {
+  const category = categoryByName(name, data);
+  const slot = seedCategory(name, data).matches.find(m => m.id === id);
+  assert.ok(slot.entrants.every(e => e.entryId), `${name}/${id} must be resolved`);
+  const [p1,p2] = slot.entrants.map(e => e.entryId);
+  const match = {id:`test-${name}-${id}`, tournament_id:data.id, category_id:category.id, group_id:null,
+    bracket_match_id:id, phase:id==='final'?'final':id.startsWith('sf')?'semifinal':'playoff',
+    player1_entry_id:p1, player2_entry_id:p2, status:'completed', score_entered:true,
+    winner_entry_id:winnerSide===1?p1:p2, is_walkover:false,is_retired:false,
+    score_sets:[1,2].map(set_number=>({set_number,type:'regular',player1_score:winnerSide===1?6:2,
+      player2_score:winnerSide===1?2:6,player1_tiebreak:null,player2_tiebreak:null})), ...extra};
+  data.matches.push(match);
+  return match;
+}
+
+test("October 13 has just one outstanding group fixture and resolves Erkek Orta", () => {
+  const pending=latest.matches.filter(m=>m.phase==='group'&&m.status!=='canceled'&&!m.score_entered);
+  assert.equal(pending.length,1);
+  assert.equal(pending[0].category_id,categoryByName('Orta Mix',latest).id);
+  const orta=seedCategory('Erkek Orta',latest);
+  assert.equal(orta.hasPending,false);
+  assert.equal(orta.hasTies,false);
+  assert.equal(orta.qualifiedAwaitingPlacement.length,0);
+});
+
+test("quarterfinal/playoff winners advance to the right semifinal then final; group standings never change", () => {
+  const data=structuredClone(latest), before=tournamentStandings(data);
+  const qf=completeBracket(data,'Erkek Master','qf1',2,{phase:'quarterfinal'});
+  assert.equal(seedCategory('Erkek Master',data).matches.find(m=>m.id==='sf1').entrants[1].entryId,qf.winner_entry_id);
+  const sf=completeBracket(data,'Erkek Master','sf1',2);
+  assert.equal(seedCategory('Erkek Master',data).matches[0].entrants[0].entryId,sf.winner_entry_id);
+  assert.deepEqual(tournamentStandings(data),before);
+  assert.match(seedCategory('Erkek Master',data).matches.find(m=>m.id==='qf1').title,/Çeyrek/);
+});
+
+test("two sequential Erkek Orta playoffs, walkovers, retirement and finals advance", () => {
+  const data=structuredClone(latest);
+  const e1=completeBracket(data,'Erkek Orta','e1',1,{is_walkover:true,score_sets:[]});
+  const e2=completeBracket(data,'Erkek Orta','e2',2,{is_retired:true,score_sets:[{set_number:1,type:'regular',player1_score:2,player2_score:4,player1_tiebreak:null,player2_tiebreak:null}]});
+  assert.equal(e1.winner_entry_id,e2.winner_entry_id);
+  const sf2=completeBracket(data,'Erkek Orta','sf2',2);
+  completeBracket(data,'Erkek Orta','sf1');
+  const final=completeBracket(data,'Erkek Orta','final',2);
+  assert.equal(final.winner_entry_id,sf2.winner_entry_id);
+  assert.equal(seedCategory('Erkek Orta',data).matches[0].winnerEntryId,final.winner_entry_id);
+});
+
+test("corrections, cancellations and score deletion invalidate stale downstream results", () => {
+  const data=structuredClone(latest);
+  const qf=completeBracket(data,'Erkek Master','qf1');
+  completeBracket(data,'Erkek Master','sf1',2);
+  qf.winner_entry_id=qf.player2_entry_id;
+  qf.score_sets=qf.score_sets.map(s=>({...s,player1_score:2,player2_score:6}));
+  let table=seedCategory('Erkek Master',data);
+  assert.equal(table.matches.find(m=>m.id==='sf1').entrants[1].entryId,qf.player2_entry_id);
+  assert.ok(table.matches.find(m=>m.id==='sf1').resultIssue);
+  assert.equal(table.matches[0].entrants[0].entryId,null);
+  for(const reset of [{status:'canceled'},{status:'scheduled',score_entered:false,score_sets:[],winner_entry_id:null}]) {
+    Object.assign(qf,reset);
+    table=seedCategory('Erkek Master',data);
+    assert.equal(table.matches.find(m=>m.id==='sf1').entrants[1].entryId,null);
+    assert.equal(table.matches[0].entrants[0].entryId,null);
+  }
+});
+
+test("reversed players work, but duplicate links, unrelated entries, wrong stages and unlinked results never advance", () => {
+  const data=structuredClone(latest);
+  const sf=completeBracket(data,'İleri Mix','sf1');
+  [sf.player1_entry_id,sf.player2_entry_id]=[sf.player2_entry_id,sf.player1_entry_id];
+  sf.winner_entry_id=sf.player1_entry_id;
+  assert.equal(seedCategory('İleri Mix',data).matches[0].entrants[0].entryId,sf.winner_entry_id);
+  const valid={...sf};
+  for (const bad of [{bracket_match_id:null},{phase:'group'},{group_id:'wrong'},{player2_entry_id:'wrong'},
+    {winner_entry_id:'wrong'},{score_sets:[]}]) {
+    Object.assign(sf,valid,bad);
+    assert.equal(seedCategory('İleri Mix',data).matches[0].entrants[0].entryId,null);
+  }
+  Object.assign(sf,valid);
+  data.matches.push({...sf,id:'duplicate'});
+  assert.equal(seedCategory('İleri Mix',data).matches[0].entrants[0].entryId,null);
+});
+
+test("round selection requires resolved matching entrants and a unique bracket slot", () => {
+  const data=structuredClone(latest), category=categoryByName('İleri Mix',data);
+  const ids=seedCategory('İleri Mix',data).matches.find(m=>m.id==='sf1').entrants.map(e=>e.entryId);
+  const check=(phase,id,players=ids,editingId)=>validateTournamentRoundSelection(data,category.id,phase,id,players,editingId);
+  assert.equal(check('semifinal','sf1'),null);
+  assert.ok(check('semifinal',''));
+  assert.ok(check('quarterfinal','sf1'));
+  assert.ok(check('semifinal','sf1',[ids[0],ids[0]]));
+  assert.ok(check('final','final'));
+  const m=completeBracket(data,'İleri Mix','sf1');
+  assert.ok(check('semifinal','sf1'));
+  assert.equal(check('semifinal','sf1',ids,m.id),null);
+  m.status='canceled';
+  assert.equal(check('semifinal','sf1'),null);
+  const html=renderToStaticMarkup(React.createElement(TournamentRoundFields,{tournament:data,categoryId:category.id,
+    groupId:'',phase:'semifinal',bracketId:'sf1',onChange(){}}));
+  for(const label of ['Playoff','Çeyrek Final','Yarı Final','Final','Tablodaki eşleşme','Evrim Özcan']) assert.ok(html.includes(label),label);
+});
+
+test("the existing generic Final booking is suggested as its exact semifinal only on admin edit", () => {
+  const existing=latest.matches.find(m=>m.id==='8da3ec51-41fe-4632-ad00-d83dc5f451ed');
+  const inferred=inferTournamentRoundSelection(latest,existing);
+  assert.equal(inferred.phase,'semifinal');
+  assert.equal(inferred.bracketId,'sf1');
+  assert.equal(existing.phase,'final');
+  assert.equal(existing.bracket_match_id,undefined);
+  assert.equal(inferTournamentRoundSelection(latest,{...existing,player2_entry_id:'unknown'}).bracketId,'');
 });
 
 test("inter-group rankings use overall points then sets then games, and do not invent a last tiebreak", () => {
