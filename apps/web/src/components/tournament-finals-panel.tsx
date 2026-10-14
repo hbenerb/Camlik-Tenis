@@ -1,4 +1,3 @@
-import { LockKeyhole } from "lucide-react";
 import { useMemo, type CSSProperties } from "react";
 
 import {
@@ -15,7 +14,6 @@ import type { GroupStandings } from "@/lib/tournament-standings";
 import type { TournamentWithDetails } from "@/lib/types";
 
 export function TournamentFinalsPanel({
-  canViewFinals,
   tournament,
   standings,
   selectedCategoryId,
@@ -23,7 +21,6 @@ export function TournamentFinalsPanel({
   color,
   textColor,
 }: {
-  canViewFinals: boolean;
   tournament: TournamentWithDetails;
   standings?: Map<string, GroupStandings>;
   selectedCategoryId: string;
@@ -34,11 +31,9 @@ export function TournamentFinalsPanel({
   const { orderedCategories, category, template } = useMemo(() => {
     const orderedCategories = [...tournament.categories].sort((a, b) => a.display_order - b.display_order);
     const category = orderedCategories.find((item) => item.id === selectedCategoryId) ?? orderedCategories[0];
-    return { orderedCategories, category, template: canViewFinals && category
+    return { orderedCategories, category, template: category
       ? getTournamentFinalsSeeding(tournament, category, standings) : null };
-  }, [canViewFinals, tournament, selectedCategoryId, standings]);
-  // Guard content as well as navigation, including a role change on this tab.
-  if (!canViewFinals) return null;
+  }, [tournament, selectedCategoryId, standings]);
   const lastRow = template ? Math.max(...template.matches.map((match) => match.row)) : 0;
   const height = lastRow * FINALS_ROW_STEP + FINALS_CARD_HEIGHT;
   const mobileHeight = lastRow * FINALS_MOBILE_ROW_STEP + FINALS_MOBILE_CARD_HEIGHT;
@@ -56,13 +51,7 @@ export function TournamentFinalsPanel({
   return (
     <section aria-label="Finaller" className="min-w-0 rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-3 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold">Finaller</h3>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-[#68756b]">
-            <LockKeyhole aria-hidden="true" size={13} />
-            Yalnızca adminler
-          </p>
-        </div>
+        <h3 className="text-lg font-semibold">Finaller</h3>
         <select
           aria-label="Final kategorisi"
           className="input min-w-0 max-w-sm"

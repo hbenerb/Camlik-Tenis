@@ -5881,7 +5881,6 @@ export function ClubApp() {
 
           {!isLoading && visibleActiveTab === "tournaments" ? (
             <TournamentDetailPanel
-              canViewFinals={isAdmin(profile)}
               currentTime={currentTime}
               key={selectedTournamentId ?? "active-tournament"}
               onClose={() => {

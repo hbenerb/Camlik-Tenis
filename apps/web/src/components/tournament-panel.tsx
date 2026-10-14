@@ -297,14 +297,12 @@ function defaultTournamentDate(
 }
 
 export function TournamentDetailPanel({
-  canViewFinals,
   currentTime,
   onClose,
   onEditMatch,
   selectedTournamentId,
   tournaments,
 }: {
-  canViewFinals: boolean;
   currentTime: Date;
   onClose: () => void;
   onEditMatch?: (match: TournamentMatch) => void;
@@ -324,7 +322,6 @@ export function TournamentDetailPanel({
       .sort((first, second) => first.display_order - second.display_order)[0]
       ?.id ?? "";
   const [detailTab, setDetailTab] = useState<TournamentDetailTab>("schedule");
-  const visibleDetailTab = detailTab === "finals" && !canViewFinals ? "schedule" : detailTab;
   const [scope, setScope] = useState<TournamentScheduleScope>("week");
   const [anchorDate, setAnchorDate] = useState(initialAnchorDate);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -603,48 +600,46 @@ export function TournamentDetailPanel({
           </div>
         </div>
 
-        <div aria-label="Turnuva bölümleri" className={`tournament-detail-tabs grid p-2 sm:px-6 ${canViewFinals ? "grid-cols-3" : "grid-cols-2"}`}>
+        <div aria-label="Turnuva bölümleri" className="tournament-detail-tabs grid grid-cols-3 p-2 sm:px-6">
           <button
-            aria-pressed={visibleDetailTab === "schedule"}
+            aria-pressed={detailTab === "schedule"}
             className={`h-11 whitespace-nowrap rounded-md text-xs font-semibold transition sm:text-sm ${
-              visibleDetailTab === "schedule"
+              detailTab === "schedule"
                 ? "hover:opacity-90"
                 : "text-[#546257] hover:bg-[#eee9dd]"
             }`}
             onClick={openSchedule}
-            style={visibleDetailTab === "schedule" ? tournamentAccentStyle : undefined}
+            style={detailTab === "schedule" ? tournamentAccentStyle : undefined}
             type="button"
           >
             Takvim
           </button>
           <button
-            aria-pressed={visibleDetailTab === "players"}
+            aria-pressed={detailTab === "players"}
             className={`h-11 whitespace-nowrap rounded-md text-xs font-semibold transition sm:text-sm ${
-              visibleDetailTab === "players"
+              detailTab === "players"
                 ? "hover:opacity-90"
                 : "text-[#546257] hover:bg-[#eee9dd]"
             }`}
             onClick={() => setDetailTab("players")}
-            style={visibleDetailTab === "players" ? tournamentAccentStyle : undefined}
+            style={detailTab === "players" ? tournamentAccentStyle : undefined}
             type="button"
           >
             Puan Durumu
           </button>
-          {canViewFinals ? (
-            <button
-              aria-pressed={visibleDetailTab === "finals"}
-              className={`h-11 whitespace-nowrap rounded-md text-xs font-semibold transition sm:text-sm ${visibleDetailTab === "finals" ? "hover:opacity-90" : "text-[#546257] hover:bg-[#eee9dd]"}`}
-              onClick={() => setDetailTab("finals")}
-              style={visibleDetailTab === "finals" ? tournamentAccentStyle : undefined}
-              type="button"
-            >
-              Finaller
-            </button>
-          ) : null}
+          <button
+            aria-pressed={detailTab === "finals"}
+            className={`h-11 whitespace-nowrap rounded-md text-xs font-semibold transition sm:text-sm ${detailTab === "finals" ? "hover:opacity-90" : "text-[#546257] hover:bg-[#eee9dd]"}`}
+            onClick={() => setDetailTab("finals")}
+            style={detailTab === "finals" ? tournamentAccentStyle : undefined}
+            type="button"
+          >
+            Finaller
+          </button>
         </div>
       </section>
 
-      {visibleDetailTab === "schedule" ? (
+      {detailTab === "schedule" ? (
         <section className="rounded-lg border border-[#ddd7c8] bg-[#fffdf8] p-4 sm:p-6">
           <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
             <div className="grid grid-cols-3 rounded-md border border-[#cfc8b8] bg-white p-1">
@@ -1149,9 +1144,8 @@ export function TournamentDetailPanel({
             </div>
           )}
         </section>
-      ) : visibleDetailTab === "finals" && canViewFinals ? (
+      ) : detailTab === "finals" ? (
         <TournamentFinalsPanel
-          canViewFinals={canViewFinals}
           tournament={selectedTournament}
           standings={groupStandings}
           color={tournamentColor}

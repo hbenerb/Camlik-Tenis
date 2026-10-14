@@ -13,7 +13,7 @@ import {
   getTournamentFinalsTemplate,
 } from "../src/lib/tournament-finals.ts";
 
-// Render the real TSX components, including their role guards, without a
+// Render the real TSX components, including read-only user access, without a
 // production-only preview route or a new runtime dependency.
 registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -159,17 +159,16 @@ test("Playoff labels and simplified footnotes stay aligned with the revised PDF"
 });
 
 const props = {
-  canViewFinals: true,
   tournament: { id: OCTOBER_29_TOURNAMENT_ID, categories, groups:[], players:[], participants:[], matches:[] },
   selectedCategoryId: "0", onCategoryChange() {}, color: "#c71532", textColor: "#ffffff",
 };
-test("finals content remains admin-only and missing results are never invented", () => {
-  assert.equal(renderToStaticMarkup(React.createElement(TournamentFinalsPanel, {...props, canViewFinals:false})), "");
+test("finals are readable without admin access and missing results are never invented", () => {
   for (const category of categories) {
     const html = renderToStaticMarkup(React.createElement(TournamentFinalsPanel, {...props, selectedCategoryId:category.id}));
     assert.equal((html.match(/<li /g) ?? []).length, category.matches);
     assert.equal((html.match(/Üst tur sonucu bekleniyor|>Sonuç bekleniyor</g) ?? []).length, category.matches * 2);
     assert.ok(!html.includes("<input"));
+    assert.doesNotMatch(html, /Yalnızca adminler|<button|Düzenle|Puan ekle/);
     assert.ok(!html.includes("Şampiyon"));
   }
 });
@@ -225,7 +224,7 @@ test("names come from player references and readable doubles names render withou
   assert.match(html, /Cenk Güncel Ad/);
   assert.match(html, /Haluk Sağun/);
   assert.doesNotMatch(html, /Cenk Cömert|truncate|line-clamp/);
-  assert.equal(renderToStaticMarkup(React.createElement(TournamentFinalsPanel, {...props, tournament:data, canViewFinals:false})), "");
+  assert.doesNotMatch(html, /Yalnızca adminler|<input|<button/);
 });
 
 function miniTournament(scores, pending = []) {
@@ -451,22 +450,25 @@ test("missing or renamed groups cannot assign a different group's entrants to ap
   assert.ok(seeding.matches.flatMap((m)=>m.entrants).every((e)=>e.status!=="confirmed"));
 });
 
-test("tournament navigation exposes the finals button only with admin access", () => {
+test("tournament navigation exposes finals to everyone while editing remains admin-only", () => {
   const tournament = {
     id: OCTOBER_29_TOURNAMENT_ID, name:"29 Ekim", is_active:true,
     group_stage_start_date:"2026-08-18", group_stage_end_date:"2026-10-15",
     finals_start_date:"2026-10-16", finals_end_date:"2026-10-29",
     categories, groups:[], players:[], participants:[], matches:[], courts:[],
   };
-  for (const allowed of [false, true]) {
+  for (const onEditMatch of [undefined, () => {}]) {
     const html = renderToStaticMarkup(React.createElement(TournamentDetailPanel, {
-      canViewFinals:allowed, currentTime:new Date("2026-10-08T12:00:00"), onClose() {},
+      onEditMatch, currentTime:new Date("2026-10-08T12:00:00"), onClose() {},
       selectedTournamentId:tournament.id, tournaments:[tournament],
     }));
-    assert.equal(/>Finaller<\/button>/.test(html), allowed);
+    assert.match(html, />Finaller<\/button>/);
+    assert.match(html, /tournament-detail-tabs grid grid-cols-3/);
+    assert.doesNotMatch(html, /Yalnızca adminler/);
     assert.ok(html.includes(">Takvim</button>"));
     assert.ok(html.includes(">Puan Durumu</button>"));
   }
   const parent = readFileSync(new URL("../src/components/club-app.tsx", import.meta.url), "utf8");
-  assert.match(parent, /<TournamentDetailPanel\s+canViewFinals=\{isAdmin\(profile\)\}/);
+  assert.doesNotMatch(parent, /canViewFinals/);
+  assert.match(parent, /onEditMatch=\{\s*isAdmin\(profile\) \? openTournamentMatchEditor : undefined/);
 });
