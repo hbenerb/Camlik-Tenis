@@ -32,11 +32,12 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sun,
+  Trophy,
   User as UserIcon,
   Users,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -119,10 +120,14 @@ import type {
 import { TournamentRoundFields } from "@/components/tournament-round-fields";
 import { TOURNAMENT_ROUND_LABELS } from "@/lib/tournament-finals";
 import { inferTournamentRoundSelection, validateTournamentRoundSelection } from "@/lib/tournament-round-selection";
+import { LeagueDraftPanel } from "@/components/league-draft-panel";
+import { LEAGUE_COLOR, LEAGUE_DRAFT_ID, prepareLeagueCategories } from "@/lib/league-draft";
+import type { LeagueCategoryDraft, LeagueDraft } from "@/lib/league-draft";
 
 type AppTab =
   | "calendar"
   | "tournaments"
+  | "league"
   | "reservations"
   | "messages"
   | "profile"
@@ -1577,6 +1582,11 @@ export function ClubApp() {
     useState<ClubSettings>(defaultSettings);
   const [courts, setCourts] = useState<Court[]>([]);
   const [tournaments, setTournaments] = useState<TournamentWithDetails[]>([]);
+  const [leagueDraft, setLeagueDraft] = useState<LeagueDraft | null>(null);
+  const [isLeagueLoading, setIsLeagueLoading] = useState(false);
+  const [leagueError, setLeagueError] = useState<string | null>(null);
+  const leagueAccess = useRef({ userId: null as string | null, admin: false, generation: 0 });
+  const leagueLoadedGeneration = useRef<number | null>(null);
   const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(
     null,
   );
@@ -2389,7 +2399,72 @@ export function ClubApp() {
     });
   }, [supabase]);
 
+  const readLeagueDraft = useCallback(async (): Promise<LeagueDraft | null> => {
+    if (!supabase) throw new Error("Lig bağlantısı kurulamadı.");
+    const { data, error } = await supabase.rpc("read_league_draft", { p_id: LEAGUE_DRAFT_ID });
+    if (error) {
+      throw new Error("Lig taslağı okunamadı. Bağlantıyı kontrol edip yeniden deneyin.");
+    }
+    if (!data) return null;
+    const payloads = (data as LeagueDraft).categories;
+    if (!Array.isArray(payloads)) throw new Error("Lig kategorileri okunamadı. Taslağı yeniden yükleyin.");
+    if (payloads.length !== 5) throw new Error("Lig kategorileri eksik. Taslağı yeniden yükleyin.");
+    prepareLeagueCategories(payloads);
+    return data as LeagueDraft;
+  }, [supabase]);
+
+  const loadLeagueData = useCallback(async () => {
+    const access = { ...leagueAccess.current };
+    if (!access.admin || !access.userId) return;
+    const stillAuthorized = () => leagueAccess.current.admin &&
+      leagueAccess.current.userId === access.userId &&
+      leagueAccess.current.generation === access.generation;
+    setIsLeagueLoading(true);
+    setLeagueError(null);
+    try {
+      const draft = await readLeagueDraft();
+      if (stillAuthorized()) {
+        leagueLoadedGeneration.current = access.generation;
+        setLeagueDraft(draft);
+      }
+    } catch (error) {
+      if (stillAuthorized()) setLeagueError(error instanceof Error ? error.message : "Lig taslağı yüklenemedi.");
+    } finally {
+      if (stillAuthorized()) setIsLeagueLoading(false);
+    }
+  }, [readLeagueDraft]);
+
+  async function saveLeagueDraft(categories: LeagueCategoryDraft[], expectedRevision: number): Promise<LeagueDraft> {
+    const access = { ...leagueAccess.current };
+    if (!supabase || !access.admin || !user || access.userId !== user.id || !isAdmin(profile)) {
+      throw new Error("Lig taslağını yalnızca adminler kaydedebilir.");
+    }
+    const { error } = await supabase.rpc("save_league_draft", {
+      p_id: LEAGUE_DRAFT_ID,
+      p_expected_revision: expectedRevision,
+      p_categories: prepareLeagueCategories(categories),
+    });
+    if (error) {
+      throw new Error(error.code === "40001"
+        ? "Başka bir admin taslağı güncelledi. Düzenlemeleriniz korunuyor; güncel taslağı yükleyip tekrar düzenleyin."
+        : `Lig taslağı kaydedilemedi: ${error.message}`);
+    }
+    const saved = await readLeagueDraft();
+    if (!leagueAccess.current.admin || leagueAccess.current.userId !== access.userId ||
+      leagueAccess.current.generation !== access.generation) {
+      throw new Error("Oturum değişti. Lig taslağını admin hesabınızla yeniden açın.");
+    }
+    if (!saved) throw new Error("Kayıt tamamlandı ancak taslak okunamadı. Yeniden yükleyin.");
+    setLeagueDraft(saved);
+    setLeagueError(null);
+    return saved;
+  }
+
   const loadGuestData = useCallback(async () => {
+    leagueAccess.current = { userId: null, admin: false, generation: leagueAccess.current.generation + 1 };
+    setLeagueDraft(null);
+    setLeagueError(null);
+    setIsLeagueLoading(false);
     if (!supabase) {
       setIsLoading(false);
       return;
@@ -2522,6 +2597,15 @@ export function ClubApp() {
       loadedProfile = repairedProfileResult.data as Profile;
     }
 
+    if (leagueAccess.current.userId !== currentUser.id) return;
+    leagueAccess.current.admin = isAdmin(loadedProfile);
+    if (!isAdmin(loadedProfile)) {
+      leagueAccess.current.generation += 1;
+      setLeagueDraft(null);
+      setLeagueError(null);
+      setIsLeagueLoading(false);
+    }
+
     const loadedSettings = (settingsResult.data as ClubSettings | null) ?? defaultSettings;
     const loadedCourts = (courtsResult.data as Court[] | null) ?? [];
 
@@ -2649,10 +2733,13 @@ export function ClubApp() {
     await Promise.all([
       loadUserNotifications(currentUser, loadedAt),
       loadTournamentData(),
+      isAdmin(loadedProfile) && leagueLoadedGeneration.current !== leagueAccess.current.generation
+        ? loadLeagueData() : Promise.resolve(),
     ]);
     setIsLoading(false);
     void processDueNotifications(currentUser, loadedProfile);
   }, [
+    loadLeagueData,
     loadTournamentData,
     loadUserNotifications,
     processDueNotifications,
@@ -2665,13 +2752,25 @@ export function ClubApp() {
     }
 
     let isMounted = true;
+    let authEventSeen = false;
+    function applySessionUser(nextUser: User | null) {
+      if (leagueAccess.current.userId !== (nextUser?.id ?? null)) {
+        leagueAccess.current = { userId: nextUser?.id ?? null, admin: false, generation: leagueAccess.current.generation + 1 };
+        setLeagueDraft(null);
+        setLeagueError(null);
+        setIsLeagueLoading(false);
+        setProfile(null);
+        setActiveTab((current) => current === "league" ? "calendar" : current);
+      }
+      setUser((current) => current?.id === nextUser?.id ? current : nextUser);
+    }
 
     supabase.auth.getUser().then(({ data }) => {
-      if (!isMounted) {
+      if (!isMounted || authEventSeen) {
         return;
       }
 
-      setUser(data.user);
+      applySessionUser(data.user);
       if (data.user) {
         window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
         setIsGuest(false);
@@ -2688,8 +2787,9 @@ export function ClubApp() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      authEventSeen = true;
       const nextUser = session?.user ?? null;
-      setUser(nextUser);
+      applySessionUser(nextUser);
 
       if (nextUser) {
         window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
@@ -2935,6 +3035,10 @@ export function ClubApp() {
       return;
     }
 
+    leagueAccess.current = { userId: null, admin: false, generation: leagueAccess.current.generation + 1 };
+    setLeagueDraft(null);
+    setLeagueError(null);
+    setIsLeagueLoading(false);
     window.sessionStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
     if (!isGuest) {
       await supabase.auth.signOut();
@@ -5638,8 +5742,10 @@ export function ClubApp() {
     ? "profile"
     : isGuest && activeTab !== "calendar" && activeTab !== "tournaments"
       ? "calendar"
-      : activeTab;
-  const isTournamentView = visibleActiveTab === "tournaments";
+      : activeTab === "league" && (!isAdmin(profile) || profile?.id !== user?.id)
+        ? "calendar"
+        : activeTab;
+  const isTournamentView = visibleActiveTab === "tournaments" || visibleActiveTab === "league";
 
   return (
     <main
@@ -5718,6 +5824,7 @@ export function ClubApp() {
             selectedTournamentId={null}
             tournaments={tournamentShortcuts}
           />
+          {isAdmin(profile) ? <LeagueShortcutButton onOpen={() => setActiveTab("league")} /> : null}
           <nav className="grid grid-cols-3 gap-1.5 lg:flex lg:flex-col lg:justify-start lg:gap-2">
             <NavButton
               icon={<CalendarDays size={22} />}
@@ -5780,6 +5887,7 @@ export function ClubApp() {
                   selectedTournamentId={null}
                   tournaments={tournamentShortcuts}
                 />
+                {isAdmin(profile) ? <LeagueShortcutButton onOpen={() => setActiveTab("league")} /> : null}
               </div>
               {isGuest && visibleActiveTab !== "calendar" ? (
                 <nav className="mb-3 grid grid-cols-1 gap-1.5 lg:hidden">
@@ -5870,7 +5978,7 @@ export function ClubApp() {
             </div>
           ) : null}
 
-          {isLoading ? (
+          {isLoading && visibleActiveTab !== "league" ? (
             <div className="flex min-h-[360px] items-center justify-center rounded-md border border-[#ddd7c8] bg-[#fffdf8]">
               <div className="flex items-center gap-2 text-sm text-[#546257]">
                 <RefreshCw className="animate-spin" size={18} />
@@ -5892,6 +6000,17 @@ export function ClubApp() {
               }
               selectedTournamentId={selectedTournamentId}
               tournaments={tournaments}
+            />
+          ) : null}
+
+          {visibleActiveTab === "league" && isAdmin(profile) ? (
+            <LeagueDraftPanel
+              draft={leagueDraft}
+              isLoading={isLeagueLoading}
+              error={leagueError}
+              onSave={saveLeagueDraft}
+              onReload={() => { void loadLeagueData(); }}
+              onBack={() => setActiveTab("calendar")}
             />
           ) : null}
 
@@ -11120,6 +11239,23 @@ function TournamentMatchEditDialog({
         </form>
       </section>
     </div>
+  );
+}
+
+function LeagueShortcutButton({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      className="tournament-shortcut-button mb-3 flex min-h-28 w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border px-3 py-3 text-left font-semibold text-white transition hover:opacity-90 lg:min-h-14 lg:py-2"
+      onClick={onOpen}
+      style={{ backgroundColor: LEAGUE_COLOR, borderColor: LEAGUE_COLOR, "--tournament-button-depth": darkenHexColor(LEAGUE_COLOR) } as CSSProperties}
+      type="button"
+    >
+      <Trophy className="size-16 shrink-0 lg:size-9" aria-hidden="true" />
+      <span className="flex min-w-0 flex-1 flex-col gap-2 lg:gap-0.5">
+        <span className="text-xl font-extrabold min-[380px]:text-2xl lg:text-sm">Lig</span>
+        <span className="text-xs font-medium opacity-90 lg:text-[10px]">Taslak · Kasım 2026–Ekim 2027</span>
+      </span>
+    </button>
   );
 }
 
